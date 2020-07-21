@@ -1,0 +1,18 @@
+<Project>
+
+  <PropertyGroup>
+    <RootNamespace>CasCap</RootNamespace>
+    <!--<LangVersion>latest</LangVersion>-->
+    <LangVersion>8.0</LangVersion>
+    <!--<Nullable>enable</Nullable>-->
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <PackageIcon>icon.png</PackageIcon>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="..\..\icon.png" Pack="true" PackagePath="\"/>
+  </ItemGroup>
+
+</Project>

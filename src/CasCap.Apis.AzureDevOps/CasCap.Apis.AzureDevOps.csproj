@@ -1,0 +1,37 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <IsPackable>true</IsPackable>
+    <!--<Nullable>enable</Nullable>-->
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <Authors>Alex Vincent</Authors>
+    <Copyright>Alex Vincent</Copyright>
+    <Description>Azure DevOps Pipelines library.</Description>
+    <PackageTags>azure,devops,rest,api,yaml,pipelines,codegen</PackageTags>
+    <PackageProjectUrl>https://github.com/f2calv/CasCap.DevOpsYamlizrCli</PackageProjectUrl>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="AzurePipelinesToGitHubActionsConverter.Core" Version="0.10.6.75344255" />
+    <PackageReference Include="CasCap.Common.Extensions" Version="1.0.10" />
+    <PackageReference Include="CasCap.Common.Net" Version="1.0.10" />
+    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.0" PrivateAssets="All" />
+    <PackageReference Include="Microsoft.TeamFoundation.DistributedTask.WebApi" Version="16.153.0" />
+    <PackageReference Include="Microsoft.TeamFoundationServer.Client" Version="16.153.0" />
+    <PackageReference Include="Microsoft.TeamFoundationServer.ExtendedClient" Version="16.153.0" />
+    <PackageReference Include="Microsoft.VisualStudio.Services.Client" Version="16.153.0" />
+    <PackageReference Include="Microsoft.VisualStudio.Services.ExtensionManagement.WebApi" Version="16.153.0" />
+    <PackageReference Include="Microsoft.VisualStudio.Services.Release.Client" Version="16.153.0" />
+    <PackageReference Include="Microsoft.VisualStudio.Services.ServiceEndpoints.WebApi" Version="16.153.0" />
+    <PackageReference Include="Newtonsoft.Json" Version="12.0.3" />
+    <PackageReference Include="semver" Version="2.0.6" />
+    <PackageReference Include="YamlDotNet" Version="8.1.2" />
+  </ItemGroup>
+
+</Project>

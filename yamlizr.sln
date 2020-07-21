@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.29009.5
+MinimumVisualStudioVersion = 15.0.26124.0
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CasCap.Apis.AzureDevOps", "src\CasCap.Apis.AzureDevOps\CasCap.Apis.AzureDevOps.csproj", "{9949C9CA-33AD-4D10-8DD1-5C05E73F4E37}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CasCap.DevOpsYamlizrCli", "src\CasCap.DevOpsYamlizrCli\CasCap.DevOpsYamlizrCli.csproj", "{44ACAF0F-260B-4100-A2F7-16A94B3EC847}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{9949C9CA-33AD-4D10-8DD1-5C05E73F4E37}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9949C9CA-33AD-4D10-8DD1-5C05E73F4E37}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9949C9CA-33AD-4D10-8DD1-5C05E73F4E37}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9949C9CA-33AD-4D10-8DD1-5C05E73F4E37}.Release|Any CPU.Build.0 = Release|Any CPU
+		{44ACAF0F-260B-4100-A2F7-16A94B3EC847}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{44ACAF0F-260B-4100-A2F7-16A94B3EC847}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{44ACAF0F-260B-4100-A2F7-16A94B3EC847}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{44ACAF0F-260B-4100-A2F7-16A94B3EC847}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {315434A5-DC61-4070-8452-C6695E1B14E0}
+	EndGlobalSection
+EndGlobal

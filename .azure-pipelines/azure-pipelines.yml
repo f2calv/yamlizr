@@ -1,0 +1,67 @@
+trigger:
+  batch: true
+  branches:
+    include:
+    - master
+    - hotfix/*
+    - feature/*
+  paths:
+    exclude:
+    - .azure-pipelines
+    - samples
+    - LICENSE
+    - README.md
+
+resources:
+  repositories:
+  - repository: sharedTemplates
+    type: github
+    name: f2calv/CasCap.YAMLTemplates
+    endpoint: github.com_f2calv
+
+variables:
+- group: nuget-public
+- name: buildConfiguration
+  value: Release
+- name: poolName
+  value: AKSAgents
+- name: SolutionName
+  value: yamlizr
+
+stages:
+- stage: Build
+  jobs:
+  - template: templates/jobs.dotnet.build-v1.yml@sharedTemplates
+    parameters:
+      SolutionName: $(SolutionName)
+      PublishArtifact: true
+
+#skip running tests on agent until we can authenticate
+#- stage: Test
+#  jobs:
+#  - job: TestJob
+#    steps:
+#    - template: templates/steps.dotnet.test-v1.yml@sharedTemplates
+#      parameters:
+#        SolutionName: $(SolutionName)
+#        InstallDependencies: true
+#        TestProjectsPath: src/
+
+- ${{ if eq(variables['Build.SourceBranch'], 'refs/heads/master') }}:
+  - stage: Publish
+    jobs:
+    - job: PublishJob
+      variables:
+        Version.Major: 0
+        Version.Minor: 0
+        Version.PackageMajorMinor: $(Version.Minor).$(Version.Major)-$(SolutionName)
+        Version.Revision: $[counter(variables['Version.PackageMajorMinor'], 0)]
+        PackageVersion: $(Version.Major).$(Version.Minor).$(Version.Revision)
+      steps:
+      - template: templates/steps.dotnet.publish.nuget-v2.yml@sharedTemplates
+        parameters:
+          packagesToPack: '*.csproj'
+          #NuGetFeedUrl: https://api.nuget.org/v3/index.json
+          #NuGetFeedAPIKey: $(f2calvNuGet)
+          NuGetFeedUrl: https://apiint.nugettest.org/v3/index.json
+          NuGetFeedAPIKey: $(f2calvNuGetInt)
