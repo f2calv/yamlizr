@@ -10,9 +10,9 @@
   <PropertyGroup>
     <Authors>Alex Vincent</Authors>
     <Copyright>Alex Vincent</Copyright>
-    <Description>Azure DevOps Classic-to-YAML Pipelines CLI CodeGen Tool</Description>
+    <Description>Azure DevOps Classic-to-YAML Pipelines CLI</Description>
     <PackageTags>azure,devops,classic,yaml,pipelines,cli,codegen</PackageTags>
-    <PackageProjectUrl>https://github.com/f2calv/CasCap.DevOpsYamlizrCli</PackageProjectUrl>
+    <PackageProjectUrl>https://github.com/f2calv/yamlizr</PackageProjectUrl>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <IncludeSymbols>true</IncludeSymbols>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>

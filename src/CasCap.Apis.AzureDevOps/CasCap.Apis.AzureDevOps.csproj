@@ -9,9 +9,9 @@
   <PropertyGroup>
     <Authors>Alex Vincent</Authors>
     <Copyright>Alex Vincent</Copyright>
-    <Description>Azure DevOps Pipelines library.</Description>
+    <Description>Azure DevOps Pipelines helper/utility library.</Description>
     <PackageTags>azure,devops,rest,api,yaml,pipelines,codegen</PackageTags>
-    <PackageProjectUrl>https://github.com/f2calv/CasCap.DevOpsYamlizrCli</PackageProjectUrl>
+    <PackageProjectUrl>https://github.com/f2calv/yamlizr</PackageProjectUrl>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <IncludeSymbols>true</IncludeSymbols>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>

@@ -73,7 +73,7 @@ namespace CasCap.Commands
 
             _console.Write("- ");
             _console.ForegroundColor = ConsoleColor.Blue;
-            _console.Write($"https://github.com/f2calv/CasCap.DevOpsYamlizrCli");
+            _console.Write($"https://github.com/f2calv/yamlizr");
             _console.ForegroundColor = fgColor;
             _console.WriteLine($" (Azure Pipelines)");
             _console.Write("- ");
@@ -85,7 +85,7 @@ namespace CasCap.Commands
             _console.WriteLine();
             _console.WriteLine($"To update/refresh this tool; ");
             _console.ForegroundColor = ConsoleColor.Cyan;
-            _console.WriteLine($"   dotnet tool update --global CasCap.DevOpsYamlizrCli");
+            _console.WriteLine($"   dotnet tool update --global yamlizr");
             _console.WriteLine();
             _console.ForegroundColor = fgColor;
             #endregion
