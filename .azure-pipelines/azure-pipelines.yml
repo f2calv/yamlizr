@@ -52,7 +52,7 @@ stages:
     jobs:
     - job: PublishJob
       variables:
-        Version.Major: 0
+        Version.Major: 1
         Version.Minor: 0
         Version.PackageMajorMinor: $(Version.Minor).$(Version.Major)-$(SolutionName)
         Version.Revision: $[counter(variables['Version.PackageMajorMinor'], 0)]
@@ -61,7 +61,7 @@ stages:
       - template: templates/steps.dotnet.publish.nuget-v2.yml@sharedTemplates
         parameters:
           packagesToPack: '*.csproj'
-          #NuGetFeedUrl: https://api.nuget.org/v3/index.json
-          #NuGetFeedAPIKey: $(f2calvNuGet)
-          NuGetFeedUrl: https://apiint.nugettest.org/v3/index.json
-          NuGetFeedAPIKey: $(f2calvNuGetInt)
+          NuGetFeedUrl: https://api.nuget.org/v3/index.json
+          NuGetFeedAPIKey: $(f2calvNuGet)
+          #NuGetFeedUrl: https://apiint.nugettest.org/v3/index.json
+          #NuGetFeedAPIKey: $(f2calvNuGetInt)
