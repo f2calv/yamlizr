@@ -6,7 +6,7 @@
 [cascap.yamlizr-badge]: https://img.shields.io/nuget/v/yamlizr?color=blue
 [cascap.yamlizr-url]: https://nuget.org/packages/yamlizr
 
-[![Build Status][azdo-badge]][azdo-url] <!-- ![Code Coverage][azdo-coverage-url] --> [![Nuget][yamlizr-badge]][yamlizr-url]
+[![Build Status][azdo-badge]][azdo-url] <!-- ![Code Coverage][azdo-coverage-url] --> [![Nuget][cascap.yamlizr-badge]][cascap.yamlizr-url]
 
 **yamlizr** is a [.NET Core Global Tool](https://docs.microsoft.com/en-us/dotnet/core/tools/global-tools) which converts Azure DevOps Classic Build/Release Definitions and any referenced Task Groups en-masse into their [YAML Pipeline](https://docs.microsoft.com/en-us/azure/devops/pipelines/yaml-schema?view=azure-devops&tabs=schema%2Cparameter-schema) or [GitHub Action](https://github.com/features/actions) equivalent.
 
