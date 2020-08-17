@@ -18,7 +18,7 @@ using System.Threading;
 using System.Threading.Tasks;
 namespace CasCap.Commands
 {
-    [Command(Description = "Convert Azure DevOps defintions to YAML")]
+    [Command(Description = "Generate Azure DevOps YAML pipelines from classic definitions.")]
     class GenerateCommand : CommandBase
     {
         public GenerateCommand(ILogger<GenerateCommand> logger) => _logger = logger;
