@@ -32,7 +32,7 @@ Also... there is an optional switch whereby the tool can pass the Azure DevOps P
   | Variable Groups   | Read          |
 - Download and install [.NET Core 3.1 SDK](https://dotnet.microsoft.com/download/dotnet-core/3.1)
 - From a command line shell install the tool;
-  `dotnet tool update --global CasCap.DevOpsYamlizrCli`
+  `dotnet tool update --global yamlizr`
 
 ### CLI Operation
 
