@@ -21,7 +21,7 @@ namespace CasCap.Commands
     [Command(Description = "Generate Azure DevOps YAML pipelines from classic definitions.")]
     class GenerateCommand : CommandBase
     {
-        public GenerateCommand(ILogger<GenerateCommand> logger) => _logger = logger;
+        public GenerateCommand(ILogger<GenerateCommand> logger, IConsole console) : base(logger, console) { }
 
         [Required]
         [Option("-pat", Description = "Azure DevOps PAT (Personal Access Token).")]

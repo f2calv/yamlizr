@@ -12,7 +12,7 @@ namespace CasCap
     [Subcommand(typeof(GenerateCommand))]
     class Program : CommandBase
     {
-        public Program(ILogger<Program> logger) => _logger = logger;
+        public Program(ILogger<Program> logger, IConsole console) : base(logger, console) { }
 
         static CommandLineApplication app;
 
@@ -56,7 +56,7 @@ namespace CasCap
         public async Task OnExecuteAsync()
         {
             await Task.Delay(0);
-            Console.WriteLine("Specify a subcommand...");
+            _console.WriteLine("Specify a subcommand...");
             app.ShowHelp();
         }
     }

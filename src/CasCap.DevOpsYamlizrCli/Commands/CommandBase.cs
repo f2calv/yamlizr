@@ -5,10 +5,8 @@ using Microsoft.TeamFoundation.Build.WebApi;
 using Microsoft.TeamFoundation.Core.WebApi;
 using Microsoft.TeamFoundation.DistributedTask.WebApi;
 using Microsoft.VisualStudio.Services.Common;
-using Microsoft.VisualStudio.Services.ExtensionManagement.WebApi;
 using Microsoft.VisualStudio.Services.ReleaseManagement.WebApi;
 using Microsoft.VisualStudio.Services.ReleaseManagement.WebApi.Clients;
-using Microsoft.VisualStudio.Services.ServiceEndpoints.WebApi;
 using Microsoft.VisualStudio.Services.WebApi;
 using ShellProgressBar;
 using System;
@@ -26,12 +24,18 @@ namespace CasCap.Commands
     public abstract class CommandBase
     {
         protected /*readonly*/ ILogger _logger;
+        protected /*readonly*/ IConsole _console;
+
+        public CommandBase(ILogger<CommandBase> logger, IConsole console)
+        {
+            _logger = logger;
+            _console = console;
+        }
+
         protected ProjectHttpClient _projectClient;
         protected BuildHttpClient _buildClient;
         protected ReleaseHttpClient _releaseClient;
         protected TaskAgentHttpClient _taskAgentClient;
-        protected ServiceEndpointHttpClient _endpointClient;
-        protected ExtensionManagementHttpClient _extensionClient;
         protected ApiService _apiService;
 
         protected VssBasicCredential _credentials;
@@ -68,7 +72,7 @@ namespace CasCap.Commands
 
         protected async Task<bool> GetProject(string project)
         {
-            Console.Write($"Retrieving Azure DevOps Project '{project}' ... ");
+            _console.Write($"Retrieving Azure DevOps Project '{project}' ... ");
             try
             {
                 _project = await _projectClient.GetProject(project);
@@ -78,16 +82,16 @@ namespace CasCap.Commands
                 Debug.WriteLine(ex);
             }
             if (_project is object)
-                Console.WriteLine($" retrieved :)");
+                _console.WriteLine($" retrieved :)");
             else
-                Console.Write($" not found :(");
+                _console.Write($" not found :(");
             return _project is object;
         }
 
         protected bool Connect(string PAT, string organisation)
         {
             var uriString = $"https://dev.azure.com/{organisation}";
-            Console.Write($"Connecting to Azure DevOps REST API, {uriString} ...");
+            _console.Write($"Connecting to Azure DevOps REST API, {uriString} ...");
             try
             {
                 _credentials = new VssBasicCredential(string.Empty, PAT);
@@ -96,14 +100,12 @@ namespace CasCap.Commands
                 _buildClient = _connection.GetClient<BuildHttpClient>();
                 _releaseClient = _connection.GetClient<ReleaseHttpClient>();
                 _taskAgentClient = _connection.GetClient<TaskAgentHttpClient>();
-                _extensionClient = _connection.GetClient<ExtensionManagementHttpClient>();
-                _endpointClient = _connection.GetClient<ServiceEndpointHttpClient>();
                 _apiService = new ApiService(PAT);
             }
             catch (Exception ex)
             {
                 Debug.WriteLine(ex);
-                Console.WriteLine($"Unable to authenticate with Azure DevOps REST API :(");
+                _console.WriteLine($"Unable to authenticate with Azure DevOps REST API :(");
                 return false;
             }
             Console.WriteLine($" connected :)");
