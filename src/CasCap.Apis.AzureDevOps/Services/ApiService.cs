@@ -32,8 +32,9 @@ namespace CasCap.Services
             var req = new
             {
                 previewRun = true,
-                yamlOverride = @"
+                yamlOverride = $@"
 # your YAML here
+{pipelineYaml}
 "
             };
             var res = await PostJsonAsync<string, object>($"https://dev.azure.com/{organisation}/{project}/_apis/pipelines/{pipelineId}/runs?api-version=6.0-preview.1", req);
