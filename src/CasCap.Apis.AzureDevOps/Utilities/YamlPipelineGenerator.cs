@@ -204,7 +204,7 @@ namespace CasCap.Utilities
             return variables;
         }
 
-        string GenCondition(string condition) => string.IsNullOrWhiteSpace(condition) || condition.Equals("succeeded()", StringComparison.OrdinalIgnoreCase) ? "succeeded()" : condition;
+        static string GenCondition(string condition) => string.IsNullOrWhiteSpace(condition) || condition.Equals("succeeded()", StringComparison.OrdinalIgnoreCase) ? "succeeded()" : condition;
 
         Stage[] GenReleaseStages()
         {
@@ -304,12 +304,12 @@ namespace CasCap.Utilities
                     var taskGroupSteps = taskGroup.Tasks.Where(p => p.Enabled).ToList();
                     if (!taskGroupSteps.IsNullOrEmpty())
                     {
-                        var steps = new List<Step>(taskGroupSteps.Count());
+                        var steps = new List<Step>(taskGroupSteps.Count);
                         foreach (var taskGroupStep in taskGroupSteps)
                             steps.AddRange(GenSteps(taskGroupStep, template.parameters));
                         template.steps = steps.ToArray();
                     }
-                    template.steps = template.steps ?? new Step[0];//handle when all tasks within taskgroup are disabled
+                    template.steps ??= Array.Empty<Step>();//handle when all tasks within taskgroup are disabled
                     _taskGroupTemplateMap.TryAdd(key, template);
                     return template;
                 }
@@ -354,7 +354,7 @@ namespace CasCap.Utilities
                     {
                         var str = i == 0 || i == lines.Length - 1 ? lines[i].Trim() : lines[i].TrimEnd();
                         sb.Append(str);
-                        if (i != lines.Length - 1) sb.Append("\n");
+                        if (i != lines.Length - 1) sb.Append('\n');
                     }
                     return sb.ToString();
                 }

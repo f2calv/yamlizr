@@ -2,31 +2,26 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>netcoreapp3.1</TargetFramework>
+    <TargetFrameworks>netcoreapp3.1</TargetFrameworks>
+    <TargetFrameworks Condition="$(MSBuildVersion) &gt;= 16.8.0">$(TargetFrameworks);net5.0</TargetFrameworks>
     <AssemblyName>yamlizr</AssemblyName>
-    <IsPackable>true</IsPackable>
   </PropertyGroup>
 
   <PropertyGroup>
-    <Authors>Alex Vincent</Authors>
-    <Copyright>Alex Vincent</Copyright>
+    <IsPackable>true</IsPackable>
     <Description>Azure DevOps Classic-to-YAML Pipelines CLI</Description>
     <PackageTags>azure,devops,classic,yaml,pipelines,cli,codegen</PackageTags>
-    <PackageProjectUrl>https://github.com/f2calv/yamlizr</PackageProjectUrl>
-    <PackageLicenseExpression>MIT</PackageLicenseExpression>
-    <IncludeSymbols>true</IncludeSymbols>
-    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
     <PackAsTool>true</PackAsTool>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="CasCap.Common.Threading" Version="1.0.10" />
+    <PackageReference Include="CasCap.Common.Threading" Version="1.0.15" />
     <PackageReference Include="ConsoleTables" Version="2.4.2" />
-    <PackageReference Include="Figgle" Version="0.3.0" />
+    <PackageReference Include="Figgle" Version="0.4.0" />
     <PackageReference Include="McMaster.Extensions.CommandLineUtils" Version="3.0.0" />
     <PackageReference Include="McMaster.Extensions.Hosting.CommandLine" Version="3.0.0" />
-    <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="3.1.7" />
-    <PackageReference Include="Microsoft.Extensions.Hosting" Version="3.1.7" />
+    <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="5.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="5.0.0" />
     <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.0" PrivateAssets="All" />
     <PackageReference Include="ShellProgressBar" Version="5.0.0" />
   </ItemGroup>

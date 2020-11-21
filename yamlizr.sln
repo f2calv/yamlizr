@@ -7,6 +7,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CasCap.Apis.AzureDevOps", "
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CasCap.DevOpsYamlizrCli", "src\CasCap.DevOpsYamlizrCli\CasCap.DevOpsYamlizrCli.csproj", "{44ACAF0F-260B-4100-A2F7-16A94B3EC847}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CasCap.Apis.AzureDevOps.Tests", "src\CasCap.Apis.AzureDevOps.Tests\CasCap.Apis.AzureDevOps.Tests.csproj", "{50FD267D-F50E-4049-ABE0-1340A5E25650}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -21,6 +23,10 @@ Global
 		{44ACAF0F-260B-4100-A2F7-16A94B3EC847}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{44ACAF0F-260B-4100-A2F7-16A94B3EC847}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{44ACAF0F-260B-4100-A2F7-16A94B3EC847}.Release|Any CPU.Build.0 = Release|Any CPU
+		{50FD267D-F50E-4049-ABE0-1340A5E25650}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{50FD267D-F50E-4049-ABE0-1340A5E25650}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{50FD267D-F50E-4049-ABE0-1340A5E25650}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{50FD267D-F50E-4049-ABE0-1340A5E25650}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
