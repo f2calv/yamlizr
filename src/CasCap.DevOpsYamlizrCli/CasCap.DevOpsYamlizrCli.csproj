@@ -10,7 +10,7 @@
   <PropertyGroup>
     <IsPackable>true</IsPackable>
     <Description>Azure DevOps Classic-to-YAML Pipelines CLI</Description>
-    <PackageTags>azure,devops,classic,yaml,pipelines,cli,codegen</PackageTags>
+    <PackageTags>azure,devops,classic,designer,yaml,pipeline,cli,codegen,convertor</PackageTags>
     <PackAsTool>true</PackAsTool>
   </PropertyGroup>
 

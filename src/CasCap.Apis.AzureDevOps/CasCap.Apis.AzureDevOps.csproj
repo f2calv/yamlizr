@@ -9,7 +9,7 @@
   <PropertyGroup>
     <IsPackable>true</IsPackable>
     <Description>Azure DevOps helper/utility library.</Description>
-    <PackageTags>azure,devops,rest,api,yaml,pipelines,codegen</PackageTags>
+    <PackageTags>azure,devops,api,helper,utility,library</PackageTags>
   </PropertyGroup>
 
   <ItemGroup>
