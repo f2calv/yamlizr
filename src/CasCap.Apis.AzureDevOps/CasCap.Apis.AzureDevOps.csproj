@@ -1,20 +1,15 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>netstandard2.0</TargetFramework>
-    <IsPackable>true</IsPackable>
+    <TargetFrameworks>netstandard2.0</TargetFrameworks>
+	<TargetFrameworks Condition="$(MSBuildVersion) &gt;= 16.8.0">$(TargetFrameworks);net5.0</TargetFrameworks>
     <!--<Nullable>enable</Nullable>-->
   </PropertyGroup>
 
   <PropertyGroup>
-    <Authors>Alex Vincent</Authors>
-    <Copyright>Alex Vincent</Copyright>
-    <Description>Azure DevOps Pipelines helper/utility library.</Description>
+    <IsPackable>true</IsPackable>
+    <Description>Azure DevOps helper/utility library.</Description>
     <PackageTags>azure,devops,rest,api,yaml,pipelines,codegen</PackageTags>
-    <PackageProjectUrl>https://github.com/f2calv/yamlizr</PackageProjectUrl>
-    <PackageLicenseExpression>MIT</PackageLicenseExpression>
-    <IncludeSymbols>true</IncludeSymbols>
-    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
   </PropertyGroup>
 
   <ItemGroup>

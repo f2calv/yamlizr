@@ -2,20 +2,15 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>netcoreapp3.1</TargetFramework>
+    <TargetFrameworks>netcoreapp3.1</TargetFrameworks>
+    <TargetFrameworks Condition="$(MSBuildVersion) &gt;= 16.8.0">$(TargetFrameworks);net5.0</TargetFrameworks>
     <AssemblyName>yamlizr</AssemblyName>
-    <IsPackable>true</IsPackable>
   </PropertyGroup>
 
   <PropertyGroup>
-    <Authors>Alex Vincent</Authors>
-    <Copyright>Alex Vincent</Copyright>
+    <IsPackable>true</IsPackable>
     <Description>Azure DevOps Classic-to-YAML Pipelines CLI</Description>
     <PackageTags>azure,devops,classic,yaml,pipelines,cli,codegen</PackageTags>
-    <PackageProjectUrl>https://github.com/f2calv/yamlizr</PackageProjectUrl>
-    <PackageLicenseExpression>MIT</PackageLicenseExpression>
-    <IncludeSymbols>true</IncludeSymbols>
-    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
     <PackAsTool>true</PackAsTool>
   </PropertyGroup>
 
