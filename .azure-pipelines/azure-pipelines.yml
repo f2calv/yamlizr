@@ -1,3 +1,12 @@
+parameters:
+- name: BuildConfiguration
+  displayName: Select BuildConfiguration
+  type: string
+  default: release
+  values:
+  - release
+  - debug
+
 trigger:
   batch: true
   branches:
@@ -8,7 +17,6 @@ trigger:
   paths:
     exclude:
     - .azure-pipelines
-    - samples
     - LICENSE
     - README.md
 
@@ -20,48 +28,19 @@ resources:
     endpoint: github.com_f2calv
 
 variables:
-- group: nuget-public
-- name: buildConfiguration
-  value: Release
-- name: poolName
-  value: AKSAgents
-- name: SolutionName
-  value: yamlizr
-
-stages:
-- stage: Build
-  jobs:
-  - template: templates/jobs.dotnet.build-v1.yml@sharedTemplates
-    parameters:
-      SolutionName: $(SolutionName)
-      PublishArtifact: true
-
-#skip running tests on agent until we can authenticate
-#- stage: Test
-#  jobs:
-#  - job: TestJob
-#    steps:
-#    - template: templates/steps.dotnet.test-v1.yml@sharedTemplates
-#      parameters:
-#        SolutionName: $(SolutionName)
-#        InstallDependencies: true
-#        TestProjectsPath: src/
-
 - ${{ if eq(variables['Build.SourceBranch'], 'refs/heads/master') }}:
-  - stage: Publish
-    jobs:
-    - job: PublishJob
-      variables:
-        Version.Major: 1
-        Version.Minor: 0
-        Version.PackageMajorMinor: $(Version.Minor).$(Version.Major)-$(SolutionName)
-        Version.Revision: $[counter(variables['Version.PackageMajorMinor'], 0)]
-        PackageVersion: $(Version.Major).$(Version.Minor).$(Version.Revision)
-      steps:
-      - template: templates/steps.dotnet.publish.nuget-v2.yml@sharedTemplates
-        parameters:
-          packagesToPack: '*.csproj'
-          NuGetFeedUrl: https://api.nuget.org/v3/index.json
-          NuGetFeedAPIKey: $(f2calvNuGet)
-          #NuGetFeedUrl: https://apiint.nugettest.org/v3/index.json
-          #NuGetFeedAPIKey: $(f2calvNuGetInt)
+  - group: nuget-prod
+- ${{ if ne(variables['Build.SourceBranch'], 'refs/heads/master') }}:
+  - group: nuget-dev
+
+pool:
+  vmImage: ubuntu-latest
+
+#extends:
+#  template: pipelines/dotnet.publish.nuget-v1.yml@sharedTemplates
+steps:
+- template: pipelines/dotnet.publish.nuget-v1.yml@sharedTemplates
+  parameters:
+    BuildConfiguration: ${{ parameters.BuildConfiguration }}
+    CoverageInclude: '[CasCap.*]*'
+    gitHubConnection: github.com_f2calv
