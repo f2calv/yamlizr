@@ -1,4 +1,4 @@
-# Yamlizr - Azure DevOps Classic-to-YAML Pipelines CLI
+# Yamlizr - Azure DevOps Designer-to-YAML Pipeline CLI
 
 [azdo-badge]: https://dev.azure.com/f2calv/github/_apis/build/status/f2calv.CasCap.DevOpsYamlizrCli?branchName=master
 [azdo-url]: https://dev.azure.com/f2calv/github/_build/latest?definitionId=8&branchName=master
@@ -8,9 +8,9 @@
 
 [![Build Status][azdo-badge]][azdo-url] <!-- ![Code Coverage][azdo-coverage-url] --> [![Nuget][cascap.yamlizr-badge]][cascap.yamlizr-url]
 
-**yamlizr** is a [.NET Core Global Tool](https://docs.microsoft.com/en-us/dotnet/core/tools/global-tools) which converts Azure DevOps Classic Build/Release Definitions and any referenced Task Groups en-masse into their [YAML Pipeline](https://docs.microsoft.com/en-us/azure/devops/pipelines/yaml-schema?view=azure-devops&tabs=schema%2Cparameter-schema) or [GitHub Action](https://github.com/features/actions) equivalent.
+> This tool was created in the summer of 2020 when there was no means of exporting a complete pipeline to YAML. As of November 2020 there is a new [Export to YAML](https://devblogs.microsoft.com/devops/replacing-view-yaml/) feature which allows you to export an entire pipeline to YAML. The official tool covers more edge cases than this CLI. Where this CLI still has benefits is in the conversion of every definition en-masse and it also gives developers the ability to automate YAML output customisations to fit their exact needs.
 
-Currently (as of August 2020) [Azure DevOps](https://dev.azure.com) only allows you to view the YAML for individual tasks in your definitions, however it doesn't allow the exporting of entire pipelines as YAML nor does it support task group-to-YAML conversion ...so hopefully this tool fills that gap.
+**yamlizr** is a [.NET Core Global Tool](https://docs.microsoft.com/en-us/dotnet/core/tools/global-tools) which converts Azure DevOps Classic Designer Build/Release Definitions and any referenced Task Groups en-masse into their [YAML Pipeline](https://docs.microsoft.com/en-us/azure/devops/pipelines/yaml-schema?view=azure-devops&tabs=schema%2Cparameter-schema) or [GitHub Action](https://github.com/features/actions) equivalent.
 
 The tool itself uses the [Azure DevOps .NET Client Libraries](https://docs.microsoft.com/en-us/azure/devops/integrate/concepts/dotnet-client-libraries?view=azure-devops) to pre-cache relevant data from your Azure DevOps organisation/account. This data includes build/release definitions, task groups, tasks/extensions data and variable groups. This Azure DevOps data is converted into Azure DevOps Pipeline objects (stages/jobs/steps/variables) which are then persisted to YAML using the [YamlDotNet](https://github.com/aaubry/YamlDotNet) library.
 
@@ -30,7 +30,7 @@ Also... there is an optional switch whereby the tool can pass the Azure DevOps P
   | Release           | Read          |
   | Task Groups       | Read          |
   | Variable Groups   | Read          |
-- Download and install [.NET Core 3.1 SDK](https://dotnet.microsoft.com/download/dotnet-core/3.1)
+- Download and install either [.NET Core 3.1 SDK](https://dotnet.microsoft.com/download/dotnet-core/3.1) or [.NET 5.0 SDK](https://dotnet.microsoft.com/download/dotnet/5.0).
 - From a command line shell install the tool;
   `dotnet tool update --global yamlizr`
 
