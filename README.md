@@ -8,7 +8,7 @@
 
 [![Build Status][azdo-badge]][azdo-url] <!-- ![Code Coverage][azdo-coverage-url] --> [![Nuget][cascap.yamlizr-badge]][cascap.yamlizr-url]
 
-> This tool was created in the summer of 2020 when there was no means of exporting a complete pipeline to YAML. As of November 2020 there is a new [Export to YAML](https://devblogs.microsoft.com/devops/replacing-view-yaml/) feature which allows you to export an entire pipeline to YAML. The official tool covers more edge cases than this CLI. Where this CLI still has benefits is in the conversion of every definition en-masse and it also gives developers the ability to automate YAML output customisations to fit their exact needs.
+> This tool was created in the summer of 2020 when there was no means of exporting a definition to YAML. As of November 2020 there is a new [Export to YAML](https://devblogs.microsoft.com/devops/replacing-view-yaml/) feature which allows you to export a Build pipeline to YAML with a single click. This official tool *probably* covers more edge cases than this CLI for Build pipelines. Where this CLI still has benefits is that it also converts Release definitions to YAML, it also allows the conversion of every single Build/Release definition en-masse which developers can then customise to fit their unique deployment needs.
 
 **yamlizr** is a [.NET Core Global Tool](https://docs.microsoft.com/en-us/dotnet/core/tools/global-tools) which converts Azure DevOps Classic Designer Build/Release Definitions and any referenced Task Groups en-masse into their [YAML Pipeline](https://docs.microsoft.com/en-us/azure/devops/pipelines/yaml-schema?view=azure-devops&tabs=schema%2Cparameter-schema) or [GitHub Action](https://github.com/features/actions) equivalent.
 
