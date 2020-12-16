@@ -13,7 +13,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="AzurePipelinesToGitHubActionsConverter.Core" Version="0.10.6.75344255" />
+    <PackageReference Include="AzurePipelinesToGitHubActionsConverter.Core" Version="0.14.1" />
     <PackageReference Include="CasCap.Common.Extensions" Version="1.0.15" />
     <PackageReference Include="CasCap.Common.Net" Version="1.0.15" />
     <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.0" PrivateAssets="All" />
