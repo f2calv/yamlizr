@@ -15,15 +15,15 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="CasCap.Common.Threading" Version="1.0.15" />
+    <PackageReference Include="CasCap.Common.Threading" Version="1.0.19" />
     <PackageReference Include="ConsoleTables" Version="2.4.2" />
     <PackageReference Include="Figgle" Version="0.4.0" />
-    <PackageReference Include="McMaster.Extensions.CommandLineUtils" Version="3.0.0" />
-    <PackageReference Include="McMaster.Extensions.Hosting.CommandLine" Version="3.0.0" />
+    <PackageReference Include="McMaster.Extensions.CommandLineUtils" Version="3.1.0" />
+    <PackageReference Include="McMaster.Extensions.Hosting.CommandLine" Version="3.1.0" />
     <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="5.0.0" />
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="5.0.0" />
     <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.0" PrivateAssets="All" />
-    <PackageReference Include="ShellProgressBar" Version="5.0.0" />
+    <PackageReference Include="ShellProgressBar" Version="5.1.0" />
   </ItemGroup>
 
   <ItemGroup>
