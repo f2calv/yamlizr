@@ -11,7 +11,7 @@ trigger:
   batch: true
   branches:
     include:
-    - master
+    - main
     - hotfix/*
     - feature/*
   paths:
@@ -28,9 +28,9 @@ resources:
     endpoint: github.com_f2calv
 
 variables:
-- ${{ if eq(variables['Build.SourceBranch'], 'refs/heads/master') }}:
+- ${{ if eq(variables['Build.SourceBranch'], 'refs/heads/main') }}:
   - group: nuget-prod
-- ${{ if ne(variables['Build.SourceBranch'], 'refs/heads/master') }}:
+- ${{ if ne(variables['Build.SourceBranch'], 'refs/heads/main') }}:
   - group: nuget-dev
 
 pool:

@@ -1,6 +1,6 @@
 mode: MainLine
 branches:
-  master:
+  main:
     tag: ''
   feature:
     tag: ci
