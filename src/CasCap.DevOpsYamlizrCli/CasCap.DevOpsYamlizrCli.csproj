@@ -15,7 +15,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="CasCap.Common.Threading" Version="1.0.20" />
+    <PackageReference Include="CasCap.Common.Threading" Version="1.0.25" />
     <PackageReference Include="ConsoleTables" Version="2.4.2" />
     <PackageReference Include="Figgle" Version="0.4.0" />
     <PackageReference Include="McMaster.Extensions.CommandLineUtils" Version="3.1.0" />
