@@ -9,6 +9,7 @@ using Semver;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -283,7 +284,7 @@ namespace CasCap.Utilities
                         timeoutInMinutes = timeoutInMinutes,
                     }
                 };
-            var template = GetOrCreateTaskGroupTemplate();
+            var template = GetOrCreateTaskGroupTemplate() ?? new Template { steps = new Step[0] };
             return _inlineTaskGroups ? new List<Step>(template.steps) : GetSteps(template, inputs);
 
             Template GetOrCreateTaskGroupTemplate()
@@ -293,7 +294,8 @@ namespace CasCap.Utilities
                     return template;
                 else
                 {
-                    _taskGroupMap.TryGetValue(key, out var taskGroup);
+                    if (!_taskGroupMap.TryGetValue(key, out var taskGroup))
+                        return null;
                     template = new Template { taskGroup = taskGroup };
                     if (!taskGroup.Inputs.IsNullOrEmpty())
                     {
