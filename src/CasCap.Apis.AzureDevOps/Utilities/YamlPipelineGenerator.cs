@@ -284,7 +284,7 @@ namespace CasCap.Utilities
                         timeoutInMinutes = timeoutInMinutes,
                     }
                 };
-            var template = GetOrCreateTaskGroupTemplate() ?? new Template { steps = new Step[0] };
+            var template = GetOrCreateTaskGroupTemplate() ?? new Template { steps = Array.Empty<Step>() };
             return _inlineTaskGroups ? new List<Step>(template.steps) : GetSteps(template, inputs);
 
             Template GetOrCreateTaskGroupTemplate()

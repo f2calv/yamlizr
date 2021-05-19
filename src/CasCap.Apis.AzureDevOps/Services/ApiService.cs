@@ -1,5 +1,5 @@
-﻿using CasCap.Common.Logging;
-using CasCap.Models;
+﻿using CasCap.Models;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Net.Http;
