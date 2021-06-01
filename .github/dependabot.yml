@@ -1,0 +1,51 @@
+version: 2
+updates:
+- package-ecosystem: nuget
+  directory: "/"
+  schedule:
+    interval: daily
+    time: "04:00"
+  open-pull-requests-limit: 10
+  ignore:
+  - dependency-name: AzurePipelinesToGitHubActionsConverter.Core
+    versions:
+    - 0.15.3
+    - 0.15.4
+    - 0.15.5
+    - 0.15.7
+    - 0.16.1
+    - 0.16.2
+    - 0.16.4
+    - 0.17.1
+    - 0.17.2
+    - 0.17.3
+    - 0.17.5
+    - 0.17.8
+  - dependency-name: YamlDotNet
+    versions:
+    - 10.0.0
+    - 11.0.1
+    - 11.1.0
+    - 9.1.4
+  - dependency-name: CasCap.Common.Extensions
+    versions:
+    - 1.0.18
+    - 1.0.19
+    - 1.0.22
+    - 1.0.24
+  - dependency-name: CasCap.Common.Net
+    versions:
+    - 1.0.18
+    - 1.0.19
+    - 1.0.22
+    - 1.0.24
+  - dependency-name: CasCap.Common.Threading
+    versions:
+    - 1.0.18
+    - 1.0.19
+    - 1.0.22
+    - 1.0.24
+  - dependency-name: Microsoft.NET.Test.Sdk
+    versions:
+    - 16.8.3
+    - 16.9.1
