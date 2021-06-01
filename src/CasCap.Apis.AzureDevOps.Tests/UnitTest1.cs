@@ -6,8 +6,10 @@ namespace CasCap.Apis.AzureDevOps.Tests
         [Fact]
         public void Test1()
         {
-            //todo: add tests
-            Assert.True(true);
+            if (1 == 1)
+                Assert.True(true);
+            else
+                Assert.True(false);
         }
     }
 }
