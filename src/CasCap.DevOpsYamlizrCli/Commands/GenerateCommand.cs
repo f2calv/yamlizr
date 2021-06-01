@@ -1,4 +1,4 @@
-﻿using AzurePipelinesToGitHubActionsConverter.Core.Conversion;
+﻿using AzurePipelinesToGitHubActionsConverter.Core;
 using CasCap.Common.Extensions;
 using CasCap.Models;
 using CasCap.Utilities;
@@ -429,13 +429,11 @@ namespace CasCap.Commands
                 _console.WriteLine($"{errors.Count} error(s) encountered when running Azure Designer -> Azure Pipeline conversion;");
                 foreach (var error in errors)
                     _console.WriteLine($"- {error}");
-            
-            
             }
             _console.ForegroundColor = ConsoleColor.Cyan;
             _console.WriteLine($"Total of {fileCounter} YAML file(s) created.");
             _console.ForegroundColor = fgColor;//reset the fg colour
-            
+
             _console.WriteLine($"Exiting...");
 
             return 0;

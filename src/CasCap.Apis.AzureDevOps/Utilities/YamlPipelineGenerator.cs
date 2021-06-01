@@ -55,7 +55,7 @@ namespace CasCap.Utilities
         public Pipeline GenPipeline()
         {
             var pipeline = new Pipeline();
-            var stages = new List<Stage>();
+            var stages = new List<StageAzDO>();
             var jobs = new List<Job>();
             var steps = new List<Step>();
             if (_build is object && _release is null)//create build pipeline
@@ -96,7 +96,7 @@ namespace CasCap.Utilities
             return pipeline.stages.IsNullOrEmpty() && pipeline.jobs.IsNullOrEmpty() && pipeline.steps.IsNullOrEmpty() ? null : pipeline;
         }
 
-        Stage GenBuildStage()
+        StageAzDO GenBuildStage()
         {
             var phases = ((DesignerProcess)_build.Process).Phases.Where(p => p.Target is object && p.Target.Type == 1).ToList();
             if (phases.IsNullOrEmpty()) return null;
@@ -112,7 +112,7 @@ namespace CasCap.Utilities
                 {
                     cancelTimeoutInMinutes = phase.JobCancelTimeoutInMinutes,
                     condition = GenCondition(phase.Condition),
-                    dependsOn = string.IsNullOrWhiteSpace(jobName) ? null : jobName,
+                    dependsOn = string.IsNullOrWhiteSpace(jobName) ? null : new[] { jobName },
                     displayName = phase.Name,
                     job = phase.Name,
                     steps = steps.ToArray(),
@@ -121,15 +121,15 @@ namespace CasCap.Utilities
                 jobs.Add(job);
                 jobName = job.job;
             }
-            return jobs.IsNullOrEmpty() ? null : new Stage { displayName = _build.Name, stage = _build.Name.Sanitize().Replace(" ", "_"), variables = GenVariables(VariableType.Build), jobs = jobs.ToArray() };
+            return jobs.IsNullOrEmpty() ? null : new StageAzDO { displayName = _build.Name, stage = _build.Name.Sanitize().Replace(" ", "_"), variables = GenVariables(VariableType.Build), jobs = jobs.ToArray() };
         }
 
-        Trigger GenTrigger()
+        TriggerAzDO GenTrigger()
         {
             if (_build.Triggers.IsNullOrEmpty()) return null;
             foreach (var t in _build.Triggers.Where(p => p.TriggerType == DefinitionTriggerType.ContinuousIntegration))
             {
-                var trigger = new Trigger();
+                var trigger = new TriggerAzDO();
                 var trig = (ContinuousIntegrationTrigger)t;
                 if (!trig.BranchFilters.IsNullOrEmpty())
                 {
@@ -207,16 +207,16 @@ namespace CasCap.Utilities
 
         static string GenCondition(string condition) => string.IsNullOrWhiteSpace(condition) || condition.Equals("succeeded()", StringComparison.OrdinalIgnoreCase) ? "succeeded()" : condition;
 
-        Stage[] GenReleaseStages()
+        StageAzDO[] GenReleaseStages()
         {
             if (_release.Environments.IsNullOrEmpty()) return null;
-            var stages = new List<Stage>();
+            var stages = new List<StageAzDO>();
             foreach (var environment in _release.Environments)
             {
                 var jobs = GenJobs(environment);
                 if (jobs.IsNullOrEmpty()) continue;
                 var variables = GenVariables(VariableType.Release, environment);
-                var stage = new Stage
+                var stage = new StageAzDO
                 {
                     displayName = _release.Name,
                     jobs = jobs.ToArray(),
@@ -243,7 +243,7 @@ namespace CasCap.Utilities
                     {
                         cancelTimeoutInMinutes = deploymentInput.JobCancelTimeoutInMinutes,
                         condition = GenCondition(deploymentInput.Condition),
-                        dependsOn = string.IsNullOrWhiteSpace(jobName) ? null : jobName,
+                        dependsOn = string.IsNullOrWhiteSpace(jobName) ? null : new[] { jobName },
                         displayName = phase.Name,
                         job = phase.Name.Sanitize().Replace(" ", "_"),
                         steps = new List<Step>(steps).ToArray(),
