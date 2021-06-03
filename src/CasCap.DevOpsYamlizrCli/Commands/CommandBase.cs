@@ -28,7 +28,6 @@ namespace CasCap.Commands
         protected /*readonly*/ ILoggerFactory _loggerFactory;
         protected /*readonly*/ IConsole _console;
         protected /*readonly*/ IApiService _apiSvc;
-        protected /*readonly*/ AzureDevOpsOptions _options;
 
         public CommandBase(ILogger<CommandBase> logger, ILoggerFactory loggerFactory, IConsole console)
         {

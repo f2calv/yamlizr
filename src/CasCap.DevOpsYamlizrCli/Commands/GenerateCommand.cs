@@ -25,7 +25,7 @@ namespace CasCap.Commands
             : base(logger, loggerFactory, console) { }
 
         [Required]
-        [Option("-pat", Description = "Azure DevOps PAT (Personal Access Token).", Inherited = true)]
+        [Option("-pat", Description = "Azure DevOps PAT (Personal Access Token).")]
         public string PAT { get; }
 
         [Required]
@@ -55,9 +55,9 @@ namespace CasCap.Commands
         {
             if (gitHubActions) inlineTaskGroups = true;//github actions don't support templates
 
-            if (string.IsNullOrWhiteSpace(_options.PAT) || _options.PAT.Trim().Length != 52)
+            if (string.IsNullOrWhiteSpace(PAT) || PAT.Trim().Length != 52)
             {
-                _logger.LogError($"{nameof(_options.PAT)} missing or invalid!");
+                _logger.LogError($"{nameof(PAT)} missing or invalid!");
                 return 1;
             }
             if (string.IsNullOrWhiteSpace(organisation))
@@ -91,7 +91,7 @@ namespace CasCap.Commands
             _console.ForegroundColor = fgColor;
             #endregion
 
-            if (!Connect(_options.PAT, organisation))
+            if (!Connect(PAT, organisation))
                 return 1;
 
             if (!await GetProject(project))
@@ -434,7 +434,6 @@ namespace CasCap.Commands
             _console.ForegroundColor = ConsoleColor.Cyan;
             _console.WriteLine($"Total of {fileCounter} YAML file(s) created.");
             _console.ForegroundColor = fgColor;//reset the fg colour
-
             _console.WriteLine($"Exiting...");
 
             return 0;
