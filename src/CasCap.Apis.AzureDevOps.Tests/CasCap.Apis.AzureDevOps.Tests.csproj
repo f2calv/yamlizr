@@ -6,7 +6,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <None Update="_appSettings.Test.json" CopyToOutputDirectory="Always" />
+    <None Update="appsettings.Test.json" CopyToOutputDirectory="Always" />
   </ItemGroup>
 
   <ItemGroup>
