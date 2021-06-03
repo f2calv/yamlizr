@@ -8,7 +8,13 @@ using System.Text;
 using System.Threading.Tasks;
 namespace CasCap.Services
 {
-    public class ApiService : HttpClientBase
+    public interface IApiService
+    {
+        Task<List<TaskObj>> GetAllExtensions(string organisation);
+        Task<string> Validate(string organisation, string project, int pipelineId, string pipelineYaml);
+    }
+
+    public class ApiService : HttpClientBase, IApiService
     {
         public ApiService(string PAT)
         {
