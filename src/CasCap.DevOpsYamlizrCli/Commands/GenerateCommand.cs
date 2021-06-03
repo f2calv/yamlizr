@@ -1,7 +1,6 @@
 ﻿using AzurePipelinesToGitHubActionsConverter.Core;
 using CasCap.Common.Extensions;
 using CasCap.Models;
-using CasCap.Services;
 using CasCap.Utilities;
 using Figgle;
 using McMaster.Extensions.CommandLineUtils;
@@ -22,9 +21,12 @@ namespace CasCap.Commands
     [Command(Description = "Generate Azure DevOps YAML pipelines from classic definitions.")]
     class GenerateCommand : CommandBase
     {
-        public GenerateCommand(ILogger<GenerateCommand> logger, IConsole console) : base(logger, console) { }
+        public GenerateCommand(ILogger<GenerateCommand> logger, ILoggerFactory loggerFactory, IConsole console)
+            : base(logger, loggerFactory, console) { }
 
-        Program Parent { get; }
+        [Required]
+        [Option("-pat", Description = "Azure DevOps PAT (Personal Access Token).", Inherited = true)]
+        public string PAT { get; }
 
         [Required]
         [Option("-org|--organisation", Description = "Azure Devops Organisation name.")]
@@ -49,7 +51,7 @@ namespace CasCap.Commands
         [Option("--githubactions", Description = "Convert to GitHub Actions (also forces inline to true) [default: false]")]
         public bool gitHubActions { get; }
 
-        public async Task<int> OnExecuteAsync(IConsole _console, IApiService _apiSvc, AzureDevOpsOptions _options)
+        public async Task<int> OnExecuteAsync()
         {
             if (gitHubActions) inlineTaskGroups = true;//github actions don't support templates
 

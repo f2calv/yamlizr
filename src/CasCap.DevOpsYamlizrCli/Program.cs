@@ -1,14 +1,8 @@
 ﻿using CasCap.Commands;
-using CasCap.Models;
-using CasCap.Services;
 using McMaster.Extensions.CommandLineUtils;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using System;
-using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Threading.Tasks;
 namespace CasCap
@@ -17,39 +11,18 @@ namespace CasCap
     [Subcommand(typeof(GenerateCommand))]
     class Program : CommandBase
     {
-        public Program(ILogger<Program> logger, IConsole console) : base(logger, console) { }
+        public Program(ILogger<Program> logger, ILoggerFactory loggerFactory, IConsole console) : base(logger, loggerFactory, console) { }
 
         static CommandLineApplication app;
 
-        //[Required]
-        //[Option("-pat", Description = "Azure DevOps PAT (Personal Access Token).", Inherited = true)]
-        //public string PAT { get; }
-
         public async static Task<int> Main(string[] args)
         {
-            var initialData = new Dictionary<string, string>
-            {
-                { $"{nameof(CasCap)}:{nameof(AzureDevOpsOptions)}:{nameof(AzureDevOpsOptions.PAT)}", "????" }
-            };
-
-            var configuration = new ConfigurationBuilder()
-                .AddInMemoryCollection(initialData)
-                .Build();
-
-            var section = configuration.GetSection(AzureDevOpsOptions.sectionKey);
-            var azureDevOpsOptions = section.Get<AzureDevOpsOptions>();
-
             var services = new ServiceCollection()
-                .AddSingleton<IConfiguration>(configuration)
                 .AddSingleton(PhysicalConsole.Singleton)
-                .Configure<AzureDevOpsOptions>(section)
-                .AddSingleton(s => azureDevOpsOptions)
-                .AddSingleton<IApiService>()
                 .AddLogging(logging =>
                 {
                     logging.AddConsole();
                     logging.AddDebug();
-                    //ApplicationLogging.LoggerFactory = logging.Services.BuildServiceProvider().GetRequiredService<ILoggerFactory>();
                 })
                 .BuildServiceProvider();
 

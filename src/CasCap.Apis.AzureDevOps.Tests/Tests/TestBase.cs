@@ -2,6 +2,7 @@
 using CasCap.Services;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using Xunit.Abstractions;
@@ -13,14 +14,16 @@ namespace CasCap.Apis.AzureDevOps.Tests
 
         public TestBase(ITestOutputHelper output)
         {
+            var PAT = Guid.NewGuid().ToString();//generate random PAT
+
             var initialData = new Dictionary<string, string>
             {
-                { $"{nameof(CasCap)}:{nameof(AzureDevOpsOptions)}:{nameof(AzureDevOpsOptions.PAT)}", Guid.NewGuid().ToString() },//generate random PAT
+                { $"{nameof(CasCap)}:{nameof(AzureDevOpsOptions)}:{nameof(AzureDevOpsOptions.PAT)}", PAT}
             };
 
             var configuration = new ConfigurationBuilder()
                 //.AddCasCapConfiguration()
-                //.AddJsonFile($"appsettings.Test.json", optional: false, reloadOnChange: false)
+                .AddJsonFile($"appsettings.Test.json", optional: true, reloadOnChange: false)
                 .AddInMemoryCollection(initialData)
                 .Build();
 
@@ -29,15 +32,14 @@ namespace CasCap.Apis.AzureDevOps.Tests
                 .AddSingleton<IConfiguration>(configuration)
                 .AddXUnitLogging(output);
 
+            var serviceProvider = services.BuildServiceProvider();
+            var loggerFactory = serviceProvider.GetRequiredService<ILoggerFactory>();
+
             //add services
-            var section = configuration.GetSection(AzureDevOpsOptions.sectionKey);
-            var azureDevOpsOptions = section.Get<AzureDevOpsOptions>();
-            services.Configure<AzureDevOpsOptions>(section);
-            services.AddSingleton(s => azureDevOpsOptions);
-            services.AddSingleton<IApiService>();
+            services.AddSingleton<IApiService>(s => new ApiService(loggerFactory.CreateLogger<ApiService>(), PAT));
 
             //assign services to be tested
-            var serviceProvider = services.BuildServiceProvider();
+            serviceProvider = services.BuildServiceProvider();
             _apiSvc = serviceProvider.GetRequiredService<IApiService>();
         }
     }

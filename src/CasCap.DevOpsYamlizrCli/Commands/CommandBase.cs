@@ -1,4 +1,5 @@
-﻿using CasCap.Services;
+﻿using CasCap.Models;
+using CasCap.Services;
 using McMaster.Extensions.CommandLineUtils;
 using Microsoft.Extensions.Logging;
 using Microsoft.TeamFoundation.Build.WebApi;
@@ -24,11 +25,15 @@ namespace CasCap.Commands
     public abstract class CommandBase
     {
         protected /*readonly*/ ILogger _logger;
+        protected /*readonly*/ ILoggerFactory _loggerFactory;
         protected /*readonly*/ IConsole _console;
+        protected /*readonly*/ IApiService _apiSvc;
+        protected /*readonly*/ AzureDevOpsOptions _options;
 
-        public CommandBase(ILogger<CommandBase> logger, IConsole console)
+        public CommandBase(ILogger<CommandBase> logger, ILoggerFactory loggerFactory, IConsole console)
         {
             _logger = logger;
+            _loggerFactory = loggerFactory;
             _console = console;
         }
 
@@ -99,6 +104,7 @@ namespace CasCap.Commands
                 _buildClient = _connection.GetClient<BuildHttpClient>();
                 _releaseClient = _connection.GetClient<ReleaseHttpClient>();
                 _taskAgentClient = _connection.GetClient<TaskAgentHttpClient>();
+                _apiSvc = new ApiService(_loggerFactory.CreateLogger<ApiService>(), PAT);
             }
             catch (Exception ex)
             {

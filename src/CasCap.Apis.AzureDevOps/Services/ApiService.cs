@@ -1,6 +1,5 @@
 ﻿using CasCap.Models;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 using System;
 using System.Collections.Generic;
 using System.Net.Http;
@@ -17,16 +16,13 @@ namespace CasCap.Services
 
     public class ApiService : HttpClientBase, IApiService
     {
-        readonly AzureDevOpsOptions _options;
-
-        public ApiService(ILogger<ApiService> logger, IOptions<AzureDevOpsOptions> options) : base()
+        public ApiService(ILogger<ApiService> logger, string PAT) : base()
         {
             _logger = logger;
-            _options = options?.Value;
             _client = new HttpClient();
             _client.DefaultRequestHeaders.Clear();
             _client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-            var bytes = Encoding.ASCII.GetBytes($"{string.Empty}:{_options.PAT}");
+            var bytes = Encoding.ASCII.GetBytes($"{string.Empty}:{PAT}");
             _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", Convert.ToBase64String(bytes));
         }
 
