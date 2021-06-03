@@ -2,6 +2,8 @@
 using CasCap.Services;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using System;
+using System.Collections.Generic;
 using Xunit.Abstractions;
 namespace CasCap.Apis.AzureDevOps.Tests
 {
@@ -11,9 +13,15 @@ namespace CasCap.Apis.AzureDevOps.Tests
 
         public TestBase(ITestOutputHelper output)
         {
+            var initialData = new Dictionary<string, string>
+            {
+                { $"{nameof(CasCap)}:{nameof(AzureDevOpsOptions)}:{nameof(AzureDevOpsOptions.PAT)}", Guid.NewGuid().ToString() },//generate random PAT
+            };
+
             var configuration = new ConfigurationBuilder()
                 //.AddCasCapConfiguration()
-                .AddJsonFile($"appsettings.Test.json", optional: false, reloadOnChange: false)
+                //.AddJsonFile($"appsettings.Test.json", optional: false, reloadOnChange: false)
+                .AddInMemoryCollection(initialData)
                 .Build();
 
             //initiate ServiceCollection w/logging
@@ -25,7 +33,8 @@ namespace CasCap.Apis.AzureDevOps.Tests
             var section = configuration.GetSection(AzureDevOpsOptions.sectionKey);
             var azureDevOpsOptions = section.Get<AzureDevOpsOptions>();
             services.Configure<AzureDevOpsOptions>(section);
-            services.AddSingleton<IApiService>(s => new ApiService(azureDevOpsOptions.PAT));
+            services.AddSingleton(s => azureDevOpsOptions);
+            services.AddSingleton<IApiService>();
 
             //assign services to be tested
             var serviceProvider = services.BuildServiceProvider();

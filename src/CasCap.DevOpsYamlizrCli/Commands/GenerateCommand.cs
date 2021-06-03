@@ -1,6 +1,7 @@
 ﻿using AzurePipelinesToGitHubActionsConverter.Core;
 using CasCap.Common.Extensions;
 using CasCap.Models;
+using CasCap.Services;
 using CasCap.Utilities;
 using Figgle;
 using McMaster.Extensions.CommandLineUtils;
@@ -23,9 +24,7 @@ namespace CasCap.Commands
     {
         public GenerateCommand(ILogger<GenerateCommand> logger, IConsole console) : base(logger, console) { }
 
-        [Required]
-        [Option("-pat", Description = "Azure DevOps PAT (Personal Access Token).")]
-        public string PAT { get; }
+        Program Parent { get; }
 
         [Required]
         [Option("-org|--organisation", Description = "Azure Devops Organisation name.")]
@@ -50,13 +49,13 @@ namespace CasCap.Commands
         [Option("--githubactions", Description = "Convert to GitHub Actions (also forces inline to true) [default: false]")]
         public bool gitHubActions { get; }
 
-        public async Task<int> OnExecuteAsync(IConsole _console)
+        public async Task<int> OnExecuteAsync(IConsole _console, IApiService _apiSvc, AzureDevOpsOptions _options)
         {
             if (gitHubActions) inlineTaskGroups = true;//github actions don't support templates
 
-            if (string.IsNullOrWhiteSpace(PAT) || PAT.Trim().Length != 52)
+            if (string.IsNullOrWhiteSpace(_options.PAT) || _options.PAT.Trim().Length != 52)
             {
-                _logger.LogError($"{nameof(PAT)} missing or invalid!");
+                _logger.LogError($"{nameof(_options.PAT)} missing or invalid!");
                 return 1;
             }
             if (string.IsNullOrWhiteSpace(organisation))
@@ -90,7 +89,7 @@ namespace CasCap.Commands
             _console.ForegroundColor = fgColor;
             #endregion
 
-            if (!Connect(PAT, organisation))
+            if (!Connect(_options.PAT, organisation))
                 return 1;
 
             if (!await GetProject(project))
@@ -128,7 +127,7 @@ namespace CasCap.Commands
             var taskGroupTemplateMap = new ConcurrentDictionary<TaskGroupVersion, Template>();
 
             pbar = new ProgressBar(1, $"Loading extensions...", pbarOptions);
-            var tasks = await _apiService.GetAllExtensions(organisation);
+            var tasks = await _apiSvc.GetAllExtensions(organisation);
             foreach (var task in tasks)
                 task.inputMap = task.inputs.ToDictionary(k => k.name, v => v);
             pbar.Tick($"{tasks.Count} installed extension(s) retrieved.");

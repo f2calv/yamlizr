@@ -36,7 +36,6 @@ namespace CasCap.Commands
         protected BuildHttpClient _buildClient;
         protected ReleaseHttpClient _releaseClient;
         protected TaskAgentHttpClient _taskAgentClient;
-        protected ApiService _apiService;
 
         protected VssBasicCredential _credentials;
         protected VssConnection _connection;
@@ -100,7 +99,6 @@ namespace CasCap.Commands
                 _buildClient = _connection.GetClient<BuildHttpClient>();
                 _releaseClient = _connection.GetClient<ReleaseHttpClient>();
                 _taskAgentClient = _connection.GetClient<TaskAgentHttpClient>();
-                _apiService = new ApiService(PAT);
             }
             catch (Exception ex)
             {

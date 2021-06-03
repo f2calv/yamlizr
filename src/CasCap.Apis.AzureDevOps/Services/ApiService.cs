@@ -1,5 +1,6 @@
 ﻿using CasCap.Models;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using System;
 using System.Collections.Generic;
 using System.Net.Http;
@@ -16,18 +17,22 @@ namespace CasCap.Services
 
     public class ApiService : HttpClientBase, IApiService
     {
-        public ApiService(string PAT)
+        readonly AzureDevOpsOptions _options;
+
+        public ApiService(ILogger<ApiService> logger, IOptions<AzureDevOpsOptions> options) : base()
         {
-            _logger = ApplicationLogging.CreateLogger<ApiService>();
+            _logger = logger;
+            _options = options?.Value;
             _client = new HttpClient();
             _client.DefaultRequestHeaders.Clear();
             _client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-            var bytes = Encoding.ASCII.GetBytes($"{string.Empty}:{PAT}");
+            var bytes = Encoding.ASCII.GetBytes($"{string.Empty}:{_options.PAT}");
             _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", Convert.ToBase64String(bytes));
         }
 
         public async Task<List<TaskObj>> GetAllExtensions(string organisation)
         {
+            _logger.LogInformation("Retrieving all extensions for organisation '{organisation}'", organisation);
             var res = await Get<Tasks, object>($"https://dev.azure.com/{organisation}/_apis/distributedtask/tasks/");
             return res.result is object && res.result is object && res.result.value is object ? res.result.value : null;
         }
@@ -35,6 +40,7 @@ namespace CasCap.Services
         //https://docs.microsoft.com/en-us/rest/api/azure/devops/pipelines/runs/run%20pipeline?view=azure-devops-rest-6.0
         public async Task<string> Validate(string organisation, string project, int pipelineId, string pipelineYaml)
         {
+            _logger.LogInformation("Validating YAML for project '{project}' in organisation '{organisation}'", project, organisation);
             var req = new
             {
                 previewRun = true,
