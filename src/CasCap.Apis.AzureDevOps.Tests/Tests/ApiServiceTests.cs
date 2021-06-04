@@ -21,7 +21,7 @@ namespace CasCap.Apis.AzureDevOps.Tests
                 Debug.WriteLine(ex);
                 Debugger.Break();
             }
-            Assert.True(true);
+            Assert.True(true);//assert true regardless of actual outcome, will add full tests later
         }
     }
 }
