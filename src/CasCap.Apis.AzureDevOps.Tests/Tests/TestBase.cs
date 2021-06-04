@@ -3,8 +3,6 @@ using CasCap.Services;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using System;
-using System.Collections.Generic;
 using Xunit.Abstractions;
 namespace CasCap.Apis.AzureDevOps.Tests
 {
@@ -14,18 +12,15 @@ namespace CasCap.Apis.AzureDevOps.Tests
 
         public TestBase(ITestOutputHelper output)
         {
-            var PAT = Guid.NewGuid().ToString();//generate random PAT
-
-            var initialData = new Dictionary<string, string>
-            {
-                { $"{nameof(CasCap)}:{nameof(AzureDevOpsOptions)}:{nameof(AzureDevOpsOptions.PAT)}", PAT}
-            };
+            //dotnet user-secrets set CasCap:AzureDevOpsOptions:PAT "xxxxx" <-- test PAT here
 
             var configuration = new ConfigurationBuilder()
                 //.AddCasCapConfiguration()
                 .AddJsonFile($"appsettings.Test.json", optional: true, reloadOnChange: false)
-                .AddInMemoryCollection(initialData)
+                .AddUserSecrets<TestBase>()
                 .Build();
+
+            var PAT = configuration[$"{nameof(CasCap)}:{nameof(AzureDevOpsOptions)}:{nameof(AzureDevOpsOptions.PAT)}"];
 
             //initiate ServiceCollection w/logging
             var services = new ServiceCollection()
