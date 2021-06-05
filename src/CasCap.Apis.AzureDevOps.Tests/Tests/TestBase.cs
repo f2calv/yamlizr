@@ -3,6 +3,7 @@ using CasCap.Services;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using System;
 using Xunit.Abstractions;
 namespace CasCap.Apis.AzureDevOps.Tests
 {
@@ -20,7 +21,8 @@ namespace CasCap.Apis.AzureDevOps.Tests
                 .AddUserSecrets<TestBase>()
                 .Build();
 
-            var PAT = configuration[$"{nameof(CasCap)}:{nameof(AzureDevOpsOptions)}:{nameof(AzureDevOpsOptions.PAT)}"];
+            var pat = configuration[$"{nameof(CasCap)}:{nameof(AzureDevOpsOptions)}:{nameof(AzureDevOpsOptions.PAT)}"];
+            if (string.IsNullOrWhiteSpace(pat)) throw new NotSupportedException("cannot find Azure DevOps PAT");
 
             //initiate ServiceCollection w/logging
             var services = new ServiceCollection()
@@ -31,7 +33,7 @@ namespace CasCap.Apis.AzureDevOps.Tests
             var loggerFactory = serviceProvider.GetRequiredService<ILoggerFactory>();
 
             //add services
-            services.AddSingleton<IApiService>(s => new ApiService(loggerFactory.CreateLogger<ApiService>(), PAT));
+            services.AddSingleton<IApiService>(s => new ApiService(loggerFactory.CreateLogger<ApiService>(), pat));
 
             //assign services to be tested
             serviceProvider = services.BuildServiceProvider();
