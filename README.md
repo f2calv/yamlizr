@@ -1,14 +1,11 @@
-# Yamlizr - Azure DevOps Designer-to-YAML Pipeline CLI
+# Yamlizr - Azure DevOps Designer-to-YAML Pipeline Conversion Tool
 
-[azdo-badge]: https://dev.azure.com/f2calv/github/_apis/build/status/f2calv.CasCap.DevOpsYamlizrCli?branchName=master
-[azdo-url]: https://dev.azure.com/f2calv/github/_build/latest?definitionId=8&branchName=master
-[azdo-coverage-url]: https://img.shields.io/azure-devops/coverage/f2calv/github/8
 [cascap.yamlizr-badge]: https://img.shields.io/nuget/v/yamlizr?color=blue
 [cascap.yamlizr-url]: https://nuget.org/packages/yamlizr
 
-[![Build Status][azdo-badge]][azdo-url] <!-- ![Code Coverage][azdo-coverage-url] --> [![Nuget][cascap.yamlizr-badge]][cascap.yamlizr-url]
+![CI](https://github.com/f2calv/yamlizr/actions/workflows/ci.yml/badge.svg) [![Coverage Status](https://coveralls.io/repos/github/f2calv/yamlizr/badge.svg?branch=main)](https://coveralls.io/github/f2calv/yamlizr?branch=main) [![SonarCloud Coverage](https://sonarcloud.io/api/project_badges/measure?project=f2calv_yamlizr&metric=code_smells)](https://sonarcloud.io/component_measures/metric/code_smells/list?id=f2calv_yamlizr) [![Nuget][cascap.yamlizr-badge]][cascap.yamlizr-url]
 
-> This tool was created in the summer of 2020 when there was no means of exporting a definition to YAML. As of November 2020 there is a new [Export to YAML](https://devblogs.microsoft.com/devops/replacing-view-yaml/) feature which allows you to export a Build pipeline to YAML with a single click. This official tool *probably* covers more edge cases than this CLI for Build pipelines. Where this CLI still has benefits is that it also converts Release definitions to YAML, it also allows the conversion of every single Build/Release definition en-masse which developers can then customise to fit their unique deployment needs.
+> This tool was created when there was no means of exporting a designer/classic build/release definition to YAML. As of November 2020 there is a new [Export to YAML](https://devblogs.microsoft.com/devops/replacing-view-yaml/) feature which allows you to export a _Build_ pipeline to YAML with a single click. This official function covers more edge cases than this CLI for Build pipelines. Where this CLI still has benefits is that it also converts Release definitions to YAML, which the official tool does not. It also allows the conversion of every single Build/Release definition en-masse, so much less clicking! Then you can then cut/copy/paste/manipulate the generated YAML steps as required to fit into a build and/or deployment pipeline unique to your own requirements.
 
 **yamlizr** is a [.NET Core Global Tool](https://docs.microsoft.com/en-us/dotnet/core/tools/global-tools) which converts Azure DevOps Classic Designer Build/Release Definitions and any referenced Task Groups en-masse into their [YAML Pipeline](https://docs.microsoft.com/en-us/azure/devops/pipelines/yaml-schema?view=azure-devops&tabs=schema%2Cparameter-schema) or [GitHub Action](https://github.com/features/actions) equivalent.
 
@@ -43,27 +40,30 @@ yamlizr generate -pat <your PAT here> -org <your AzDO organisation> -proj <your 
 ```
 
 For context-sensitive help execute;
-```
+
+```pwsh
 yamlizr --help
 ```
 
 Optional switches;
+
 - `--inline` merge the tasks from task groups into the steps of the calling job instead of creating additional template files.
 - `--githubactions` generate GitHub Actions workflows via [AzurePipelinesToGitHubActionsConverter](https://github.com/samsmithnz/AzurePipelinesToGitHubActionsConverter).
 - `--filter` filter build/release definitions (if you want to use a more granular approach).
 
 To generate both Azure Pipelines and GitHub Actions YAML for a build definition called 'wibble-CI' and a release definition called 'wibble-CD';
+
 ```pwsh
 yamlizr generate -pat <your PAT here> -org <your AzDO organisation> -proj <your AzDO project> -out c:/temp/myoutputfolder --filter wibble --githubactions
 ```
 
 All YAML files generated are output into sub-folders of a project folder, i.e. using the above example of `-o c:/temp/myoutputfolder` the following folders are created;
+
 - `c:/temp/myoutputfolder/<your AzDO project>/AzureDevOpsBuilds/*.yml`
 - `c:/temp/myoutputfolder/<your AzDO project>/AzureDevOpsReleases/*.yml`
 - `c:/temp/myoutputfolder/<your AzDO project>/AzureDevOpsTaskGroups/*.yml`
 - `c:/temp/myoutputfolder/<your AzDO project>/GitHubBuilds/*.yml`
 - `c:/temp/myoutputfolder/<your AzDO project>/GitHubReleases/*.yml`
-
 
 ### Core Dependencies
 
@@ -86,7 +86,3 @@ All YAML files generated are output into sub-folders of a project folder, i.e. u
 ### Feedback/Issues
 
 Please post any issues or feedback [here](https://github.com/f2calv/yamlizr/issues).
-
-### License
-
-yamlizr is Copyright &copy; 2020 [@f2calv](https://github.com/f2calv) under the [MIT license](LICENSE).
