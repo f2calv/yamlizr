@@ -22,7 +22,7 @@ namespace CasCap.Apis.AzureDevOps.Tests
                 .Build();
 
             var pat = configuration[$"{nameof(CasCap)}:{nameof(AzureDevOpsOptions)}:{nameof(AzureDevOpsOptions.PAT)}"];
-            if (string.IsNullOrWhiteSpace(pat)) throw new NotSupportedException("cannot find Azure DevOps PAT");
+            //if (string.IsNullOrWhiteSpace(pat)) throw new NotSupportedException("cannot find Azure DevOps PAT");
 
             //initiate ServiceCollection w/logging
             var services = new ServiceCollection()
