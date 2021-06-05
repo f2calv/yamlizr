@@ -12,6 +12,7 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Threading;
@@ -396,10 +397,10 @@ namespace CasCap.Commands
                             count++;
                         }
                     }
-                    catch// (Exception ex)
+                    catch (Exception ex)
                     {
                         errors.Add($"definition id {Id} '{Name}' GitHub Action conversion failed");
-                        //Debug.WriteLine(ex.Message);
+                        Debug.WriteLine(ex.Message);
                         //throw ex;
                     }
                 return count;

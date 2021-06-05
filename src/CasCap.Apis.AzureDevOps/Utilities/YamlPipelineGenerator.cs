@@ -102,6 +102,8 @@ namespace CasCap.Utilities
             if (phases.IsNullOrEmpty()) return null;
             var jobs = new List<Job>(phases.Count);
             var jobName = string.Empty;
+            var duplicatePhaseNames = phases.Select(p => p.Name).Distinct().Count() > 1;
+            var j = 0;
             foreach (var phase in phases)
             {
                 var steps = new List<Step>(phase.Steps.Count);
@@ -114,12 +116,13 @@ namespace CasCap.Utilities
                     condition = GenCondition(phase.Condition),
                     dependsOn = string.IsNullOrWhiteSpace(jobName) ? null : new[] { jobName },
                     displayName = phase.Name,
-                    job = phase.Name,
+                    job = duplicatePhaseNames ? $"{phase.Name.Sanitize().Replace(" ", "_")}_{j}" : phase.Name.Sanitize().Replace(" ", "_"),
                     steps = steps.ToArray(),
                     timeoutInMinutes = phase.JobTimeoutInMinutes,
                 };
                 jobs.Add(job);
                 jobName = job.job;
+                j++;
             }
             return jobs.IsNullOrEmpty() ? null : new StageAzDO { displayName = _build.Name, stage = _build.Name.Sanitize().Replace(" ", "_"), variables = GenVariables(VariableType.Build), jobs = jobs.ToArray() };
         }
@@ -231,6 +234,8 @@ namespace CasCap.Utilities
             {
                 var jobName = string.Empty;
                 var jobs = new List<Job>();
+                var duplicatePhaseNames = environment.DeployPhases.Select(p => p.Name).Distinct().Count() > 1;
+                var j = 0;
                 foreach (var phase in environment.DeployPhases.Where(p => p.PhaseType == DeployPhaseTypes.AgentBasedDeployment).OrderBy(p => p.Rank))
                 {
                     var steps = new List<Step>(phase.WorkflowTasks.Count);
@@ -245,12 +250,13 @@ namespace CasCap.Utilities
                         condition = GenCondition(deploymentInput.Condition),
                         dependsOn = string.IsNullOrWhiteSpace(jobName) ? null : new[] { jobName },
                         displayName = phase.Name,
-                        job = phase.Name.Sanitize().Replace(" ", "_"),
+                        job = duplicatePhaseNames ? $"{phase.Name.Sanitize().Replace(" ", "_")}_{j}" : phase.Name.Sanitize().Replace(" ", "_"),
                         steps = new List<Step>(steps).ToArray(),
                         timeoutInMinutes = deploymentInput.TimeoutInMinutes,
                     };
                     jobs.Add(job);
                     jobName = job.job;
+                    j++;
                 }
                 return jobs;
             }
