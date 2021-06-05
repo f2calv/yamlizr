@@ -1,5 +1,4 @@
 ﻿using CasCap.Commands;
-using CasCap.Common.Logging;
 using McMaster.Extensions.CommandLineUtils;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -12,7 +11,7 @@ namespace CasCap
     [Subcommand(typeof(GenerateCommand))]
     class Program : CommandBase
     {
-        public Program(ILogger<Program> logger, IConsole console) : base(logger, console) { }
+        public Program(ILogger<Program> logger, ILoggerFactory loggerFactory, IConsole console) : base(logger, loggerFactory, console) { }
 
         static CommandLineApplication app;
 
@@ -24,7 +23,6 @@ namespace CasCap
                 {
                     logging.AddConsole();
                     logging.AddDebug();
-                    ApplicationLogging.LoggerFactory = logging.Services.BuildServiceProvider().GetRequiredService<ILoggerFactory>();
                 })
                 .BuildServiceProvider();
 

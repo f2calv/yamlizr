@@ -1,4 +1,4 @@
-﻿using AzurePipelinesToGitHubActionsConverter.Core.Conversion;
+﻿using AzurePipelinesToGitHubActionsConverter.Core;
 using CasCap.Common.Extensions;
 using CasCap.Models;
 using CasCap.Utilities;
@@ -12,6 +12,7 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Threading;
@@ -21,7 +22,8 @@ namespace CasCap.Commands
     [Command(Description = "Generate Azure DevOps YAML pipelines from classic definitions.")]
     class GenerateCommand : CommandBase
     {
-        public GenerateCommand(ILogger<GenerateCommand> logger, IConsole console) : base(logger, console) { }
+        public GenerateCommand(ILogger<GenerateCommand> logger, ILoggerFactory loggerFactory, IConsole console)
+            : base(logger, loggerFactory, console) { }
 
         [Required]
         [Option("-pat", Description = "Azure DevOps PAT (Personal Access Token).")]
@@ -50,7 +52,7 @@ namespace CasCap.Commands
         [Option("--githubactions", Description = "Convert to GitHub Actions (also forces inline to true) [default: false]")]
         public bool gitHubActions { get; }
 
-        public async Task<int> OnExecuteAsync(IConsole _console)
+        public async Task<int> OnExecuteAsync()
         {
             if (gitHubActions) inlineTaskGroups = true;//github actions don't support templates
 
@@ -128,7 +130,7 @@ namespace CasCap.Commands
             var taskGroupTemplateMap = new ConcurrentDictionary<TaskGroupVersion, Template>();
 
             pbar = new ProgressBar(1, $"Loading extensions...", pbarOptions);
-            var tasks = await _apiService.GetAllExtensions(organisation);
+            var tasks = await _apiSvc.GetAllExtensions(organisation);
             foreach (var task in tasks)
                 task.inputMap = task.inputs.ToDictionary(k => k.name, v => v);
             pbar.Tick($"{tasks.Count} installed extension(s) retrieved.");
@@ -395,10 +397,10 @@ namespace CasCap.Commands
                             count++;
                         }
                     }
-                    catch// (Exception ex)
+                    catch (Exception ex)
                     {
                         errors.Add($"definition id {Id} '{Name}' GitHub Action conversion failed");
-                        //Debug.WriteLine(ex.Message);
+                        Debug.WriteLine(ex.Message);
                         //throw ex;
                     }
                 return count;
@@ -429,13 +431,10 @@ namespace CasCap.Commands
                 _console.WriteLine($"{errors.Count} error(s) encountered when running Azure Designer -> Azure Pipeline conversion;");
                 foreach (var error in errors)
                     _console.WriteLine($"- {error}");
-            
-            
             }
             _console.ForegroundColor = ConsoleColor.Cyan;
             _console.WriteLine($"Total of {fileCounter} YAML file(s) created.");
             _console.ForegroundColor = fgColor;//reset the fg colour
-            
             _console.WriteLine($"Exiting...");
 
             return 0;

@@ -13,17 +13,17 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="AzurePipelinesToGitHubActionsConverter.Core" Version="0.10.6.75344255" />
-    <PackageReference Include="CasCap.Common.Extensions" Version="1.0.20" />
-    <PackageReference Include="CasCap.Common.Net" Version="1.0.20" />
+    <PackageReference Include="AzurePipelinesToGitHubActionsConverter.Core" Version="0.18.5" />
+    <PackageReference Include="CasCap.Common.Extensions" Version="1.0.33" />
+    <PackageReference Include="CasCap.Common.Net" Version="1.0.33" />
     <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.0" PrivateAssets="All" />
-    <PackageReference Include="Microsoft.TeamFoundation.DistributedTask.WebApi" Version="16.153.0" />
-    <PackageReference Include="Microsoft.TeamFoundationServer.Client" Version="16.153.0" />
-    <PackageReference Include="Microsoft.VisualStudio.Services.Client" Version="16.153.0" />
-    <PackageReference Include="Microsoft.VisualStudio.Services.Release.Client" Version="16.153.0" />
-    <PackageReference Include="Newtonsoft.Json" Version="12.0.3" />
+    <PackageReference Include="Microsoft.TeamFoundation.DistributedTask.WebApi" Version="16.170.0" />
+    <PackageReference Include="Microsoft.TeamFoundationServer.Client" Version="16.170.0" />
+    <PackageReference Include="Microsoft.VisualStudio.Services.Client" Version="16.170.0" />
+    <PackageReference Include="Microsoft.VisualStudio.Services.Release.Client" Version="16.170.0" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
     <PackageReference Include="semver" Version="2.0.6" />
-    <PackageReference Include="YamlDotNet" Version="9.1.4" />
+    <PackageReference Include="YamlDotNet" Version="11.1.1" />
   </ItemGroup>
 
 </Project>
