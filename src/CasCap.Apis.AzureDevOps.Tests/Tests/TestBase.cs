@@ -18,7 +18,7 @@ namespace CasCap.Apis.AzureDevOps.Tests
             var configuration = new ConfigurationBuilder()
                 //.AddCasCapConfiguration()
                 .AddJsonFile($"appsettings.Test.json", optional: true, reloadOnChange: false)
-                .AddUserSecrets<TestBase>()
+                .AddUserSecrets<TestBase>(true)
                 .Build();
 
             var pat = configuration[$"{nameof(CasCap)}:{nameof(AzureDevOpsOptions)}:{nameof(AzureDevOpsOptions.PAT)}"];
