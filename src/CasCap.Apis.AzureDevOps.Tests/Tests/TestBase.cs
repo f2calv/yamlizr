@@ -3,7 +3,6 @@ using CasCap.Services;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using System;
 using Xunit.Abstractions;
 namespace CasCap.Apis.AzureDevOps.Tests;
 

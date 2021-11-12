@@ -1,5 +1,4 @@
-﻿using CasCap.Models;
-using CasCap.Services;
+﻿using CasCap.Services;
 using McMaster.Extensions.CommandLineUtils;
 using Microsoft.Extensions.Logging;
 using Microsoft.TeamFoundation.Build.WebApi;
@@ -84,11 +83,11 @@ public abstract class CommandBase
         {
             Debug.WriteLine(ex);
         }
-        if (_project is object)
+        if (_project is not null)
             _console.WriteLine($" retrieved :)");
         else
             _console.Write($" not found :(");
-        return _project is object;
+        return _project is not null;
     }
 
     protected bool Connect(string PAT, string organisation)

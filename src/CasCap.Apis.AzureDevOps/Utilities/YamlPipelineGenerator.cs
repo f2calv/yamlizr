@@ -9,7 +9,6 @@ using Semver;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -58,26 +57,26 @@ public class YamlPipelineGenerator
         var stages = new List<StageAzDO>();
         var jobs = new List<Job>();
         var steps = new List<Step>();
-        if (_build is object && _release is null)//create build pipeline
+        if (_build is not null && _release is null)//create build pipeline
         {
             pipeline.name = _build.BuildNumberFormat;
             pipeline.trigger = GenTrigger();
-            if (_build.Queue is object)
+            if (_build.Queue is not null)
                 pipeline.pool = new Pool { name = _build.Queue.Name };
             pipeline.variables = GenVariables(VariableType.Build);
             var buildStage = GenBuildStage();
-            if (buildStage is object)
+            if (buildStage is not null)
                 if (buildStage.jobs.Length == 1)
                     steps.AddRange(buildStage.jobs[0].steps);
                 else
                     jobs.AddRange(buildStage.jobs);
         }
-        else if (_build is null && _release is object)//create release pipeline
+        else if (_build is null && _release is not null)//create release pipeline
         {
             pipeline.variables = GenVariables(VariableType.Release);
             if (pipeline.variables.Count == 0) pipeline.variables = null;
             var releaseStages = GenReleaseStages();
-            if (releaseStages is object)
+            if (releaseStages is not null)
             {
                 if (releaseStages.Length == 1)
                     if (releaseStages[0].jobs.Length == 1)
@@ -98,7 +97,7 @@ public class YamlPipelineGenerator
 
     StageAzDO GenBuildStage()
     {
-        var phases = ((DesignerProcess)_build.Process).Phases.Where(p => p.Target is object && p.Target.Type == 1).ToList();
+        var phases = ((DesignerProcess)_build.Process).Phases.Where(p => p.Target is not null && p.Target.Type == 1).ToList();
         if (phases.IsNullOrEmpty()) return null;
         var jobs = new List<Job>(phases.Count);
         var jobName = string.Empty;
@@ -185,7 +184,7 @@ public class YamlPipelineGenerator
         }
         else
         {
-            if (environment is object)
+            if (environment is not null)
             {
                 variables = new List<Variable>(environment.VariableGroups.Count + environment.Variables.Count);
                 foreach (var id in environment.VariableGroups)
@@ -344,7 +343,7 @@ public class YamlPipelineGenerator
                 inputValue = MultiLineTrim(inputValue);
 
                 //replace task group variables with parameters only if taskgroup templates are required
-                if (!_inlineTaskGroups && parameters is object)
+                if (!_inlineTaskGroups && parameters is not null)
                     inputValue = ConvertVarsTo2Params(inputValue);
 
                 //replace task inputs with the primary/top-most task alias (if one exists)
@@ -392,7 +391,7 @@ public class YamlPipelineGenerator
         foreach (var key in inputs.Keys.ToList())
         {
             var input = template.taskGroup.Inputs.FirstOrDefault(p => p.Name.Equals(key, StringComparison.OrdinalIgnoreCase));
-            if (input is object && string.IsNullOrWhiteSpace(inputs[key]))
+            if (input is not null && string.IsNullOrWhiteSpace(inputs[key]))
                 inputs[key] = input.DefaultValue;
         }
         return new List<Step> { new Step { template = $"../{_templatesFolder}/{filename}", parameters = inputs.IsNullOrEmpty() ? null : inputs } };
