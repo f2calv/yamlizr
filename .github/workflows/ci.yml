@@ -7,11 +7,17 @@ on:
         description: Build Configuration
         required: true
         default: Release
+      PublishPreview:
+        description: Publish preview branch?
+        required: true
+        default: false
   push:
+    branches-ignore:
+      - "preview/**"
     paths-ignore:
-    - '.azure-pipelines/**'
-    - LICENSE
-    - README.md
+      - ".azure-pipelines/**"
+      - LICENSE
+      - README.md
   pull_request:
     branches: [main]
     types: [opened, synchronize, reopened]
@@ -38,10 +44,10 @@ jobs:
       with:
         dotnet-version: 3.1.x
 
-    - name: .NET 5.x SDK
+    - name: .NET 6.x SDK
       uses: actions/setup-dotnet@v1
       with:
-        dotnet-version: 5.0.x
+        dotnet-version: 6.0.x
 
     # - name: gitversion install
     #   uses: gittools/actions/gitversion/setup@v0.9.7
@@ -81,12 +87,12 @@ jobs:
         flag-name: run-netcoreapp3.1
         parallel: true
 
-    - name: code coverage - coveralls (2 of 3) - .NET 5.x SDK
+    - name: code coverage - coveralls (2 of 3) - .NET 6.x SDK
       uses: coverallsapp/github-action@master
       with:
         github-token: ${{ secrets.github_token }}
-        path-to-lcov: ${{ github.workspace }}/coverage/coverage.net5.0.info
-        flag-name: run-net5.0
+        path-to-lcov: ${{ github.workspace }}/coverage/coverage.net6.0.info
+        flag-name: run-net6.0
         parallel: true
 
     - name: code coverage - coveralls (3 of 3)

@@ -27,7 +27,7 @@ Also... there is an optional switch whereby the tool can pass the Azure DevOps P
   | Release           | Read          |
   | Task Groups       | Read          |
   | Variable Groups   | Read          |
-- Download and install either [.NET Core 3.1 SDK](https://dotnet.microsoft.com/download/dotnet-core/3.1) or [.NET 5.0 SDK](https://dotnet.microsoft.com/download/dotnet/5.0).
+- Download and install either [.NET Core 3.1 SDK](https://dotnet.microsoft.com/download/dotnet-core/3.1) or [.NET 6.0 SDK](https://dotnet.microsoft.com/download/dotnet/6.0).
 - From a command line shell install the tool;
   `dotnet tool update --global yamlizr`
 
