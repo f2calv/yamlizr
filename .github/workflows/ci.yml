@@ -130,11 +130,14 @@ jobs:
         if: github.ref == 'refs/heads/main' && runner.OS == 'Linux'
 
       - name: dotnet push (api.nuget.org)
-        run: dotnet nuget push ${{ github.workspace }}/src/**/*.nupkg --skip-duplicate -k ${{ secrets.NUGET_API_KEY }} -s https://api.nuget.org/v3/index.json
-        if: github.ref == 'refs/heads/main' && secrets.NUGET_API_KEY != ''
-
-      - name: dotnet push (api.nuget.org)
-        run: echo "::warning title=NUGET_API_KEY Missing!::NUGET_API_KEY Missing from secrets."
+        run: |
+         if [[ "${{ secrets.NUGET_API_KEY }}" != "" ]]; \
+         then
+           dotnet nuget push ${{ github.workspace }}/src/**/*.nupkg --skip-duplicate -k ${{ secrets.NUGET_API_KEY }} -s https://api.nuget.org/v3/index.json
+         else
+           echo "::warning title=NUGET_API_KEY::NUGET_API_KEY is missing from secrets, skipping push to api.nuget.org."
+         fi
+        if: github.ref == 'refs/heads/main'
 
       - name: dotnet push (nuget.pkg.github.com)
         run: |
@@ -142,14 +145,12 @@ jobs:
           gpr push ${{ github.workspace }}/src/**/*.nupkg -k ${{ secrets.GITHUB_TOKEN }}
         if: github.ref == 'refs/heads/main'
 
-      - name: create-release ${{ steps.gitversion.outputs.SemVer }}
-        uses: actions/create-release@v1 #todo: this is deprecated, replace with another action later...?
+      - name: create release ${{ needs.gitversion.outputs.FullSemVer }}
+        uses: softprops/action-gh-release@v1
         if: github.ref == 'refs/heads/main'
         with:
-          tag_name: ${{ steps.gitversion.outputs.SemVer }}
-          release_name: Release ${{ steps.gitversion.outputs.SemVer }}
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          tag_name: ${{ needs.gitversion.outputs.FullSemVer }}
+          name: Release ${{ needs.gitversion.outputs.FullSemVer }}
 
   SonarQube:
     runs-on: windows-latest
