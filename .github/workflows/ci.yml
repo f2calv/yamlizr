@@ -4,15 +4,18 @@ on:
   workflow_dispatch:
     inputs:
       BuildConfiguration:
-        type: string
+        type: choice
         description: Build Configuration
         required: true
         default: Release
+        options:
+        - Release
+        - Debug
       PublishPreview:
-        type: boolean
+        type: string
         description: Publish preview branch?
         required: true
-        default: false
+        default: "false"
   push:
     branches-ignore:
       - "preview/**"
@@ -25,185 +28,8 @@ on:
     types: [opened, synchronize, reopened]
 
 jobs:
-  build:
-    #no point using matrix build as "Container operations are only supported on Linux runners"
-    # strategy:
-    #   matrix:
-    #     os: [ubuntu-latest,windows-latest]
-    # runs-on: ${{matrix.os}}
-    runs-on: ubuntu-latest
-    outputs:
-      SemVer: ${{ steps.gitversion.outputs.SemVer }}
-      FullSemVer: ${{ steps.gitversion.outputs.FullSemVer }}
-      BuildConfiguration: ${{ steps.setvars.outputs.BuildConfiguration }}
-
-    steps:
-      - uses: actions/checkout@v2
-        with:
-          fetch-depth: 0
-
-      - name: set vars
-        id: setvars
-        run: |
-          BuildConfiguration=${{ github.event.inputs.BuildConfiguration }}
-          echo "::set-output name=BuildConfiguration::${BuildConfiguration:-"Release"}"
-
-      - name: .NET Core 3.1.x SDK
-        uses: actions/setup-dotnet@v1
-        with:
-          dotnet-version: 3.1.x
-
-      - name: .NET 6.x SDK
-        uses: actions/setup-dotnet@v1
-        with:
-          dotnet-version: 6.0.x
-
-      # - name: gitversion install
-      #   uses: gittools/actions/gitversion/setup@v0.9.7
-      #   with:
-      #     versionSpec: 5.x
-
-      # #https://gitversion.net/docs/usage/
-      # - name: gitversion determine version
-      #   id: gitversionOLD
-      #   uses: gittools/actions/gitversion/execute@v0.9.7
-      #   with:
-      #     useConfigFile: true
-
-      - name: gitversion
-        id: gitversion
-        run: |
-          dotnet tool update -g GitVersion.Tool
-          $GitVersion = dotnet-gitversion ${{ github.workspace }} /nofetch | ConvertFrom-Json
-          echo "SemVer=$($GitVersion.SemVer)"
-          echo "::set-output name=SemVer::$($GitVersion.SemVer)"
-          echo "FullSemVer=$($GitVersion.FullSemVer)"
-          echo "::set-output name=FullSemVer::$($GitVersion.FullSemVer)"
-        shell: pwsh
-
-      - name: dotnet restore
-        run: dotnet restore --verbosity minimal --configfile nuget.config
-
-      - name: dotnet build
-        run: dotnet build -c ${{ steps.setvars.outputs.BuildConfiguration }} --nologo --no-restore -p:Version='${{ steps.gitversion.outputs.SemVer }}' -p:SourceRevisionId=${{ github.sha }}
-
-      - name: dotnet test
-        run: dotnet test -c ${{ steps.setvars.outputs.BuildConfiguration }} --nologo --no-restore --no-build -p:CollectCoverage=true -p:CoverletOutputFormat=lcov -p:CoverletOutput=${{ github.workspace }}/coverage/
-
-      - name: code coverage - coveralls (1 of 3) - .NET Core 3.1.x
-        uses: coverallsapp/github-action@master
-        with:
-          github-token: ${{ secrets.github_token }}
-          path-to-lcov: ${{ github.workspace }}/coverage/coverage.netcoreapp3.1.info
-          flag-name: run-netcoreapp3.1
-          parallel: true
-
-      - name: code coverage - coveralls (2 of 3) - .NET 6.x SDK
-        uses: coverallsapp/github-action@master
-        with:
-          github-token: ${{ secrets.github_token }}
-          path-to-lcov: ${{ github.workspace }}/coverage/coverage.net6.0.info
-          flag-name: run-net6.0
-          parallel: true
-
-      - name: code coverage - coveralls (3 of 3)
-        uses: coverallsapp/github-action@master
-        with:
-          github-token: ${{ secrets.github_token }}
-          parallel-finished: true
-
-      # - name: code coverage - report generator
-      #   uses: danielpalme/ReportGenerator-GitHub-Action@4.5.8
-      #   if: runner.OS == 'Linux'
-      #   with:
-      #     reports: ./coverage/coverage.*.info
-      #     targetdir: ./coveragereport
-      #     reporttypes: lcov
-      #     tag: ${{ github.run_number }}_${{ github.run_id }}
-
-      - name: reportgenerator
-        run: |
-          dotnet tool update -g dotnet-reportgenerator-globaltool
-          reportgenerator -reports:./coverage/coverage.*.info \
-            -targetdir:./coveragereport \
-            -reporttypes:lcov \
-            -tag:${{ github.run_number }}_${{ github.run_id }}
-
-      - name: code coverage - upload-artifact
-        uses: actions/upload-artifact@v2
-        with:
-          name: coveragereport
-          path: coveragereport
-
-      - name: dotnet pack
-        run: dotnet pack -c ${{ steps.setvars.outputs.BuildConfiguration }} --nologo --no-build --include-symbols -p:Version='${{ steps.gitversion.outputs.SemVer }}'
-        if: github.ref == 'refs/heads/main'
-
-      - name: dotnet push (api.nuget.org)
-        run: |
-         if [[ "${{ secrets.NUGET_API_KEY }}" != "" ]]; \
-         then
-           dotnet nuget push ${{ github.workspace }}/src/**/*.nupkg --skip-duplicate -k ${{ secrets.NUGET_API_KEY }} -s https://api.nuget.org/v3/index.json
-         else
-           echo "::warning title=NUGET_API_KEY::NUGET_API_KEY is missing from secrets, skipping push to api.nuget.org."
-         fi
-        if: github.ref == 'refs/heads/main' || github.event.inputs.PublishPreview == 'true'
-
-      - name: dotnet push (nuget.pkg.github.com)
-        run: |
-          dotnet tool update -g gpr
-          gpr push ${{ github.workspace }}/src/**/*.nupkg -k ${{ secrets.GITHUB_TOKEN }}
-        if: github.ref == 'refs/heads/main'
-
-      - name: create release ${{ steps.gitversion.outputs.FullSemVer }}
-        uses: softprops/action-gh-release@v1
-        if: github.ref == 'refs/heads/main' || github.event.inputs.PublishPreview == 'true'
-        with:
-          tag_name: ${{ steps.gitversion.outputs.FullSemVer }}
-          name: Release ${{ steps.gitversion.outputs.FullSemVer }}
-
-  SonarQube:
-    runs-on: windows-latest
-    needs: build
-    steps:
-      # Steps below from https://docs.sonarqube.org/latest/analysis/github-integration/ + modifications!
-
-      - name: Set up JDK 11
-        uses: actions/setup-java@v1
-        with:
-          java-version: 1.11
-      - uses: actions/checkout@v2
-        with:
-          fetch-depth: 0 # Shallow clones should be disabled for a better relevancy of analysis
-      - name: Cache SonarQube packages
-        uses: actions/cache@v1
-        with:
-          path: ~\sonar\cache
-          key: ${{ runner.os }}-sonar
-          restore-keys: ${{ runner.os }}-sonar
-      - name: Cache SonarQube scanner
-        id: cache-sonar-scanner
-        uses: actions/cache@v1
-        with:
-          path: .\.sonar\scanner
-          key: ${{ runner.os }}-sonar-scanner
-          restore-keys: ${{ runner.os }}-sonar-scanner
-      - name: Install SonarQube scanner
-        if: steps.cache-sonar-scanner.outputs.cache-hit != 'true'
-        shell: powershell
-        run: |
-          New-Item -Path .\.sonar\scanner -ItemType Directory
-          dotnet tool update dotnet-sonarscanner --tool-path .\.sonar\scanner
-      - name: Build and analyze
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # Needed to get PR information, if any
-        shell: powershell
-        run: |
-          if ("${{ secrets.SONAR_TOKEN }}" -ne "") {
-            .\.sonar\scanner\dotnet-sonarscanner begin /k:"${{ github.actor }}_${{ github.event.repository.name }}" /o:"${{ github.actor }}" /d:sonar.login="${{ secrets.SONAR_TOKEN }}" /d:sonar.host.url="https://sonarcloud.io"
-            dotnet build -c ${{ needs.build.outputs.BuildConfiguration }}
-            .\.sonar\scanner\dotnet-sonarscanner end /d:sonar.login="${{ secrets.SONAR_TOKEN }}"
-          }
-          else {
-            Write-Host "::warning title=SONAR_TOKEN::SONAR_TOKEN is missing from secrets, skipping build and analyze."
-          }
+  ci:
+    uses: f2calv/gha-workflows/.github/workflows/dotnet-publish-nuget-v1.yml@main
+    with:
+      BuildConfiguration: ${{ github.event.inputs.BuildConfiguration }}
+      PublishPreview: ${{ github.event.inputs.PublishPreview }}
