@@ -1,6 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-namespace CasCap.Models;
+﻿namespace CasCap.Models;
 
 public class TaskObj
 {

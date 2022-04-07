@@ -1,5 +1,4 @@
-﻿using System;
-namespace CasCap.Models;
+﻿namespace CasCap.Models;
 
 public struct TaskGroupVersion
 {

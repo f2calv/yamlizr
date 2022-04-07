@@ -1,5 +1,4 @@
 ﻿using AzurePipelinesToGitHubActionsConverter.Core.AzurePipelines;
-using System.Collections.Generic;
 namespace CasCap.Models;
 
 public class StageAzDO// : Stage //we can't inherit from Stage here as it will mess up the order of the properties when YAMLised.

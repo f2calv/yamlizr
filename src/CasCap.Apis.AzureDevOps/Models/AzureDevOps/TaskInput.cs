@@ -1,5 +1,4 @@
-﻿using System.Collections.Generic;
-namespace CasCap.Models;
+﻿namespace CasCap.Models;
 
 public class TaskInput
 {

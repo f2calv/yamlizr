@@ -1,6 +1,4 @@
-using System;
 using System.Diagnostics;
-using System.Threading.Tasks;
 using Xunit;
 using Xunit.Abstractions;
 namespace CasCap.Apis.AzureDevOps.Tests;

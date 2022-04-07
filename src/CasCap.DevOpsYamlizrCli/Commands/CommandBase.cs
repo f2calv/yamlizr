@@ -1,5 +1,4 @@
-﻿using CasCap.Models;
-using CasCap.Services;
+﻿using CasCap.Services;
 using McMaster.Extensions.CommandLineUtils;
 using Microsoft.Extensions.Logging;
 using Microsoft.TeamFoundation.Build.WebApi;
@@ -10,10 +9,7 @@ using Microsoft.VisualStudio.Services.ReleaseManagement.WebApi;
 using Microsoft.VisualStudio.Services.ReleaseManagement.WebApi.Clients;
 using Microsoft.VisualStudio.Services.WebApi;
 using ShellProgressBar;
-using System;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.Threading.Tasks;
 namespace CasCap.Commands;
 
 /// <summary>
