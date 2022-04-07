@@ -1,9 +1,8 @@
-﻿namespace CasCap.Models
+﻿namespace CasCap.Models;
+
+public class TaskVersion
 {
-    public class TaskVersion
-    {
-        public int major { get; set; }
-        public int minor { get; set; }
-        public int patch { get; set; }
-    }
+    public int major { get; set; }
+    public int minor { get; set; }
+    public int patch { get; set; }
 }

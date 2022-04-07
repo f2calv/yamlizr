@@ -1,10 +1,9 @@
 ﻿using Microsoft.TeamFoundation.DistributedTask.WebApi;
 using YamlDotNet.Serialization;
-namespace CasCap.Models
+namespace CasCap.Models;
+
+public class Template : Pipeline
 {
-    public class Template : Pipeline
-    {
-        [YamlIgnore]
-        public TaskGroup taskGroup { get; set; }
-    }
+    [YamlIgnore]
+    public TaskGroup taskGroup { get; set; }
 }
