@@ -93,7 +93,7 @@ class GenerateCommand : CommandBase
             return 1;
 
         var rootPath = AppDomain.CurrentDomain.BaseDirectory;//or Directory.GetCurrentDirectory()?
-        if (outputPath is object) rootPath = outputPath;
+        if (outputPath is not null) rootPath = outputPath;
         //always output into a folder named after the project
         if (!Path.GetFileName(rootPath).Equals(_project.Name, StringComparison.OrdinalIgnoreCase))
             rootPath = Path.Combine(rootPath, _project.Name);
@@ -180,7 +180,7 @@ class GenerateCommand : CommandBase
             {
                 var build = await _buildClient.GetDefinitionAsync(_project.Id, definitionReference.Id);
 
-                if (build is object && build.Process is object)
+                if (build is not null && build.Process is not null)
                 {
                     if (build.Process is DesignerProcess)
                         buildDefinitions.Add(build);
@@ -306,7 +306,7 @@ class GenerateCommand : CommandBase
             var gitHubPath = Path.Combine(rootPath, "GitHubBuilds");
             if (!Directory.Exists(gitHubPath) && gitHubActions) Directory.CreateDirectory(gitHubPath);
 
-            var definitions = results.Where(p => p.buildDefinition is object).ToList();
+            var definitions = results.Where(p => p.buildDefinition is not null).ToList();
 
             var dtStart = DateTime.UtcNow;
             pbar = new ProgressBar(definitions.Count, $"Persisting {definitions.Count} build pipeline(s) to disk{(gitHubActions ? " with GitHub Actions conversion" : string.Empty)}...", pbarOptions) { EstimatedDuration = TimeSpan.FromMilliseconds(releaseDefinitions.Count * 100) };
@@ -341,7 +341,7 @@ class GenerateCommand : CommandBase
             var gitHubPath = Path.Combine(rootPath, "GitHubReleases");
             if (!Directory.Exists(gitHubPath) && gitHubActions) Directory.CreateDirectory(gitHubPath);
 
-            var definitions = results.Where(p => p.releaseDefinition is object).ToList();
+            var definitions = results.Where(p => p.releaseDefinition is not null).ToList();
 
             var dtStart = DateTime.UtcNow;
             pbar = new ProgressBar(definitions.Count, $"Persisting {definitions.Count} release pipeline(s) to disk{(gitHubActions ? " with GitHub Actions conversion" : string.Empty)}...", pbarOptions) { EstimatedDuration = TimeSpan.FromMilliseconds(releaseDefinitions.Count * 100) };
@@ -384,7 +384,7 @@ class GenerateCommand : CommandBase
                 try
                 {
                     var gitHubYAML = conversion.ConvertAzurePipelineToGitHubAction(azureDevOpsYAML);
-                    if (gitHubYAML is object && !string.IsNullOrWhiteSpace(gitHubYAML.actionsYaml))
+                    if (gitHubYAML is not null && !string.IsNullOrWhiteSpace(gitHubYAML.actionsYaml))
                     {
                         var gitHubDefPath = Path.Combine(gitHubPath, filename);
                         File.WriteAllText(gitHubDefPath, gitHubYAML.actionsYaml);

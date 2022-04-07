@@ -26,7 +26,7 @@ public class ApiService : HttpClientBase, IApiService
     {
         _logger.LogInformation("Retrieving all extensions for organisation '{organisation}'", organisation);
         var res = await Get<Tasks, object>($"https://dev.azure.com/{organisation}/_apis/distributedtask/tasks/");
-        return res.result is object && res.result is object && res.result.value is object ? res.result.value : null;
+        return res.result is not null && res.result is not null && res.result.value is not null ? res.result.value : null;
     }
 
     //https://docs.microsoft.com/en-us/rest/api/azure/devops/pipelines/runs/run%20pipeline?view=azure-devops-rest-6.0
@@ -42,6 +42,6 @@ public class ApiService : HttpClientBase, IApiService
 "
         };
         var res = await PostJsonAsync<string, object>($"https://dev.azure.com/{organisation}/{project}/_apis/pipelines/{pipelineId}/runs?api-version=6.0-preview.1", req);
-        return res.result is object ? res.result : null;
+        return res.result is not null ? res.result : null;
     }
 }
