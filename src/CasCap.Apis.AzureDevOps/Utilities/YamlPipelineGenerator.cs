@@ -270,7 +270,7 @@ public class YamlPipelineGenerator
     List<Step> GenSteps(Guid Id, string displayName, string semver, IDictionary<string, string> inputs, IDictionary<string, string> env,
         string condition, bool continueOnError, int timeoutInMinutes, Dictionary<string, string> parameters = null)
     {
-        var version = SemVersion.Parse(semver.Replace(".*", ".0")).Major;
+        var version = SemVersion.Parse(semver.Replace(".*", ".0"), SemVersionStyles.OptionalPatch).Major;
         if (_taskMap.TryGetValue(Id, out var taskObjs) && taskObjs.TryGetValue(version, out var taskObj))
             return new List<Step>
             {
