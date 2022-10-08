@@ -20,6 +20,7 @@ public class YamlPipelineGenerator
     ConcurrentDictionary<TaskGroupVersion, Template> _taskGroupTemplateMap;//this collection is appended-to as the app iterates over the definitions
     readonly Dictionary<int, Microsoft.TeamFoundation.DistributedTask.WebApi.VariableGroup> _variableGroupMap;
     readonly bool _inlineTaskGroups;
+    readonly DeployPhaseTypes _phaseType;
 
     readonly string _templatesFolder = "AzureDevOpsTaskGroups";
 
@@ -36,7 +37,8 @@ public class YamlPipelineGenerator
         Dictionary<TaskGroupVersion, TaskGroup> taskGroupMap,
         ConcurrentDictionary<TaskGroupVersion, Template> taskGroupTemplateMap,
         Dictionary<int, Microsoft.TeamFoundation.DistributedTask.WebApi.VariableGroup> variableGroupMap,
-        bool inlineTaskGroups
+        bool inlineTaskGroups,
+        DeployPhaseTypes phaseType
         )
     {
         _build = build;
@@ -46,6 +48,7 @@ public class YamlPipelineGenerator
         _taskGroupTemplateMap = taskGroupTemplateMap;
         _variableGroupMap = variableGroupMap;
         _inlineTaskGroups = inlineTaskGroups;
+        _phaseType = phaseType;
     }
 
     public Pipeline GenPipeline()
@@ -232,7 +235,7 @@ public class YamlPipelineGenerator
             var jobs = new List<Job>();
             var duplicatePhaseNames = environment.DeployPhases.Select(p => p.Name).Distinct().Count() > 1;
             var j = 0;
-            foreach (var phase in environment.DeployPhases.Where(p => p.PhaseType == DeployPhaseTypes.AgentBasedDeployment).OrderBy(p => p.Rank))
+            foreach (var phase in environment.DeployPhases.Where(p => p.PhaseType == _phaseType).OrderBy(p => p.Rank))
             {
                 var steps = new List<Step>(phase.WorkflowTasks.Count);
                 foreach (var task in phase.WorkflowTasks)

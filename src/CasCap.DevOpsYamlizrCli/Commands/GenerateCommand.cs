@@ -37,6 +37,9 @@ class GenerateCommand : CommandBase
     [Option("--filter", Description = "Build/Release definition wildcard filter.")]
     public string filter { get; }
 
+    [Option("--phasetype", Description = "Filter deployment phases [default: AgentBasedDeployment]")]
+    public DeployPhaseTypes phaseType { get; set; } = DeployPhaseTypes.AgentBasedDeployment;
+
     [Option("--parallelism", Description = "Parallel execution mode (work in progress) [default: false]")]
     public bool parallelism { get; }
 
@@ -231,7 +234,8 @@ class GenerateCommand : CommandBase
                     taskGroupMap,
                     taskGroupTemplateMap,
                     variableGroupMap,
-                    inlineTaskGroups
+                    inlineTaskGroups,
+                    phaseType
                     );
 
                 var pipeline = generator.GenPipeline();
@@ -289,12 +293,13 @@ class GenerateCommand : CommandBase
                     taskGroupMap,
                     taskGroupTemplateMap,
                     variableGroupMap,
-                    inlineTaskGroups
+                    inlineTaskGroups,
+                    phaseType
                     );
 
                 var pipeline = generator.GenPipeline();
                 if (pipeline is null)
-                    errors.Add($"Processing release definition id {releaseDefinition.Id} '{releaseDefinition.Name}' failed");
+                    errors.Add($"Processing release definition id {releaseDefinition.Id} '{releaseDefinition.Name}' failed (generated pipeline is null)");
                 else
                     results.Add((null, releaseDefinition, pipeline));
 

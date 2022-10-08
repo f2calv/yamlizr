@@ -47,11 +47,15 @@ For context-sensitive help execute;
 yamlizr --help
 ```
 
+Optional arguments;
+
+- `--filter <some string here>` filter build/release definitions (if you want to use a more granular approach).
+- `--phasetype <phase type here>` filter deployment jobs by Deploy Phase Type the default is `AgentBasedDeployment` DeployPhaseTypes(tested), other (un-tested) options are `RunOnServer`, `MachineGroupBasedDeployment` & `DeploymentGates`.
+
 Optional switches;
 
 - `--inline` merge the tasks from task groups into the steps of the calling job instead of creating additional template files.
 - `--githubactions` generate GitHub Actions workflows via [AzurePipelinesToGitHubActionsConverter](https://github.com/samsmithnz/AzurePipelinesToGitHubActionsConverter).
-- `--filter` filter build/release definitions (if you want to use a more granular approach).
 
 To generate both Azure Pipelines and GitHub Actions YAML for a build definition called 'wibble-CI' and a release definition called 'wibble-CD';
 
