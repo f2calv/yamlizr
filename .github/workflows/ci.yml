@@ -9,8 +9,8 @@ on:
         required: true
         default: Release
         options:
-        - Release
-        - Debug
+          - Release
+          - Debug
       PublishPreview:
         type: string
         description: Publish preview branch?
@@ -31,5 +31,6 @@ jobs:
   ci:
     uses: f2calv/gha-workflows/.github/workflows/dotnet-publish-nuget-v1.yml@main
     with:
+      NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
       BuildConfiguration: ${{ github.event.inputs.BuildConfiguration }}
       PublishPreview: ${{ github.event.inputs.PublishPreview }}
