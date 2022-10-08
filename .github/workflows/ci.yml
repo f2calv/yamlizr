@@ -9,8 +9,8 @@ on:
         required: true
         default: Release
         options:
-        - Release
-        - Debug
+          - Release
+          - Debug
       PublishPreview:
         type: string
         description: Publish preview branch?
@@ -33,3 +33,5 @@ jobs:
     with:
       BuildConfiguration: ${{ github.event.inputs.BuildConfiguration }}
       PublishPreview: ${{ github.event.inputs.PublishPreview }}
+    secrets:
+      NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}

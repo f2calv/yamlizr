@@ -37,6 +37,9 @@ class GenerateCommand : CommandBase
     [Option("--filter", Description = "Build/Release definition wildcard filter.")]
     public string filter { get; }
 
+    [Option("--phasetype", Description = "Filter deployment phases [default: AgentBasedDeployment]")]
+    public DeployPhaseTypes phaseType { get; set; } = DeployPhaseTypes.AgentBasedDeployment;
+
     [Option("--parallelism", Description = "Parallel execution mode (work in progress) [default: false]")]
     public bool parallelism { get; }
 
@@ -169,7 +172,15 @@ class GenerateCommand : CommandBase
 
             var processedDefinitionCount = 0;
             if (parallelism || 1 == 1)//always parallel as this is pretty solid...
-                await buildDefinitionReferences.ForEachAsyncSemaphore(definitionReference => ProcessDefinition(definitionReference), Environment.ProcessorCount);
+#if NET6_0_OR_GREATER
+                await Parallel.ForEachAsync(buildDefinitionReferences, async (definitionReference, token) =>
+                {
+                    if (token.IsCancellationRequested) return;
+                    await ProcessDefinition(definitionReference);
+                });
+#else
+                await buildDefinitionReferences.ForEachAsyncSemaphore(definitionReference => ProcessDefinition(definitionReference));
+#endif
             else
                 foreach (var definitionReference in buildDefinitionReferences)
                     await ProcessDefinition(definitionReference);
@@ -223,7 +234,8 @@ class GenerateCommand : CommandBase
                     taskGroupMap,
                     taskGroupTemplateMap,
                     variableGroupMap,
-                    inlineTaskGroups
+                    inlineTaskGroups,
+                    phaseType
                     );
 
                 var pipeline = generator.GenPipeline();
@@ -254,7 +266,15 @@ class GenerateCommand : CommandBase
 
             var processedDefinitionCount = 0;
             if (parallelism)
-                await releaseDefinitions.ForEachAsyncSemaphore(releaseDefinition => ProcessDefinition(releaseDefinition), Environment.ProcessorCount);
+#if NET6_0_OR_GREATER
+                await Parallel.ForEachAsync(releaseDefinitions, async (releaseDefinition, token) =>
+                {
+                    if (token.IsCancellationRequested) return;
+                    await ProcessDefinition(releaseDefinition);
+                });
+#else
+                await releaseDefinitions.ForEachAsyncSemaphore(releaseDefinition => ProcessDefinition(releaseDefinition));
+#endif
             else
                 foreach (var releaseDefinition in releaseDefinitions)
                     await ProcessDefinition(releaseDefinition);
@@ -273,12 +293,13 @@ class GenerateCommand : CommandBase
                     taskGroupMap,
                     taskGroupTemplateMap,
                     variableGroupMap,
-                    inlineTaskGroups
+                    inlineTaskGroups,
+                    phaseType
                     );
 
                 var pipeline = generator.GenPipeline();
                 if (pipeline is null)
-                    errors.Add($"Processing release definition id {releaseDefinition.Id} '{releaseDefinition.Name}' failed");
+                    errors.Add($"Processing release definition id {releaseDefinition.Id} '{releaseDefinition.Name}' failed (generated pipeline is null)");
                 else
                     results.Add((null, releaseDefinition, pipeline));
 
@@ -313,7 +334,15 @@ class GenerateCommand : CommandBase
 
             var processedDefinitionCount = 0;
             if (parallelism || 1 == 1)//always parallel as this is pretty solid...
-                await definitions.ForEachAsyncSemaphore(result => ProcessDefinition(result), Environment.ProcessorCount);
+#if NET6_0_OR_GREATER
+                await Parallel.ForEachAsync(definitions, async (result, token) =>
+                {
+                    if (token.IsCancellationRequested) return;
+                    await ProcessDefinition(result);
+                });
+#else
+                await definitions.ForEachAsyncSemaphore(result => ProcessDefinition(result));
+#endif
             else
                 foreach (var result in definitions)
                     await ProcessDefinition(result);
@@ -348,7 +377,15 @@ class GenerateCommand : CommandBase
 
             var processedDefinitionCount = 0;
             if (parallelism || 1 == 1)//always parallel as this is pretty solid...
-                await definitions.ForEachAsyncSemaphore(result => ProcessDefinition(result), Environment.ProcessorCount);
+#if NET6_0_OR_GREATER
+                await Parallel.ForEachAsync(definitions, async (result, token) =>
+                {
+                    if (token.IsCancellationRequested) return;
+                    await ProcessDefinition(result);
+                });
+#else
+                await definitions.ForEachAsyncSemaphore(result => ProcessDefinition(result));
+#endif
             else
                 foreach (var result in definitions)
                     await ProcessDefinition(result);

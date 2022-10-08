@@ -7,9 +7,13 @@ updates:
     time: "04:00"
   open-pull-requests-limit: 10
   ignore:
-  - dependency-name: AzurePipelinesToGitHubActionsConverter.Core
   - dependency-name: YamlDotNet
   - dependency-name: CasCap.Common.Extensions
   - dependency-name: CasCap.Common.Net
   - dependency-name: CasCap.Common.Threading
+  - dependency-name: CasCap.Common.Testing
   - dependency-name: Microsoft.NET.Test.Sdk
+  - dependency-name: xunit
+  - dependency-name: xunit.runner.visualstudio
+  - dependency-name: semver
+  - dependency-name: ShellProgressBar
