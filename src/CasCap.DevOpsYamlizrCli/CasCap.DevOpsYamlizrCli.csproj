@@ -17,7 +17,7 @@
   <ItemGroup>
     <PackageReference Include="CasCap.Common.Threading" Version="1.2.7" />
     <PackageReference Include="ConsoleTables" Version="2.4.2" />
-    <PackageReference Include="Figgle" Version="0.4.0" />
+    <PackageReference Include="Figgle" Version="0.4.1" />
     <PackageReference Include="McMaster.Extensions.CommandLineUtils" Version="4.0.1" />
     <PackageReference Include="McMaster.Extensions.Hosting.CommandLine" Version="4.0.1" />
     <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="6.0.0" />
