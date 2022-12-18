@@ -13,16 +13,16 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="AzurePipelinesToGitHubActionsConverter.Core" Version="1.0.9" />
-    <PackageReference Include="CasCap.Common.Extensions" Version="1.2.7" />
-    <PackageReference Include="CasCap.Common.Net" Version="1.2.7" />
+    <PackageReference Include="AzurePipelinesToGitHubActionsConverter.Core" Version="1.0.22" />
+    <PackageReference Include="CasCap.Common.Extensions" Version="2.0.3" />
+    <PackageReference Include="CasCap.Common.Net" Version="2.0.3" />
     <PackageReference Include="Microsoft.TeamFoundation.DistributedTask.WebApi" Version="16.170.0" />
     <PackageReference Include="Microsoft.TeamFoundationServer.Client" Version="16.170.0" />
     <PackageReference Include="Microsoft.VisualStudio.Services.Client" Version="16.170.0" />
     <PackageReference Include="Microsoft.VisualStudio.Services.Release.Client" Version="16.170.0" />
-    <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.2" />
     <PackageReference Include="semver" Version="2.2.0" />
-    <PackageReference Include="YamlDotNet" Version="12.0.2" />
+    <PackageReference Include="YamlDotNet" Version="12.2.1" />
   </ItemGroup>
 
 </Project>
