@@ -24,11 +24,11 @@ class GenerateCommand : CommandBase
     public string PAT { get; }
 
     [Required]
-    [Option("-org|--organisation", Description = "Azure Devops Organisation name.")]
+    [Option("-org|--organisation", Description = "Azure DevOps Organisation Uri.")]
     public string organisation { get; }
 
     [Required]
-    [Option("-proj|--project", Description = "Azure Devops Project name.")]
+    [Option("-proj|--project", Description = "Azure DevOps Project name.")]
     public string project { get; }
 
     [Option("-out|--outputpath", Description = "Absolute path to YAML output folder [default: Current Directory]")]

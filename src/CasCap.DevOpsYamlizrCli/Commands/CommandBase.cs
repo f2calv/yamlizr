@@ -89,12 +89,12 @@ public abstract class CommandBase
 
     protected bool Connect(string PAT, string organisation)
     {
-        var uriString = $"https://dev.azure.com/{organisation}";
-        _console.Write($"Connecting to Azure DevOps REST API, {uriString} ...");
+        var uri = new Uri(organisation);
+        _console.Write($"Connecting to Azure DevOps REST API, {uri} ...");
         try
         {
             _credentials = new VssBasicCredential(string.Empty, PAT);
-            _connection = new VssConnection(new Uri(uriString), _credentials);
+            _connection = new VssConnection(uri, _credentials);
             _projectClient = _connection.GetClient<ProjectHttpClient>();
             _buildClient = _connection.GetClient<BuildHttpClient>();
             _releaseClient = _connection.GetClient<ReleaseHttpClient>();
