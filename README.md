@@ -57,10 +57,25 @@ Optional switches;
 - `--inline` merge the tasks from task groups into the steps of the calling job instead of creating additional template files.
 - `--githubactions` generate GitHub Actions workflows via [AzurePipelinesToGitHubActionsConverter](https://github.com/samsmithnz/AzurePipelinesToGitHubActionsConverter).
 
-To generate both Azure Pipelines and GitHub Actions YAML for a build definition called 'wibble-CI' and a release definition called 'wibble-CD';
+Examples;
 
 ```powershell
-yamlizr generate -pat <your PAT here> -org <your AzDO Organisation Uri> -proj <your AzDO project> -out c:/temp/myoutputfolder --filter wibble --githubactions
+#generate both Azure Pipelines and GitHub Actions YAML for a Build Definition called 'wibble-CI' and a Release Definition called 'wibble-CD';
+yamlizr generate `
+  -pat <your PAT here> `
+  -org <your AzDO Organisation Uri> `
+  -proj <your AzDO project> `
+  -out c:/temp/myoutputfolder `
+  --filter wibble `
+  --githubactions
+
+#generate both Azure Pipelines and GitHub Actions YAML for *ALL* Build & Release Definitions found within the AzDO Project;
+yamlizr generate `
+  -pat abcdefghij01234567890abcdefghij01234567890abcdefghij `
+  -org https://dev.azure.com/MyOrg `
+  -proj MyProject `
+  -out c:/temp/myoutputfolder `
+  --githubactions
 ```
 
 All YAML files generated are output into sub-folders of a project folder, i.e. using the above example of `-o c:/temp/myoutputfolder` the following folders are created;
