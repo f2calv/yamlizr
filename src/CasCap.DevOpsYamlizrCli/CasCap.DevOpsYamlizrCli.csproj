@@ -2,8 +2,8 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFrameworks>netcoreapp3.1</TargetFrameworks>
-    <TargetFrameworks Condition="$(MSBuildVersion) &gt;= 17.0.0">$(TargetFrameworks);net6.0</TargetFrameworks>
+    <TargetFrameworks>net6.0</TargetFrameworks>
+    <TargetFrameworks Condition="$(MSBuildVersion) &gt;= 17.3.0">$(TargetFrameworks);net7.0</TargetFrameworks>
     <AssemblyName>yamlizr</AssemblyName>
   </PropertyGroup>
 
@@ -15,13 +15,13 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="CasCap.Common.Threading" Version="1.2.7" />
+    <PackageReference Include="CasCap.Common.Threading" Version="2.0.3" />
     <PackageReference Include="ConsoleTables" Version="2.4.2" />
-    <PackageReference Include="Figgle" Version="0.4.0" />
-    <PackageReference Include="McMaster.Extensions.CommandLineUtils" Version="4.0.1" />
-    <PackageReference Include="McMaster.Extensions.Hosting.CommandLine" Version="4.0.1" />
-    <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="6.0.0" />
-    <PackageReference Include="Microsoft.Extensions.Hosting" Version="6.0.1" />
+    <PackageReference Include="Figgle" Version="0.4.1" />
+    <PackageReference Include="McMaster.Extensions.CommandLineUtils" Version="4.0.2" />
+    <PackageReference Include="McMaster.Extensions.Hosting.CommandLine" Version="4.0.2" />
+    <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="7.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="7.0.0" />
     <PackageReference Include="ShellProgressBar" Version="5.2.0" />
   </ItemGroup>
 
