@@ -28,7 +28,7 @@ class GenerateCommand : CommandBase
     public string organisation { get; }
 
     [Required]
-    [Option("-proj|--project", Description = "Azure DevOps Project name.")]
+    [Option("-proj|--project", Description = "Azure DevOps Project Name.")]
     public string project { get; }
 
     [Option("-out|--outputpath", Description = "Absolute path to YAML output folder [default: Current Directory]")]

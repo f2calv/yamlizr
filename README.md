@@ -38,7 +38,7 @@ If you find this tool of use then please give it a thumbs-up by giving this repo
 To generate YAML files in the `c:/temp/myoutputfolder` output folder execute the following command;
 
 ```pwsh
-yamlizr generate -pat <your PAT here> -org <your AzDO Organisation Uri> -proj <your AzDO project> -out c:/temp/myoutputfolder
+yamlizr generate -pat <your PAT here> -org <your AzDO Organisation Uri> -proj <your AzDO project name> -out c:/temp/myoutputfolder
 ```
 
 For context-sensitive help execute;
@@ -64,7 +64,7 @@ Examples;
 yamlizr generate `
   -pat <your PAT here> `
   -org <your AzDO Organisation Uri> `
-  -proj <your AzDO project> `
+  -proj <your AzDO project name> `
   -out c:/temp/myoutputfolder `
   --filter wibble `
   --githubactions
