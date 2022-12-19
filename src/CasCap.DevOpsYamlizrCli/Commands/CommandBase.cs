@@ -90,7 +90,7 @@ public abstract class CommandBase
     protected bool Connect(string PAT, string organisation)
     {
         var uri = new Uri(organisation);
-        _console.Write($"Connecting to Azure DevOps REST API, {uri} ...");
+        _console.Write($"Connecting to DevOps REST API, {uri} ...");
         try
         {
             _credentials = new VssBasicCredential(string.Empty, PAT);
@@ -104,7 +104,7 @@ public abstract class CommandBase
         catch (Exception ex)
         {
             Debug.WriteLine(ex);
-            _console.WriteLine($"Unable to authenticate with Azure DevOps REST API :(");
+            _console.WriteLine($"Unable to authenticate with DevOps REST API :(");
             return false;
         }
         Console.WriteLine($" connected :)");
