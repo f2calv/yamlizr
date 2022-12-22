@@ -6,7 +6,7 @@ namespace CasCap.Services;
 
 public interface IApiService
 {
-    Task<List<TaskObj>> GetAllExtensions(string organisation);
+    Task<List<TaskObj>> GetAllExtensions(string organisationUri);
     Task<string> Validate(string organisation, string project, int pipelineId, string pipelineYaml);
 }
 
@@ -22,10 +22,10 @@ public class ApiService : HttpClientBase, IApiService
         _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", Convert.ToBase64String(bytes));
     }
 
-    public async Task<List<TaskObj>> GetAllExtensions(string organisation)
+    public async Task<List<TaskObj>> GetAllExtensions(string organisationUri)
     {
-        _logger.LogInformation("Retrieving all extensions for organisation '{organisation}'", organisation);
-        var res = await Get<Tasks, object>($"https://dev.azure.com/{organisation}/_apis/distributedtask/tasks/");
+        _logger.LogInformation("Retrieving all extensions for organisation '{organisation}'", organisationUri);
+        var res = await Get<Tasks, object>($"{organisationUri}/_apis/distributedtask/tasks/");
         return res.result is not null && res.result is not null && res.result.value is not null ? res.result.value : null;
     }
 

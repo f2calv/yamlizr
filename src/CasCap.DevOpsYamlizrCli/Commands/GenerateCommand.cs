@@ -25,7 +25,7 @@ class GenerateCommand : CommandBase
 
     [Required]
     [Option("-org|--organisation", Description = "Azure DevOps Organisation Uri.")]
-    public string organisation { get; }
+    public string organisationUri { get; }
 
     [Required]
     [Option("-proj|--project", Description = "Azure DevOps Project Name.")]
@@ -58,9 +58,9 @@ class GenerateCommand : CommandBase
             _logger.LogError($"{nameof(PAT)} missing or invalid!");
             return 1;
         }
-        if (string.IsNullOrWhiteSpace(organisation))
+        if (string.IsNullOrWhiteSpace(organisationUri))
         {
-            _logger.LogError($"{nameof(organisation)} missing or invalid!");
+            _logger.LogError($"{nameof(organisationUri)} missing or invalid!");
             return 1;
         }
 
@@ -89,7 +89,7 @@ class GenerateCommand : CommandBase
         _console.ForegroundColor = fgColor;
         #endregion
 
-        if (!Connect(PAT, organisation))
+        if (!Connect(PAT, organisationUri))
             return 1;
 
         if (!await GetProject(project))
@@ -127,7 +127,7 @@ class GenerateCommand : CommandBase
         var taskGroupTemplateMap = new ConcurrentDictionary<TaskGroupVersion, Template>();
 
         pbar = new ProgressBar(1, $"Loading extensions...", pbarOptions);
-        var tasks = await _apiSvc.GetAllExtensions(organisation);
+        var tasks = await _apiSvc.GetAllExtensions(organisationUri);
         foreach (var task in tasks)
             task.inputMap = task.inputs.ToDictionary(k => k.name, v => v);
         pbar.Tick($"{tasks.Count} installed extension(s) retrieved.");
