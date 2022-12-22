@@ -87,9 +87,9 @@ public abstract class CommandBase
         return _project is not null;
     }
 
-    protected bool Connect(string PAT, string organisation)
+    protected bool Connect(string PAT, string organisationUri)
     {
-        var uri = new Uri(organisation);
+        var uri = new Uri(organisationUri);
         _console.Write($"Connecting to DevOps REST API, {uri} ...");
         try
         {
