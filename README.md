@@ -29,7 +29,7 @@ If you find this tool of use then please give it a thumbs-up by giving this repo
   | Release           | Read          |
   | Task Groups       | Read          |
   | Variable Groups   | Read          |
-- Download and install either [.NET 6.0 SDK](https://dotnet.microsoft.com/download/dotnet/6.0) or [.NET 7.0 SDK](https://dotnet.microsoft.com/download/dotnet/7.0).
+- Download and install the [.NET 8.0 SDK](https://dotnet.microsoft.com/download/dotnet/8.0).
 - From a command line shell install the tool;
   `dotnet tool update --global yamlizr`
 
