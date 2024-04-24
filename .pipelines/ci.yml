@@ -1,3 +1,5 @@
+#Deprecated: now using GitHub Actions, preserved this in case any requirement to go back to ADO. 
+
 parameters:
 - name: BuildConfiguration
   displayName: Select BuildConfiguration
