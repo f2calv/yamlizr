@@ -1,4 +1,4 @@
-#Deprecated: now using GitHub Actions, preserved this in case any requirement to go back to ADO. 
+#Deprecated: now using GitHub Actions, preserving this pipeline in case of any requirement to go back to ADO. 
 
 parameters:
 - name: BuildConfiguration
