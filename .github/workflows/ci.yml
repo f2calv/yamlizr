@@ -32,7 +32,7 @@ jobs:
     uses: f2calv/gha-workflows/.github/workflows/lint.yml@v1
 
   ci:
-    uses: f2calv/gha-workflows/.github/workflows/dotnet-publish-nuget.yml@f2calv/2024-06-sonarqube-fix
+    uses: f2calv/gha-workflows/.github/workflows/dotnet-publish-nuget.yml@v1
     with:
       BuildConfiguration: ${{ github.event.inputs.BuildConfiguration }}
       PublishPreview: ${{ github.event.inputs.PublishPreview }}
