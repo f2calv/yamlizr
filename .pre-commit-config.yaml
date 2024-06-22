@@ -1,0 +1,18 @@
+repos:
+- repo: https://github.com/pre-commit/pre-commit-hooks
+  rev: v4.6.0
+  hooks:
+  - id: check-xml
+  - id: check-yaml
+    args: [--allow-multiple-documents]
+  - id: check-json
+  - id: check-added-large-files
+    args: [--maxkb=50]
+  - id: end-of-file-fixer
+  - id: trailing-whitespace
+  - id: double-quote-string-fixer
+- repo: https://github.com/igorshubovych/markdownlint-cli
+  rev: v0.41.0
+  hooks:
+  - id: markdownlint
+    args: ["--disable", "MD013", "--disable", "MD034", "--"]
