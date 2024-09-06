@@ -21,11 +21,11 @@ class GenerateCommand : CommandBase
 
     [Required]
     [Option("-pat", Description = "Azure DevOps PAT (Personal Access Token).")]
-    public string PAT { get; }
+    public string PAT { get; set; }
 
     [Required]
     [Option("-org|--organisation", Description = "Azure DevOps Organisation Uri.")]
-    public string organisationUri { get; }
+    public string organisationUri { get; set; }
 
     [Required]
     [Option("-proj|--project", Description = "Azure DevOps Project Name.")]
@@ -55,13 +55,30 @@ class GenerateCommand : CommandBase
 
         if (string.IsNullOrWhiteSpace(PAT) || PAT.Trim().Length != 52)
         {
-            _logger.LogError($"{nameof(PAT)} missing or invalid!");
-            return 1;
+            PAT = Environment.GetEnvironmentVariable("SYSTEM_ACCESSTOKEN");
+            if(!string.IsNullOrWhiteSpace(PAT))
+            {
+                _console.WriteLine("System.AccessToken detected using that for authentication.");
+            } 
+            else
+            {
+                _logger.LogError($"{nameof(PAT)} missing or invalid!");
+                return 1;
+            }
         }
         if (string.IsNullOrWhiteSpace(organisationUri))
         {
+            var collection = Environment.GetEnvironmentVariable("SYSTEM_COLLECTIONURI");
+            if (!string.IsNullOrWhiteSpace(collection))
+            {
+                organisationUri = collection;
+                _console.WriteLine("System.CollectionUri detected, extracting organization from it.");
+            }
+            else
+            {
             _logger.LogError($"{nameof(organisationUri)} missing or invalid!");
             return 1;
+            }
         }
 
         #region tool intro text
