@@ -1,0 +1,45 @@
+repos:
+- repo: https://github.com/pre-commit/pre-commit-hooks
+  rev: v4.6.0
+  hooks:
+  - id: check-xml
+  - id: check-yaml
+    args: [--allow-multiple-documents]
+  #- id: check-json #Note: now we are using check-json5
+  - id: check-added-large-files
+    args: [--maxkb=50]
+  - id: end-of-file-fixer
+  - id: trailing-whitespace
+  - id: double-quote-string-fixer
+- repo: https://gitlab.com/bmares/check-json5
+  rev: v1.0.0
+  hooks:
+  - id: check-json5
+- repo: https://github.com/igorshubovych/markdownlint-cli
+  rev: v0.41.0
+  hooks:
+  - id: markdownlint
+    args: ["--disable", "MD013", "--disable", "MD034", "--"]
+
+#Not working or SLOW:
+
+# - repo: https://github.com/dotnet/format
+#   rev: v8.0.453106
+#   hooks:
+#   - id: dotnet-format
+#     entry: dotnet format KNX.Release.sln -v diagnostic --no-restore
+#     #entry: dotnet format whitespace . --folder -v diagnostic
+#     #args: [".", "--folder", "-v", "diagnostic"]
+#     #args: [--folder, --include]
+#https://pre-commit.com/#repository-local-hooks
+# - repo: local
+#   hooks:
+#   #Use dotnet format already installed on your machine
+#   #https://github.com/dotnet/format
+#      - id: dotnet-format
+#        name: dotnet format
+#        language: system
+#        #entry: dotnet format KNX.Debug.sln --verbosity d --no-restore
+#        entry: dotnet format KNX.Debug.sln -v diag --include ./ --no-restore
+#        #entry: dotnet format --include
+#        types_or: ["c#"]

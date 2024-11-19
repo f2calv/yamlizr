@@ -3,7 +3,7 @@ name: ci
 on:
   workflow_dispatch:
     inputs:
-      BuildConfiguration:
+      configuration:
         type: choice
         description: Build Configuration
         required: true
@@ -11,16 +11,15 @@ on:
         options:
           - Release
           - Debug
-      PublishPreview:
+      push-preview:
         type: string
-        description: Publish preview branch?
+        description: Push preview branch?
         required: true
         default: "false"
   push:
     branches-ignore:
       - "preview/**"
     paths-ignore:
-      - ".azure-pipelines/**"
       - LICENSE
       - README.md
   pull_request:
@@ -28,10 +27,13 @@ on:
     types: [opened, synchronize, reopened]
 
 jobs:
+  lint:
+    uses: f2calv/gha-workflows/.github/workflows/lint.yml@v1
+
   ci:
     uses: f2calv/gha-workflows/.github/workflows/dotnet-publish-nuget.yml@v1
     with:
-      BuildConfiguration: ${{ github.event.inputs.BuildConfiguration }}
-      PublishPreview: ${{ github.event.inputs.PublishPreview }}
+      configuration: ${{ github.event.inputs.configuration }}
+      push-preview: ${{ github.event.inputs.push-preview }}
     secrets:
       NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}

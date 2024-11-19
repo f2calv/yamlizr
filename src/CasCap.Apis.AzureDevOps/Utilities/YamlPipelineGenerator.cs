@@ -274,7 +274,7 @@ public class YamlPipelineGenerator
         string condition, bool continueOnError, int timeoutInMinutes, Dictionary<string, string> parameters = null)
     {
         var version = SemVersion.Parse(semver.Replace(".*", ".0"), SemVersionStyles.OptionalPatch).Major;
-        if (_taskMap.TryGetValue(Id, out var taskObjs) && taskObjs.TryGetValue(version, out var taskObj))
+        if (_taskMap.TryGetValue(Id, out var taskObjs) && taskObjs.TryGetValue((int)version, out var taskObj))
             return new List<Step>
             {
                 new Step
@@ -294,7 +294,7 @@ public class YamlPipelineGenerator
 
         Template GetOrCreateTaskGroupTemplate()
         {
-            var key = new TaskGroupVersion(Id, version);
+            var key = new TaskGroupVersion(Id, (int)version);
             if (_taskGroupTemplateMap.TryGetValue(key, out var template))
                 return template;
             else
