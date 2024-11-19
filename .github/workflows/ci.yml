@@ -31,7 +31,7 @@ jobs:
     uses: f2calv/gha-workflows/.github/workflows/lint.yml@v1
 
   ci:
-    uses: f2calv/gha-workflows/.github/workflows/dotnet-publish-nuget.yml@f2calv/2024-11-dotnet9b
+    uses: f2calv/gha-workflows/.github/workflows/dotnet-publish-nuget.yml@v1
     with:
       configuration: ${{ github.event.inputs.configuration }}
       push-preview: ${{ github.event.inputs.push-preview }}
