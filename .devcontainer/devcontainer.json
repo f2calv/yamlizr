@@ -1,25 +1,30 @@
 // For format details, see https://aka.ms/devcontainer.json. For config options, see the
 // README at: https://github.com/devcontainers/templates/tree/main/src/dotnet
 {
-  "name": "C# (.NET)",
-  // Or use a Dockerfile or Docker Compose file. More info: https://containers.dev/guide/dockerfile
-  "image": "mcr.microsoft.com/devcontainers/dotnet:1-8.0-bookworm",
-  // Features to add to the dev container. More info: https://containers.dev/features.
-  "features": {
-    "ghcr.io/devcontainers-contrib/features/pre-commit:2": {}
-  },
-  // Use 'forwardPorts' to make a list of ports inside the container available locally.
-  // "forwardPorts": [5000, 5001],
-  // "portsAttributes": {
-  //		"5001": {
-  //			"protocol": "https"
-  //		}
-  // }
-  // Use 'postCreateCommand' to run commands after the container is created.
-  "postCreateCommand": "sh . ./.devcontainer/postCreateCommand.sh",
-  "postStartCommand": "sh . ./.devcontainer/postStartCommand.sh",
-  // Configure tool-specific properties.
-  // "customizations": {},
-  // Comment out to connect as root instead. More info: https://aka.ms/vscode-remote/containers/non-root.
-  "remoteUser": "vscode"
+    "name": "C# (.NET)",
+    // Or use a Dockerfile or Docker Compose file. More info: https://containers.dev/guide/dockerfile
+    "image": "mcr.microsoft.com/devcontainers/dotnet:1-8.0-bookworm",
+    // Features to add to the dev container. More info: https://containers.dev/features.
+    "features": {
+        "ghcr.io/devcontainers-contrib/features/pre-commit:2": {},
+        "ghcr.io/devcontainers/features/docker-outside-of-docker:1": {}
+    },
+    // Use 'forwardPorts' to make a list of ports inside the container available locally.
+    // "forwardPorts": [5000, 5001],
+    // "portsAttributes": {
+    //		"5001": {
+    //			"protocol": "https"
+    //		}
+    // }
+    // Use 'postCreateCommand' to run commands after the container is created.
+    "postCreateCommand": "sh . ./.devcontainer/postCreateCommand.sh",
+    "postStartCommand": "sh . ./.devcontainer/postStartCommand.sh",
+    // Configure tool-specific properties.
+    // "customizations": {},
+    "mounts": [
+        "source=${localEnv:HOME}${localEnv:USERPROFILE}/source/github,target=/workspaces,type=bind,consistency=cached",
+        "source=${env:HOME}${env:USERPROFILE}/.kube,target=/home/vscode/.kube,type=bind"
+    ]
+    // Uncomment to connect as root instead. More info: https://aka.ms/dev-containers-non-root.
+    // "remoteUser": "root"
 }
