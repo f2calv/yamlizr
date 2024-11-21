@@ -10,6 +10,7 @@ using Microsoft.VisualStudio.Services.ReleaseManagement.WebApi.Clients;
 using Microsoft.VisualStudio.Services.WebApi;
 using ShellProgressBar;
 using System.Diagnostics;
+
 namespace CasCap.Commands;
 
 /// <summary>

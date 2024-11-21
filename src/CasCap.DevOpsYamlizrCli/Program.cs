@@ -2,6 +2,7 @@
 using McMaster.Extensions.CommandLineUtils;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+
 namespace CasCap;
 
 [Command("yamlizr")]

@@ -2,6 +2,7 @@
 using Microsoft.Extensions.Logging;
 using System.Net.Http.Headers;
 using System.Text;
+
 namespace CasCap.Services;
 
 public interface IApiService

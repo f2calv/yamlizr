@@ -9,6 +9,7 @@ using Semver;
 using System.Collections.Concurrent;
 using System.Text;
 using System.Text.RegularExpressions;
+
 namespace CasCap.Utilities;
 
 public class YamlPipelineGenerator

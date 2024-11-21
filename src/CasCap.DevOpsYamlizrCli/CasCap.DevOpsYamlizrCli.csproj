@@ -14,13 +14,13 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="ConsoleTables" Version="2.6.2" />
-    <PackageReference Include="Figgle" Version="0.5.1" />
-    <PackageReference Include="McMaster.Extensions.CommandLineUtils" Version="4.1.1" />
-    <PackageReference Include="McMaster.Extensions.Hosting.CommandLine" Version="4.1.1" />
-    <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="9.0.0" />
-    <PackageReference Include="Microsoft.Extensions.Hosting" Version="9.0.0" />
-    <PackageReference Include="ShellProgressBar" Version="5.2.0" />
+    <PackageReference Include="ConsoleTables" />
+    <PackageReference Include="Figgle" />
+    <PackageReference Include="McMaster.Extensions.CommandLineUtils" />
+    <PackageReference Include="McMaster.Extensions.Hosting.CommandLine" />
+    <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" />
+    <PackageReference Include="ShellProgressBar" />
   </ItemGroup>
 
   <ItemGroup>
