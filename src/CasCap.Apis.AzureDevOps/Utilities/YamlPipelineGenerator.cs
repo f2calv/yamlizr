@@ -66,27 +66,17 @@ public class YamlPipelineGenerator
                 pipeline.pool = new Pool { name = _build.Queue.Name };
             pipeline.variables = GenVariables(VariableType.Build);
             var buildStage = GenBuildStage();
-            if (buildStage is not null)
-                if (buildStage.jobs.Length == 1)
-                    steps.AddRange(buildStage.jobs[0].steps);
-                else
-                    jobs.AddRange(buildStage.jobs);
+            if (buildStage is not null && buildStage.jobs.Length > 0)
+                jobs.AddRange(buildStage.jobs);
         }
         else if (_build is null && _release is not null)//create release pipeline
         {
             pipeline.variables = GenVariables(VariableType.Release);
             if (pipeline.variables.Count == 0) pipeline.variables = null;
             var releaseStages = GenReleaseStages();
-            if (releaseStages is not null)
-            {
-                if (releaseStages.Length == 1)
-                    if (releaseStages[0].jobs.Length == 1)
-                        steps.AddRange(releaseStages[0].jobs[0].steps);
-                    else
-                        jobs.AddRange(releaseStages[0].jobs);
-                else
-                    stages.AddRange(releaseStages);
-            }
+            if (releaseStages is not null && releaseStages.Length > 0)
+                stages.AddRange(releaseStages);
+            
         }
         else
             throw new Exception($"{nameof(YamlPipelineGenerator)} expects only either a build OR a release!");
