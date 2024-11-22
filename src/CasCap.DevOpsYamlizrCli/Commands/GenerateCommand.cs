@@ -50,6 +50,9 @@ class GenerateCommand : CommandBase
     [Option("--githubactions", Description = "Convert to GitHub Actions (also forces inline to true) [default: false]")]
     public bool gitHubActions { get; }
 
+    [Option("--create-directory", Description = "Create the destination directory if it does not exist [default: false]")]
+    public bool createDirectory { get; }
+
     public async Task<int> OnExecuteAsync()
     {
         if (gitHubActions) inlineTaskGroups = true;//github actions don't support templates
@@ -102,8 +105,8 @@ class GenerateCommand : CommandBase
         if (!Path.GetFileName(rootPath).Equals(_project.Name, StringComparison.OrdinalIgnoreCase))
             rootPath = Path.Combine(rootPath, _project.Name);
         if (!Directory.Exists(rootPath))
-            if (Prompt.GetYesNo($"Directory '{rootPath}' does not exist, create?", true))
-                Directory.CreateDirectory(rootPath);//create the output folder if doesn't exist
+            if (createDirectory || Prompt.GetYesNo($"Directory '{rootPath}' does not exist, create?", true))
+                Directory.CreateDirectory(rootPath);//create the output folder if it doesn't exist
             else
                 return 1;
 
