@@ -50,7 +50,7 @@ class GenerateCommand : CommandBase
     [Option("--githubactions", Description = "Convert to GitHub Actions (also forces inline to true) [default: false]")]
     public bool gitHubActions { get; }
 
-	[Option("--createDirectory", Description = "Create the destination directory if it does not exist [default: false]")]
+    [Option("--create-directory", Description = "Create the destination directory if it does not exist [default: false]")]
     public bool createDirectory { get; }
 
     public async Task<int> OnExecuteAsync()
