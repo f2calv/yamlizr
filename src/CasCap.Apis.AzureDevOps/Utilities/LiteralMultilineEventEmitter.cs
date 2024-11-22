@@ -1,6 +1,7 @@
 ﻿using YamlDotNet.Core;
 using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.EventEmitters;
+
 namespace CasCap.Utilities;
 
 public class LiteralMultilineEventEmitter : ChainedEventEmitter

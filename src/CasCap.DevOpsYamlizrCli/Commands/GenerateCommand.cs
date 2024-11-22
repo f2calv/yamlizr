@@ -11,6 +11,7 @@ using ShellProgressBar;
 using System.Collections.Concurrent;
 using System.ComponentModel.DataAnnotations;
 using System.Diagnostics;
+
 namespace CasCap.Commands;
 
 [Command(Description = "Generate Azure DevOps YAML pipelines from classic definitions.")]
@@ -56,7 +57,7 @@ class GenerateCommand : CommandBase
     {
         if (gitHubActions) inlineTaskGroups = true;//github actions don't support templates
 
-        if (string.IsNullOrWhiteSpace(PAT) || PAT.Trim().Length != 52)
+        if (string.IsNullOrWhiteSpace(PAT) || (PAT.Trim().Length != 52 && PAT.Trim().Length != 84))
         {
             _logger.LogError($"{nameof(PAT)} missing or invalid!");
             return 1;
