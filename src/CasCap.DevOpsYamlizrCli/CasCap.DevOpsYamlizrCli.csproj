@@ -24,7 +24,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\CasCap.Apis.AzureDevOps\CasCap.Apis.AzureDevOps.csproj" />
+    <ProjectReference Include="..\CasCap.Api.AzureDevOps\CasCap.Api.AzureDevOps.csproj" />
   </ItemGroup>
 
 </Project>
