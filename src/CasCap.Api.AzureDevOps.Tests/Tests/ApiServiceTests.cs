@@ -2,7 +2,7 @@ using System.Diagnostics;
 using Xunit;
 using Xunit.Abstractions;
 
-namespace CasCap.Apis.AzureDevOps.Tests;
+namespace CasCap.Api.AzureDevOps.Tests;
 
 public class ApiServiceTests : TestBase
 {

@@ -3,11 +3,11 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.12.35209.166
 MinimumVisualStudioVersion = 15.0.26124.0
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CasCap.Apis.AzureDevOps", "src\CasCap.Apis.AzureDevOps\CasCap.Apis.AzureDevOps.csproj", "{9949C9CA-33AD-4D10-8DD1-5C05E73F4E37}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CasCap.Api.AzureDevOps", "src\CasCap.Api.AzureDevOps\CasCap.Api.AzureDevOps.csproj", "{9949C9CA-33AD-4D10-8DD1-5C05E73F4E37}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CasCap.DevOpsYamlizrCli", "src\CasCap.DevOpsYamlizrCli\CasCap.DevOpsYamlizrCli.csproj", "{44ACAF0F-260B-4100-A2F7-16A94B3EC847}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CasCap.Apis.AzureDevOps.Tests", "src\CasCap.Apis.AzureDevOps.Tests\CasCap.Apis.AzureDevOps.Tests.csproj", "{50FD267D-F50E-4049-ABE0-1340A5E25650}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CasCap.Api.AzureDevOps.Tests", "src\CasCap.Api.AzureDevOps.Tests\CasCap.Api.AzureDevOps.Tests.csproj", "{50FD267D-F50E-4049-ABE0-1340A5E25650}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

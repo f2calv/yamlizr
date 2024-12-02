@@ -5,7 +5,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Xunit.Abstractions;
 
-namespace CasCap.Apis.AzureDevOps.Tests;
+namespace CasCap.Api.AzureDevOps.Tests;
 
 public abstract class TestBase
 {
