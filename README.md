@@ -22,6 +22,7 @@ If you find this tool of use then please give it a thumbs-up by giving this repo
 ## Installation/Set-up
 
 - [Create a Personal Access Token (PAT)](https://docs.microsoft.com/en-us/azure/devops/organizations/accounts/use-personal-access-tokens-to-authenticate?view=azure-devops&tabs=preview-page) with the following scopes/permissions;
+
   | Scope             | Permission    |
   | ----------------- | ------------- |
   | Build             | Read          |
@@ -29,7 +30,10 @@ If you find this tool of use then please give it a thumbs-up by giving this repo
   | Release           | Read          |
   | Task Groups       | Read          |
   | Variable Groups   | Read          |
-- Download and install the [.NET 8.0 SDK](https://dotnet.microsoft.com/download/dotnet/8.0).
+
+- Download and install either;
+  - [.NET 8.0 SDK](https://dotnet.microsoft.com/download/dotnet/8.0)
+  - [.NET 9.0 SDK](https://dotnet.microsoft.com/download/dotnet/9.0)
 - From a command line shell install the tool;
   `dotnet tool update --global yamlizr`
 
