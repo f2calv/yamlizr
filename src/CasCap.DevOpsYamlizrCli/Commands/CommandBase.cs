@@ -8,6 +8,7 @@ using Microsoft.VisualStudio.Services.Common;
 using Microsoft.VisualStudio.Services.ReleaseManagement.WebApi;
 using Microsoft.VisualStudio.Services.ReleaseManagement.WebApi.Clients;
 using Microsoft.VisualStudio.Services.WebApi;
+using Microsoft.VisualStudio.Services.ServiceEndpoints.WebApi;
 using ShellProgressBar;
 using System.Diagnostics;
 
@@ -37,6 +38,7 @@ public abstract class CommandBase
     protected BuildHttpClient _buildClient;
     protected ReleaseHttpClient _releaseClient;
     protected TaskAgentHttpClient _taskAgentClient;
+    protected ServiceEndpointHttpClient2 _serviceEndpointClient;
 
     protected VssBasicCredential _credentials;
     protected VssConnection _connection;
@@ -100,6 +102,7 @@ public abstract class CommandBase
             _buildClient = _connection.GetClient<BuildHttpClient>();
             _releaseClient = _connection.GetClient<ReleaseHttpClient>();
             _taskAgentClient = _connection.GetClient<TaskAgentHttpClient>();
+            _serviceEndpointClient = _connection.GetClient<ServiceEndpointHttpClient2>();
             _apiSvc = new ApiService(_loggerFactory.CreateLogger<ApiService>(), PAT);
         }
         catch (Exception ex)

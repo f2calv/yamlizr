@@ -154,7 +154,11 @@ class GenerateCommand : CommandBase
         pbar.Dispose();
         var variableGroupMap = variableGroups.ToDictionary(k => k.Id, v => v);
 
+        pbar = new ProgressBar(1, $"Loading service endpoints...", pbarOptions);
+        var serviceEndpoints = await _serviceEndpointClient.GetServiceEndpointsAsync(_project.Id);
+        pbar.Tick($"{serviceEndpoints.Count} service endpoint(s) retrieved.");
         pbar.Dispose();
+        var serviceEndpointMap = serviceEndpoints.ToDictionary(k => $"{k.Type.ToLower()}_{k.Id.ToString().ToLower()}", v => v);
 
         //new-up collection to store build/release definitions and pipelines
         var results = new List<(BuildDefinition buildDefinition, ReleaseDefinition releaseDefinition, Pipeline pipeline)>();
@@ -239,10 +243,19 @@ class GenerateCommand : CommandBase
                     taskGroupTemplateMap,
                     variableGroupMap,
                     inlineTaskGroups,
-                    phaseType
+                    phaseType,
+                    serviceEndpointMap
                     );
 
-                var pipeline = generator.GenPipeline();
+                Pipeline pipeline = null;
+                try
+                {
+                    pipeline = generator.GenPipeline();
+                }
+                catch (Exception ex)
+                {
+                    _console.WriteLine($"Processing build definition id {buildDefinition.Id} '{buildDefinition.Name}' failed with exception: {ex.Message}{ex.StackTrace}");
+                }
                 if (pipeline is null)
                     errors.Add($"Processing build definition id {buildDefinition.Id} '{buildDefinition.Name}' failed");
                 else
@@ -298,10 +311,19 @@ class GenerateCommand : CommandBase
                     taskGroupTemplateMap,
                     variableGroupMap,
                     inlineTaskGroups,
-                    phaseType
+                    phaseType,
+                    serviceEndpointMap
                     );
 
-                var pipeline = generator.GenPipeline();
+                Pipeline pipeline = null;
+                try
+                {
+                    pipeline = generator.GenPipeline();
+                }
+                catch (Exception ex)
+                {
+                    _console.WriteLine($"Processing release definition id {releaseDefinition.Id} '{releaseDefinition.Name}' failed with exception: {ex.Message}{ex.StackTrace}");
+                }
                 if (pipeline is null)
                     errors.Add($"Processing release definition id {releaseDefinition.Id} '{releaseDefinition.Name}' failed (generated pipeline is null)");
                 else

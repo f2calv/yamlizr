@@ -22,8 +22,11 @@ public class YamlPipelineGenerator
     readonly Dictionary<int, Microsoft.TeamFoundation.DistributedTask.WebApi.VariableGroup> _variableGroupMap;
     readonly bool _inlineTaskGroups;
     readonly DeployPhaseTypes _phaseType;
+    readonly Dictionary<string, Microsoft.VisualStudio.Services.ServiceEndpoints.WebApi.ServiceEndpoint> _serviceEndpointMap;
 
     readonly string _templatesFolder = "AzureDevOpsTaskGroups";
+
+    const string CONNECTED_SERVICE_PREFIX = "connectedService:";
 
     enum VariableType
     {
@@ -39,7 +42,8 @@ public class YamlPipelineGenerator
         ConcurrentDictionary<TaskGroupVersion, Template> taskGroupTemplateMap,
         Dictionary<int, Microsoft.TeamFoundation.DistributedTask.WebApi.VariableGroup> variableGroupMap,
         bool inlineTaskGroups,
-        DeployPhaseTypes phaseType
+        DeployPhaseTypes phaseType,
+        Dictionary<string, Microsoft.VisualStudio.Services.ServiceEndpoints.WebApi.ServiceEndpoint> serviceEndpointMap
         )
     {
         _build = build;
@@ -50,6 +54,7 @@ public class YamlPipelineGenerator
         _variableGroupMap = variableGroupMap;
         _inlineTaskGroups = inlineTaskGroups;
         _phaseType = phaseType;
+        _serviceEndpointMap = serviceEndpointMap;
     }
 
     public Pipeline GenPipeline()
@@ -346,6 +351,19 @@ public class YamlPipelineGenerator
                 //replace task group variables with parameters only if taskgroup templates are required
                 if (!_inlineTaskGroups && parameters is not null)
                     inputValue = ConvertVarsTo2Params(inputValue);
+
+                //replace the service endpoint inputs with the service endpoint name
+                // e.g. e95932cb-d826-464a-a7c6-9710430ab08a -> My-Service-Endpoint-Name
+                if (sourceInput.type.StartsWith(CONNECTED_SERVICE_PREFIX, StringComparison.OrdinalIgnoreCase))
+                {
+                    //replace the value with the service endpoint name
+                    if (_serviceEndpointMap.TryGetValue($"{sourceInput.type[CONNECTED_SERVICE_PREFIX.Length..].ToLower()}_{inputValue.ToLower()}",
+                        out var serviceEndpoint))
+                    {
+                        //if the input is a service endpoint, replace the value with the service endpoint name
+                        inputValue = serviceEndpoint.Name;
+                    }
+                }
 
                 //replace task inputs with the primary/top-most task alias (if one exists)
                 newInputs.Add(!sourceInput.aliases.IsNullOrEmpty() ? sourceInput.aliases[0] : key, inputValue);
