@@ -16,6 +16,7 @@
   <ItemGroup>
     <PackageReference Include="ConsoleTables" />
     <PackageReference Include="Figgle" />
+    <PackageReference Include="Figgle.Fonts" />
     <PackageReference Include="McMaster.Extensions.CommandLineUtils" />
     <PackageReference Include="McMaster.Extensions.Hosting.CommandLine" />
     <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" />

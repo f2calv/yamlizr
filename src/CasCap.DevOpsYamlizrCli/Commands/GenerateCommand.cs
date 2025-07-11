@@ -2,7 +2,7 @@
 using CasCap.Common.Extensions;
 using CasCap.Models;
 using CasCap.Utilities;
-using Figgle;
+using Figgle.Fonts;
 using McMaster.Extensions.CommandLineUtils;
 using Microsoft.Extensions.Logging;
 using Microsoft.TeamFoundation.Build.WebApi;
