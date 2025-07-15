@@ -19,6 +19,7 @@
     <PackageReference Include="Microsoft.TeamFoundationServer.Client" />
     <PackageReference Include="Microsoft.VisualStudio.Services.Client" />
     <PackageReference Include="Microsoft.VisualStudio.Services.Release.Client" />
+    <PackageReference Include="Microsoft.VisualStudio.Services.ServiceEndpoints.WebApi" />
     <PackageReference Include="Newtonsoft.Json" />
     <PackageReference Include="semver" />
     <PackageReference Include="YamlDotNet" />

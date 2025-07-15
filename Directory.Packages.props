@@ -23,6 +23,7 @@
     <PackageVersion Include="Microsoft.TeamFoundationServer.Client" Version="19.225.1" />
     <PackageVersion Include="Microsoft.VisualStudio.Services.Client" Version="19.225.1" />
     <PackageVersion Include="Microsoft.VisualStudio.Services.Release.Client" Version="19.225.1" />
+    <PackageVersion Include="Microsoft.VisualStudio.Services.ServiceEndpoints.WebApi" Version="19.225.1" />
     <PackageVersion Include="Newtonsoft.Json" Version="13.0.3" />
     <PackageVersion Include="ShellProgressBar" Version="5.2.0" />
     <PackageVersion Include="YamlDotNet" Version="16.3.0" />
