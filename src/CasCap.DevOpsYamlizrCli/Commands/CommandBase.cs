@@ -26,7 +26,7 @@ public abstract class CommandBase
     protected /*readonly*/ IConsole _console;
     protected /*readonly*/ IApiService _apiSvc;
 
-    public CommandBase(ILogger<CommandBase> logger, ILoggerFactory loggerFactory, IConsole console)
+    protected CommandBase(ILogger<CommandBase> logger, ILoggerFactory loggerFactory, IConsole console)
     {
         _logger = logger;
         _loggerFactory = loggerFactory;

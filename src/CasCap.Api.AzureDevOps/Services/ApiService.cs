@@ -25,15 +25,17 @@ public class ApiService : HttpClientBase, IApiService
 
     public async Task<List<TaskObj>> GetAllExtensions(string organisationUri)
     {
-        _logger.LogInformation("Retrieving all extensions for organisation '{organisation}'", organisationUri);
+        _logger.LogInformation("{ClassName} retrieving all extensions for organisation '{OrganisationUri}'",
+            nameof(ApiService), organisationUri);
         var res = await Get<Tasks, object>($"{organisationUri}/_apis/distributedtask/tasks/");
-        return res.result is not null && res.result is not null && res.result.value is not null ? res.result.value : null;
+        return res.result is not null && res.result.value is not null ? res.result.value : null;
     }
 
     //https://docs.microsoft.com/en-us/rest/api/azure/devops/pipelines/runs/run%20pipeline?view=azure-devops-rest-6.0
     public async Task<string> Validate(string organisation, string project, int pipelineId, string pipelineYaml)
     {
-        _logger.LogInformation("Validating YAML for project '{project}' in organisation '{organisation}'", project, organisation);
+        _logger.LogInformation("{ClassName} validating YAML for project '{Project}' in organisation '{Organisation}'",
+            nameof(ApiService), project, organisation);
         var req = new
         {
             previewRun = true,

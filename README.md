@@ -110,4 +110,4 @@ All YAML files generated are output into sub-folders of a project folder, i.e. u
 
 ### Feedback/Issues
 
-Please post any issues or feedback [here](https://github.com/f2calv/yamlizr/issues).
+Please post any issues or feedback [to GitHub issues](https://github.com/f2calv/yamlizr/issues).

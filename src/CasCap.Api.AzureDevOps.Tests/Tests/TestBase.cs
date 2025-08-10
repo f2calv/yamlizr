@@ -11,7 +11,7 @@ public abstract class TestBase
 {
     protected IApiService _apiSvc;
 
-    public TestBase(ITestOutputHelper output)
+    protected TestBase(ITestOutputHelper output)
     {
         //dotnet user-secrets set CasCap:AzureDevOpsOptions:PAT "xxxxx" <-- test PAT here
 

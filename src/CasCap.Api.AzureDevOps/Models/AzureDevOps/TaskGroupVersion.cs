@@ -1,6 +1,6 @@
 ﻿namespace CasCap.Models;
 
-public struct TaskGroupVersion
+public readonly struct TaskGroupVersion
 {
     public TaskGroupVersion(Guid _taskGroupId, int _version)
     {
