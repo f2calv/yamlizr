@@ -40,7 +40,7 @@
     <!-- IDE0042 - Variable declaration can be deconstructed -->
     <!-- CS0162 - Unreachable code detected. -->
     <!-- S125 - Remove this commented out code. -->
-    <NoWarn>IDE1006;IDE0079;IDE0042;S125</NoWarn>
+    <NoWarn>IDE1006;IDE0079;IDE0042;CS0162;S125</NoWarn>
   </PropertyGroup>
 
   <PropertyGroup>
