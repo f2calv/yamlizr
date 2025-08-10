@@ -34,15 +34,13 @@
     <ContinuousIntegrationBuild>true</ContinuousIntegrationBuild>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'">
+  <PropertyGroup>
     <!-- IDE1006 - suppress roslyn naming convention messages -->
     <!-- IDE0079 - Remove unnecessary suppression -->
     <!-- IDE0042 - Variable declaration can be deconstructed -->
-    <NoWarn>IDE1006;IDE0079;IDE0042</NoWarn>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'">
-    <!-- suppress 'Unreachable code detected' -->
-    <NoWarn>CS0162</NoWarn>
+    <!-- CS0162 - Unreachable code detected. -->
+    <!-- S125 - Remove this commented out code. -->
+    <NoWarn>IDE1006;IDE0079;IDE0042;S125</NoWarn>
   </PropertyGroup>
 
   <PropertyGroup>
