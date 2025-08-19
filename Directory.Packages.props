@@ -3,10 +3,10 @@
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
   </PropertyGroup>
   <ItemGroup>
-    <PackageVersion Include="AzurePipelinesToGitHubActionsConverter.Core" Version="1.3.72" />
-    <PackageVersion Include="CasCap.Common.Extensions" Version="4.3.6" />
-    <PackageVersion Include="CasCap.Common.Net" Version="4.3.6" />
-    <PackageVersion Include="CasCap.Common.Testing" Version="4.3.6" />
+    <PackageVersion Include="AzurePipelinesToGitHubActionsConverter.Core" Version="1.3.74" />
+    <PackageVersion Include="CasCap.Common.Extensions" Version="4.3.7" />
+    <PackageVersion Include="CasCap.Common.Net" Version="4.3.7" />
+    <PackageVersion Include="CasCap.Common.Testing" Version="4.3.7" />
     <PackageVersion Include="ConsoleTables" Version="2.7.0" />
     <PackageVersion Include="Figgle" Version="0.6.5" />
     <PackageVersion Include="Figgle.Fonts" Version="0.6.5" />
@@ -30,6 +30,6 @@
     <PackageVersion Include="coverlet.msbuild" Version="6.0.4" />
     <PackageVersion Include="semver" Version="3.0.0" />
     <PackageVersion Include="xunit" Version="2.9.3" />
-    <PackageVersion Include="xunit.runner.visualstudio" Version="3.1.3" />
+    <PackageVersion Include="xunit.runner.visualstudio" Version="3.1.4" />
   </ItemGroup>
 </Project>
