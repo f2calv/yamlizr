@@ -1,6 +1,7 @@
 exclude: |
   (?x)^(
-    .devcontainer/devcontainer.json
+    .devcontainer/devcontainer.json|
+    Directory.Packages.props
   )$
 repos:
 - repo: https://github.com/pre-commit/pre-commit-hooks
