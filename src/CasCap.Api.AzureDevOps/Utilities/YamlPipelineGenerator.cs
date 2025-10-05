@@ -89,7 +89,7 @@ public class YamlPipelineGenerator
             }
         }
         else
-            throw new Exception($"{nameof(YamlPipelineGenerator)} expects only either a build OR a release!");
+            throw new GenericException($"{nameof(YamlPipelineGenerator)} expects only either a build OR a release!");
         if (stages.Count > 1) pipeline.stages = stages.ToArray();
         else if (jobs.Count > 1) pipeline.jobs = jobs.ToArray();
         else pipeline.steps = steps.ToArray();
