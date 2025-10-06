@@ -1,6 +1,6 @@
 exclude: |
   (?x)^(
-    .editorconfig
+    .editorconfig|
     .devcontainer/devcontainer.json||
     Directory.Packages.props
   )$
