@@ -26,26 +26,3 @@ repos:
   hooks:
   - id: markdownlint
     args: ["--disable", "MD013", "--disable", "MD034", "--"]
-
-#Not working or SLOW:
-
-# - repo: https://github.com/dotnet/format
-#   rev: v8.0.453106
-#   hooks:
-#   - id: dotnet-format
-#     entry: dotnet format KNX.Release.sln -v diagnostic --no-restore
-#     #entry: dotnet format whitespace . --folder -v diagnostic
-#     #args: [".", "--folder", "-v", "diagnostic"]
-#     #args: [--folder, --include]
-#https://pre-commit.com/#repository-local-hooks
-# - repo: local
-#   hooks:
-#   #Use dotnet format already installed on your machine
-#   #https://github.com/dotnet/format
-#      - id: dotnet-format
-#        name: dotnet format
-#        language: system
-#        #entry: dotnet format KNX.Debug.sln --verbosity d --no-restore
-#        entry: dotnet format KNX.Debug.sln -v diag --include ./ --no-restore
-#        #entry: dotnet format --include
-#        types_or: ["c#"]
