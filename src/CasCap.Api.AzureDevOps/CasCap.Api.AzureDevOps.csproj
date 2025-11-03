@@ -15,6 +15,7 @@
     <PackageReference Include="AzurePipelinesToGitHubActionsConverter.Core" />
     <PackageReference Include="CasCap.Common.Extensions" />
     <PackageReference Include="CasCap.Common.Net" />
+  <PackageReference Include="Microsoft.Extensions.Configuration" VersionOverride="9.0.10" />
     <PackageReference Include="Microsoft.TeamFoundation.DistributedTask.WebApi" />
     <PackageReference Include="Microsoft.TeamFoundationServer.Client" />
     <PackageReference Include="Microsoft.VisualStudio.Services.Client" />
