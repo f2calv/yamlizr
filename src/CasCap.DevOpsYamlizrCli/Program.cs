@@ -11,7 +11,7 @@ class Program : CommandBase
 {
     public Program(ILogger<Program> logger, ILoggerFactory loggerFactory, IConsole console) : base(logger, loggerFactory, console) { }
 
-    static CommandLineApplication app;
+    private static CommandLineApplication app;
 
     public async static Task<int> Main(string[] args)
     {
