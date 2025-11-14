@@ -1,4 +1,5 @@
-﻿using CasCap.Models;
+﻿using CasCap.Common.Services;
+using CasCap.Models;
 using Microsoft.Extensions.Logging;
 using System.Net.Http.Headers;
 using System.Text;

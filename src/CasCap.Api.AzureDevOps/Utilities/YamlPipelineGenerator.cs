@@ -14,16 +14,16 @@ namespace CasCap.Utilities;
 
 public class YamlPipelineGenerator
 {
-    readonly BuildDefinition _build;
-    readonly ReleaseDefinition _release;
-    readonly Dictionary<Guid, Dictionary<int, TaskObj>> _taskMap;
-    readonly Dictionary<TaskGroupVersion, TaskGroup> _taskGroupMap;
+    private readonly BuildDefinition _build;
+    private readonly ReleaseDefinition _release;
+    private readonly Dictionary<Guid, Dictionary<int, TaskObj>> _taskMap;
+    private readonly Dictionary<TaskGroupVersion, TaskGroup> _taskGroupMap;
     ConcurrentDictionary<TaskGroupVersion, Template> _taskGroupTemplateMap;//this collection is appended-to as the app iterates over the definitions
-    readonly Dictionary<int, Microsoft.TeamFoundation.DistributedTask.WebApi.VariableGroup> _variableGroupMap;
-    readonly bool _inlineTaskGroups;
-    readonly DeployPhaseTypes _phaseType;
+    private readonly Dictionary<int, Microsoft.TeamFoundation.DistributedTask.WebApi.VariableGroup> _variableGroupMap;
+    private readonly bool _inlineTaskGroups;
+    private readonly DeployPhaseTypes _phaseType;
 
-    readonly string _templatesFolder = "AzureDevOpsTaskGroups";
+    private readonly string _templatesFolder = "AzureDevOpsTaskGroups";
 
     enum VariableType
     {
@@ -89,7 +89,7 @@ public class YamlPipelineGenerator
             }
         }
         else
-            throw new Exception($"{nameof(YamlPipelineGenerator)} expects only either a build OR a release!");
+            throw new GenericException($"{nameof(YamlPipelineGenerator)} expects only either a build OR a release!");
         if (stages.Count > 1) pipeline.stages = stages.ToArray();
         else if (jobs.Count > 1) pipeline.jobs = jobs.ToArray();
         else pipeline.steps = steps.ToArray();
@@ -172,7 +172,7 @@ public class YamlPipelineGenerator
         return null;
     }
 
-    List<Variable> GenVariables(VariableType type, ReleaseDefinitionEnvironment environment = null)
+    private List<Variable> GenVariables(VariableType type, ReleaseDefinitionEnvironment environment = null)
     {
         List<Variable> variables;
         if (type == VariableType.Build)
@@ -208,7 +208,7 @@ public class YamlPipelineGenerator
         return variables;
     }
 
-    static string GenCondition(string condition) => string.IsNullOrWhiteSpace(condition) || condition.Equals("succeeded()", StringComparison.OrdinalIgnoreCase) ? "succeeded()" : condition;
+    private static string GenCondition(string condition) => string.IsNullOrWhiteSpace(condition) || condition.Equals("succeeded()", StringComparison.OrdinalIgnoreCase) ? "succeeded()" : condition;
 
     StageAzDO[] GenReleaseStages()
     {
@@ -262,16 +262,16 @@ public class YamlPipelineGenerator
         }
     }
 
-    List<Step> GenSteps(BuildDefinitionStep task)
+    private List<Step> GenSteps(BuildDefinitionStep task)
         => GenSteps(task.TaskDefinition.Id, task.DisplayName, task.TaskDefinition.VersionSpec, task.Inputs, task.Environment, task.Condition, task.ContinueOnError, task.TimeoutInMinutes);
 
-    List<Step> GenSteps(WorkflowTask task)
+    private List<Step> GenSteps(WorkflowTask task)
         => GenSteps(task.TaskId, task.Name, task.Version, task.Inputs, task.Environment, task.Condition, task.ContinueOnError, task.TimeoutInMinutes);
 
-    List<Step> GenSteps(TaskGroupStep task, Dictionary<string, string> parameters)
+    private List<Step> GenSteps(TaskGroupStep task, Dictionary<string, string> parameters)
         => GenSteps(task.Task.Id, task.DisplayName, task.Task.VersionSpec, task.Inputs, task.Environment, task.Condition, task.ContinueOnError, task.TimeoutInMinutes, parameters);
 
-    List<Step> GenSteps(Guid Id, string displayName, string semver, IDictionary<string, string> inputs, IDictionary<string, string> env,
+    private List<Step> GenSteps(Guid Id, string displayName, string semver, IDictionary<string, string> inputs, IDictionary<string, string> env,
         string condition, bool continueOnError, int timeoutInMinutes, Dictionary<string, string> parameters = null)
     {
         var version = SemVersion.Parse(semver.Replace(".*", ".0"), SemVersionStyles.OptionalPatch).Major;
