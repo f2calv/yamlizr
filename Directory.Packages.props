@@ -19,10 +19,10 @@
     <PackageVersion Include="Microsoft.Extensions.Hosting" Version="10.0.0" />
     <PackageVersion Include="Microsoft.Extensions.Hosting.Abstractions" Version="10.0.0" />
     <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.0.1" />
-    <PackageVersion Include="Microsoft.TeamFoundation.DistributedTask.WebApi" Version="19.225.1" />
-    <PackageVersion Include="Microsoft.TeamFoundationServer.Client" Version="19.225.1" />
-    <PackageVersion Include="Microsoft.VisualStudio.Services.Client" Version="19.225.1" />
-    <PackageVersion Include="Microsoft.VisualStudio.Services.Release.Client" Version="19.225.1" />
+    <PackageVersion Include="Microsoft.TeamFoundation.DistributedTask.WebApi" Version="19.225.2" />
+    <PackageVersion Include="Microsoft.TeamFoundationServer.Client" Version="19.225.2" />
+    <PackageVersion Include="Microsoft.VisualStudio.Services.Client" Version="19.225.2" />
+    <PackageVersion Include="Microsoft.VisualStudio.Services.Release.Client" Version="19.225.2" />
     <PackageVersion Include="Newtonsoft.Json" Version="13.0.4" />
     <PackageVersion Include="ShellProgressBar" Version="5.2.0" />
     <PackageVersion Include="YamlDotNet" Version="16.3.0" />
