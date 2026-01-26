@@ -3,7 +3,7 @@
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
   </PropertyGroup>
   <ItemGroup>
-    <PackageVersion Include="AzurePipelinesToGitHubActionsConverter.Core" Version="1.4.1" />
+    <PackageVersion Include="AzurePipelinesToGitHubActionsConverter.Core" Version="1.4.6" />
     <PackageVersion Include="CasCap.Common.Extensions" Version="4.5.1" />
     <PackageVersion Include="CasCap.Common.Net" Version="4.5.1" />
     <PackageVersion Include="CasCap.Common.Testing" Version="4.5.1" />
