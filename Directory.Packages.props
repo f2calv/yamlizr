@@ -10,7 +10,7 @@
     <PackageVersion Include="ConsoleTables" Version="2.7.0" />
     <PackageVersion Include="Figgle" Version="0.6.5" />
     <PackageVersion Include="Figgle.Fonts" Version="0.6.5" />
-    <PackageVersion Include="McMaster.Extensions.CommandLineUtils" Version="4.1.1" />
+    <PackageVersion Include="McMaster.Extensions.CommandLineUtils" Version="5.0.0" />
     <PackageVersion Include="McMaster.Extensions.Hosting.CommandLine" Version="4.1.1" />
     <PackageVersion Include="Microsoft.Extensions.Configuration" Version="10.0.0" />
     <PackageVersion Include="Microsoft.Extensions.Configuration.EnvironmentVariables" Version="10.0.0" />
