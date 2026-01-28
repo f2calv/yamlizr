@@ -3,26 +3,26 @@
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
   </PropertyGroup>
   <ItemGroup>
-    <PackageVersion Include="AzurePipelinesToGitHubActionsConverter.Core" Version="1.4.1" />
-    <PackageVersion Include="CasCap.Common.Extensions" Version="4.5.1" />
-    <PackageVersion Include="CasCap.Common.Net" Version="4.5.1" />
-    <PackageVersion Include="CasCap.Common.Testing" Version="4.5.1" />
+    <PackageVersion Include="AzurePipelinesToGitHubActionsConverter.Core" Version="1.4.6" />
+    <PackageVersion Include="CasCap.Common.Extensions" Version="4.5.4" />
+    <PackageVersion Include="CasCap.Common.Net" Version="4.5.4" />
+    <PackageVersion Include="CasCap.Common.Testing" Version="4.5.4" />
     <PackageVersion Include="ConsoleTables" Version="2.7.0" />
     <PackageVersion Include="Figgle" Version="0.6.5" />
     <PackageVersion Include="Figgle.Fonts" Version="0.6.5" />
-    <PackageVersion Include="McMaster.Extensions.CommandLineUtils" Version="4.1.1" />
-    <PackageVersion Include="McMaster.Extensions.Hosting.CommandLine" Version="4.1.1" />
-    <PackageVersion Include="Microsoft.Extensions.Configuration" Version="10.0.0" />
-    <PackageVersion Include="Microsoft.Extensions.Configuration.EnvironmentVariables" Version="10.0.0" />
-    <PackageVersion Include="Microsoft.Extensions.Configuration.Json" Version="10.0.0" />
-    <PackageVersion Include="Microsoft.Extensions.Configuration.UserSecrets" Version="10.0.0" />
-    <PackageVersion Include="Microsoft.Extensions.Hosting" Version="10.0.0" />
-    <PackageVersion Include="Microsoft.Extensions.Hosting.Abstractions" Version="10.0.0" />
+    <PackageVersion Include="McMaster.Extensions.CommandLineUtils" Version="5.0.0" />
+    <PackageVersion Include="McMaster.Extensions.Hosting.CommandLine" Version="5.0.0" />
+    <PackageVersion Include="Microsoft.Extensions.Configuration" Version="10.0.2" />
+    <PackageVersion Include="Microsoft.Extensions.Configuration.EnvironmentVariables" Version="10.0.2" />
+    <PackageVersion Include="Microsoft.Extensions.Configuration.Json" Version="10.0.2" />
+    <PackageVersion Include="Microsoft.Extensions.Configuration.UserSecrets" Version="10.0.2" />
+    <PackageVersion Include="Microsoft.Extensions.Hosting" Version="10.0.2" />
+    <PackageVersion Include="Microsoft.Extensions.Hosting.Abstractions" Version="10.0.2" />
     <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.0.1" />
-    <PackageVersion Include="Microsoft.TeamFoundation.DistributedTask.WebApi" Version="19.225.1" />
-    <PackageVersion Include="Microsoft.TeamFoundationServer.Client" Version="19.225.1" />
-    <PackageVersion Include="Microsoft.VisualStudio.Services.Client" Version="19.225.1" />
-    <PackageVersion Include="Microsoft.VisualStudio.Services.Release.Client" Version="19.225.1" />
+    <PackageVersion Include="Microsoft.TeamFoundation.DistributedTask.WebApi" Version="19.225.2" />
+    <PackageVersion Include="Microsoft.TeamFoundationServer.Client" Version="19.225.2" />
+    <PackageVersion Include="Microsoft.VisualStudio.Services.Client" Version="19.225.2" />
+    <PackageVersion Include="Microsoft.VisualStudio.Services.Release.Client" Version="19.225.2" />
     <PackageVersion Include="Newtonsoft.Json" Version="13.0.4" />
     <PackageVersion Include="ShellProgressBar" Version="5.2.0" />
     <PackageVersion Include="YamlDotNet" Version="16.3.0" />
