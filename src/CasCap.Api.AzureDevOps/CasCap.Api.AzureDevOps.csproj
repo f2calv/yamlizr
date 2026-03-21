@@ -19,6 +19,7 @@
     <PackageReference Include="Microsoft.VisualStudio.Services.Client" />
     <PackageReference Include="Microsoft.VisualStudio.Services.Release.Client" />
     <PackageReference Include="Newtonsoft.Json" />
+    <PackageReference Include="System.Configuration.ConfigurationManager" />
     <PackageReference Include="semver" />
     <PackageReference Include="YamlDotNet" />
   </ItemGroup>
