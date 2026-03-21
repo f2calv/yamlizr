@@ -17,11 +17,11 @@ public class ApiService : HttpClientBase, IApiService
     public ApiService(ILogger<ApiService> logger, string PAT) : base()
     {
         _logger = logger;
-        _client = new HttpClient();
-        _client.DefaultRequestHeaders.Clear();
-        _client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+        Client = new HttpClient();
+        Client.DefaultRequestHeaders.Clear();
+        Client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
         var bytes = Encoding.ASCII.GetBytes($"{string.Empty}:{PAT}");
-        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", Convert.ToBase64String(bytes));
+        Client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", Convert.ToBase64String(bytes));
     }
 
     public async Task<List<TaskObj>> GetAllExtensions(string organisationUri)
