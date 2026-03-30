@@ -110,6 +110,10 @@ public class YamlPipelineGenerator
             foreach (var step in phase.Steps)
                 if (step.Enabled) steps.AddRange(GenSteps(step));
             if (steps.IsNullOrEmpty()) continue;
+            if (phase.Name == null)
+            {
+                phase.Name = $"Phase {j + 1}";//if the phase name is null, we assign a default name
+            }
             var job = new Job
             {
                 cancelTimeoutInMinutes = phase.JobCancelTimeoutInMinutes,
