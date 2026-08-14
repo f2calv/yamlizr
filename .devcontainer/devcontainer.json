@@ -17,13 +17,29 @@
     //		}
     // }
     // Use 'postCreateCommand' to run commands after the container is created.
-    "postCreateCommand": "sh . ./.devcontainer/postCreateCommand.sh",
-    "postStartCommand": "sh . ./.devcontainer/postStartCommand.sh",
+    "postCreateCommand": "sh ./.devcontainer/postCreateCommand.sh",
+    "postStartCommand": "sh ./.devcontainer/postStartCommand.sh",
     // Configure tool-specific properties.
-    // "customizations": {},
+    "customizations": {
+        // Configure properties specific to VS Code.
+        "vscode": {
+            // Set *default* container specific settings.json values on container create.
+            "settings": {},
+            // Add the IDs of extensions you want installed when the container is created.
+            "extensions": [
+                "ms-vscode.powershell",
+                "ms-azuretools.vscode-docker",
+                "ms-vscode-remote.vscode-remote-extensionpack",
+                "mutantdino.resourcemonitor",
+                "usernamehw.errorlens",
+                "davidanson.vscode-markdownlint",
+                "ms-dotnettools.csharp"
+            ]
+        }
+    },
     "mounts": [
         "source=${localEnv:HOME}${localEnv:USERPROFILE}/source/github,target=/workspaces,type=bind,consistency=cached",
-        "source=${env:HOME}${env:USERPROFILE}/.kube,target=/home/vscode/.kube,type=bind"
+        "source=${env:HOME}${env:USERPROFILE}/.kube,target=/home/vscode/.kube,type=bind,consistency=cached"
     ]
     // Uncomment to connect as root instead. More info: https://aka.ms/dev-containers-non-root.
     // "remoteUser": "root"
