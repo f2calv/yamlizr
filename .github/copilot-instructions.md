@@ -5,6 +5,7 @@
 **yamlizr** is a .NET Global Tool that converts Azure DevOps Classic Designer Build/Release Definitions and Task Groups into YAML Pipeline or GitHub Actions equivalents. The tool uses the Azure DevOps .NET Client Libraries to pre-cache data and converts it into pipeline objects using YamlDotNet.
 
 ### Repository Details
+
 - **Type**: .NET Console Application (CLI tool) packaged as a NuGet global tool
 - **Size**: Small (~3.7 MB, ~126 files)
 - **Target Frameworks**: Multi-targeted for net8.0, net9.0, and net10.0
@@ -15,6 +16,7 @@
 ## Project Structure
 
 ### Main Projects
+
 1. **CasCap.DevOpsYamlizrCli** - CLI tool (executable, packaged as global tool)
    - Location: `src/CasCap.DevOpsYamlizrCli/`
    - Entry Point: `Program.cs`
@@ -29,6 +31,7 @@
    - Framework: xUnit with coverlet for code coverage
 
 ### Key Configuration Files
+
 - **Root Directory**:
   - `Directory.Build.props` - Common MSBuild properties for all projects
   - `Directory.Packages.props` - Central Package Management (CPM) configuration
@@ -44,6 +47,7 @@
 ## Build & Test Instructions
 
 ### Prerequisites
+
 - .NET 8.0, 9.0, or 10.0 SDK (any will work due to multi-targeting)
 - No need to install pre-commit locally unless running linting
 
@@ -52,16 +56,20 @@
 **IMPORTANT**: Always run these commands from the repository root directory (`/home/runner/work/yamlizr/yamlizr`).
 
 1. **Restore Dependencies** (run first):
+
    ```bash
    dotnet restore
    ```
+
    - Duration: ~5-10 seconds
    - Expected warnings: NU1903 warnings about System.Data.SqlClient vulnerability (these are known and can be ignored)
 
 2. **Build the Solution**:
+
    ```bash
    dotnet build
    ```
+
    - Duration: ~10-15 seconds
    - Builds all 3 projects for all target frameworks (net8.0, net9.0, net10.0)
    - Configuration: Debug (default) or Release
@@ -69,26 +77,34 @@
    - Success criteria: "Build succeeded" with 0 errors
 
 3. **Run Tests**:
+
    ```bash
    dotnet test
    ```
+
    - Duration: ~10-15 seconds
    - Runs xUnit tests with code coverage via coverlet
    - Currently: 1 test in the test project
    - Success criteria: "Passed! - Failed: 0, Passed: 1, Skipped: 0"
 
 4. **Clean Build Artifacts**:
+
    ```bash
    dotnet clean
    ```
+
    OR use the PowerShell script:
+
    ```powershell
    pwsh clean.ps1
    ```
+
    - Removes all bin/ and obj/ directories recursively
 
 ### Build Sequence for Code Changes
+
 **ALWAYS follow this order**:
+
 1. `dotnet restore` - Required before building
 2. `dotnet build` - Build and check for compilation errors
 3. `dotnet test` - Verify tests pass
@@ -99,6 +115,7 @@
 ## CI/CD Pipeline
 
 ### GitHub Actions Workflows
+
 The CI pipeline consists of two reusable workflows:
 
 1. **Lint Job** (`f2calv/gha-workflows/.github/workflows/lint.yml@v1`):
@@ -115,6 +132,7 @@ The CI pipeline consists of two reusable workflows:
    - Creates GitHub releases when appropriate
 
 ### Triggers
+
 - Push to any branch except `preview/**` (ignoring LICENSE, README.md)
 - Pull requests to main branch
 - Manual workflow dispatch
@@ -122,6 +140,7 @@ The CI pipeline consists of two reusable workflows:
 ## Code Style & Conventions
 
 ### C# Conventions (enforced via .editorconfig)
+
 - **Indentation**: 4 spaces
 - **Line endings**: LF (Unix-style)
 - **Braces**: Always use braces for control flow
@@ -131,6 +150,7 @@ The CI pipeline consists of two reusable workflows:
 - **Naming**: PascalCase for types/members, interfaces start with "I"
 
 ### Build Properties
+
 - **LangVersion**: C# 14.0
 - **Nullable**: Not enabled globally (per-project basis)
 - **ImplicitUsings**: Enabled
@@ -139,15 +159,18 @@ The CI pipeline consists of two reusable workflows:
 ## Known Issues & Workarounds
 
 ### Package Vulnerabilities
+
 - **System.Data.SqlClient 4.8.5**: Known high severity vulnerability (GHSA-98g6-xh36-x2p7)
 - This is a transitive dependency from Azure DevOps client libraries
 - **Workaround**: Currently accepted as known issue; not blocking builds
 
 ### Pre-commit Hooks
+
 - Pre-commit hooks reference gitlab.com which may be blocked in some environments
 - **Workaround**: CI runs pre-commit in isolated Python venv; local pre-commit runs may fail due to network restrictions
 
 ### Multi-Targeting
+
 - Projects target net8.0, net9.0, and net10.0
 - NETSDK1233 warning is suppressed for .NET 10 support
 - All frameworks must build successfully for CI to pass
@@ -155,6 +178,7 @@ The CI pipeline consists of two reusable workflows:
 ## Dependencies
 
 ### Key External Dependencies
+
 - Azure DevOps .NET Client Libraries (Microsoft.TeamFoundation.*, Microsoft.VisualStudio.Services.*)
 - YamlDotNet - YAML serialization
 - AzurePipelinesToGitHubActionsConverter.Core - GitHub Actions conversion
@@ -163,6 +187,7 @@ The CI pipeline consists of two reusable workflows:
 - coverlet - Code coverage
 
 ### Package Management
+
 - Uses Central Package Management (CPM) via `Directory.Packages.props`
 - All package versions are defined centrally
 - Projects reference packages without version attributes
@@ -170,12 +195,14 @@ The CI pipeline consists of two reusable workflows:
 ## Validation Steps
 
 ### Before Committing
+
 1. Ensure code builds: `dotnet build`
 2. Ensure tests pass: `dotnet test`
 3. Check for code style issues (local .editorconfig compliance)
 4. Review changes against existing conventions
 
 ### CI Will Validate
+
 - Pre-commit hooks (YAML, JSON, markdown, file sizes, whitespace)
 - Multi-framework builds (net8.0, net9.0, net10.0)
 - All tests pass
@@ -184,18 +211,22 @@ The CI pipeline consists of two reusable workflows:
 ## Additional Notes
 
 ### Solution File
+
 - Uses modern XML solution format (`.slnx`) instead of legacy `.sln`
 - Contains 3 projects and solution items folder
 - Visual Studio 2022 and later support this format
 
 ### Tool Usage
+
 The CLI tool is intended to:
+
 - Connect to Azure DevOps using a PAT token
 - Download and convert Build/Release definitions to YAML
 - Output can be Azure Pipelines or GitHub Actions format
 - See README.md for full CLI usage documentation
 
 ### Architecture
+
 - **CLI Layer**: Commands, parsing, progress bars
 - **API Layer**: Azure DevOps integration, model conversion
 - **Tests**: Configuration-based testing with user secrets support
