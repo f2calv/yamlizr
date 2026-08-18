@@ -10,6 +10,7 @@ namespace CasCap.Api.AzureDevOps.Tests;
 public abstract class TestBase
 {
     protected IApiService _apiSvc;
+    protected bool _hasPat;
 
     protected TestBase(ITestOutputHelper output)
     {
@@ -22,6 +23,7 @@ public abstract class TestBase
             .Build();
 
         var pat = configuration[$"{nameof(CasCap)}:{nameof(AzureDevOpsOptions)}:{nameof(AzureDevOpsOptions.PAT)}"];
+        _hasPat = !string.IsNullOrWhiteSpace(pat);
         //if (string.IsNullOrWhiteSpace(pat)) throw new NotSupportedException("cannot find Azure DevOps PAT");
 
         //initiate ServiceCollection w/logging
