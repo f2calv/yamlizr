@@ -16,7 +16,9 @@ updates:
     ignore:
     - dependency-name: YamlDotNet
     - dependency-name: CasCap.Common.*
-    - dependency-name: Microsoft.NET.Test.Sdk
+    #xunit.v3 majors are migrations, not bumps: 3.x to 4.0 forced Microsoft.Testing.Platform,
+    #OutputType Exe and four package swaps. Minors and patches flow normally.
     - dependency-name: xunit.*
+      update-types: ["version-update:semver-major"]
     - dependency-name: semver
     - dependency-name: ShellProgressBar
