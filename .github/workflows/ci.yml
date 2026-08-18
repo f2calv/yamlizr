@@ -11,11 +11,11 @@ on:
         options:
           - Release
           - Debug
+      #The SemVer pre-release suffix (e.g. 1.2.3-my-feature.4) is what marks it preview to NuGet.
       push-preview:
-        type: string
-        description: Push preview branch?
-        required: true
-        default: "false"
+        type: boolean
+        description: Push a pre-release package?
+        default: false
   push:
     branches-ignore:
       - "preview/**"
@@ -26,14 +26,51 @@ on:
     branches: [main]
     types: [opened, synchronize, reopened]
 
+#Deny all by default; each job grants only the scopes it needs.
+permissions: {}
+
 jobs:
   lint:
+    permissions:
+      contents: read #checkout
     uses: f2calv/gha-workflows/.github/workflows/lint.yml@v1
 
-  ci:
-    uses: f2calv/gha-workflows/.github/workflows/dotnet-publish-nuget.yml@v1
+  versioning:
+    permissions:
+      contents: read #checkout and release lookup
+    uses: f2calv/gha-workflows/.github/workflows/gha-release-versioning.yml@v1
     with:
-      configuration: ${{ github.event.inputs.configuration }}
-      push-preview: ${{ github.event.inputs.push-preview }}
-    secrets:
-      NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
+      tag-prefix: ''
+      tag-and-release: false
+
+  build:
+    runs-on: ubuntu-latest
+    needs: [versioning]
+    #Note: a permissions block is subtractive - every scope not listed resets to none.
+    #The composite action cannot request these itself, so they must be declared here.
+    permissions:
+      id-token: write #OIDC token for NuGet Trusted Publishing
+      contents: read #checkout
+      packages: write #push to nuget.pkg.github.com
+    steps:
+      - uses: f2calv/gha-dotnet-nuget@v2
+        with:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          #The nuget.org username matches the GitHub owner. If they ever diverge this must
+          #become a literal, or the token exchange fails with an opaque 401.
+          nuget-user: ${{ github.repository_owner }}
+          configuration: ${{ inputs.configuration }}
+          push-preview: ${{ inputs.push-preview }}
+          version: ${{ needs.versioning.outputs.version }}
+
+  release:
+    needs: [versioning, build]
+    if: needs.versioning.outputs.release-exists == 'false'
+      && (github.ref == format('refs/heads/{0}', github.event.repository.default_branch) || inputs.push-preview == 'true')
+    uses: f2calv/gha-workflows/.github/workflows/gha-release-versioning.yml@v1
+    permissions:
+      contents: write
+    with:
+      semVer: ${{ needs.versioning.outputs.version }}
+      tag-prefix: ''
+      move-major-tag: false
