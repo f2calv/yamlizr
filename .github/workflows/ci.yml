@@ -66,7 +66,7 @@ jobs:
   release:
     needs: [versioning, build]
     if: needs.versioning.outputs.release-exists == 'false'
-      && (github.ref == format('refs/heads/{0}', github.event.repository.default_branch) || inputs.push-preview == 'true')
+      && (github.ref == format('refs/heads/{0}', github.event.repository.default_branch) || inputs.push-preview == true)
     uses: f2calv/gha-workflows/.github/workflows/gha-release-versioning.yml@v1
     permissions:
       contents: write
