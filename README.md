@@ -31,9 +31,10 @@ If you find this tool of use then please give it a thumbs-up by giving this repo
   | Task Groups       | Read          |
   | Variable Groups   | Read          |
 
-- Download and install either;
+- Download and install one of;
   - [.NET 8.0 SDK](https://dotnet.microsoft.com/download/dotnet/8.0)
   - [.NET 9.0 SDK](https://dotnet.microsoft.com/download/dotnet/9.0)
+  - [.NET 10.0 SDK](https://dotnet.microsoft.com/download/dotnet/10.0)
 - From a command line shell install the tool;
   `dotnet tool update --global yamlizr`
 
@@ -60,6 +61,21 @@ Optional switches;
 
 - `--inline` merge the tasks from task groups into the steps of the calling job instead of creating additional template files.
 - `--githubactions` generate GitHub Actions workflows via [AzurePipelinesToGitHubActionsConverter](https://github.com/samsmithnz/AzurePipelinesToGitHubActionsConverter).
+- `--create-directory` create the output folder without prompting, for unattended runs.
+- `--parallelism` generate pipelines in parallel.
+
+### Running Inside a Pipeline
+
+`-pat` also accepts an access token issued to a pipeline's build service identity, so yamlizr can run
+as a step in an Azure Pipeline without a Personal Access Token. Grant the build service the same read
+scopes listed above and pass `$(System.AccessToken)`;
+
+```yaml
+- script: |
+    dotnet tool update --global yamlizr
+    yamlizr generate --token $(System.AccessToken) -org $(System.CollectionUri) -proj $(System.TeamProject) -out $(Build.ArtifactStagingDirectory) --create-directory
+  displayName: yamlizr
+```
 
 Examples;
 
@@ -102,10 +118,28 @@ All YAML files generated are output into sub-folders of a project folder, i.e. u
 
 - The [NuGet package](https://www.nuget.org/packages/yamlizr/) includes [SourceLink](https://github.com/dotnet/sourcelink) which enables you to jump inside the library and debug the API yourself. By default Visual Studio 2017/2019 does not allow this and will pop up an message "You are debugging a Release build of...", to disable this message go into the Visual Studio debugging options and un-check the 'Just My Code' option (menu path, Tools > Options > Debugging).
 
+### Known Limitations
+
+The tool converts as much of a classic definition as it can and reports whatever it cannot. Anything
+listed below is **absent from the generated YAML** and must be re-created by hand. Every run prints a
+summary of the constructs it skipped, naming the definition and the construct, so nothing is dropped
+without a trace. Progress on closing these gaps is tracked in
+[issue #182](https://github.com/f2calv/yamlizr/issues/182).
+
+| Classic construct | Status |
+| --- | --- |
+| Release artifacts | Not converted; a generated release pipeline has no inputs. |
+| Pre- and post-deployment approvals and gates | Not converted. |
+| Stage inter-dependencies (`dependsOn`) | Not converted; generated stages run concurrently rather than in the classic environment order. |
+| Non-agent build phases (server, deployment group) | Not converted. |
+| Deploy phases other than `--phasetype` | Not converted. |
+| Triggers other than continuous integration (pull request, scheduled, build completion) | Not converted. |
+| Steps referencing an uninstalled extension | Not converted; reported by name and task id. |
+| Combined build plus release multi-stage pipelines | Build and release definitions are emitted as separate files. |
+
 ### Known Issues
 
 - ShellProgressBar gives random formatting problems.
-- `--parallelism` command line option for faster processing is a bit buggy so disabled.
 - Various YAML structures are 'missing', PR's welcome.
 
 ### Feedback/Issues

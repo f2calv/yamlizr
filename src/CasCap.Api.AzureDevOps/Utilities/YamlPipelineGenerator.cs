@@ -105,7 +105,12 @@ public class YamlPipelineGenerator
 
     StageAzDO GenBuildStage()
     {
-        var phases = ((DesignerProcess)_build.Process).Phases.Where(p => p.Target is not null && p.Target.Type == 1).ToList();
+        var allPhases = ((DesignerProcess)_build.Process).Phases;
+        var phases = allPhases.Where(p => p.Target is not null && p.Target.Type == 1).ToList();
+        //TODO(#182): only agent phases (Target.Type 1) are converted; server and deployment-group
+        //phases are skipped. https://github.com/f2calv/yamlizr/issues/182
+        if (allPhases.Count > phases.Count)
+            _warnings.Add($"{allPhases.Count - phases.Count} non-agent build phase(s) are not converted, see https://github.com/f2calv/yamlizr/issues/182");
         if (phases.IsNullOrEmpty()) return null;
         var jobs = new List<Job>(phases.Count);
         var jobName = string.Empty;
@@ -137,6 +142,11 @@ public class YamlPipelineGenerator
     TriggerAzDO GenTrigger()
     {
         if (_build.Triggers.IsNullOrEmpty()) return null;
+        //TODO(#182): only continuous integration triggers are converted; pull request, scheduled and
+        //build-completion triggers are skipped. https://github.com/f2calv/yamlizr/issues/182
+        var unconverted = _build.Triggers.Where(p => p.TriggerType != DefinitionTriggerType.ContinuousIntegration).ToList();
+        if (!unconverted.IsNullOrEmpty())
+            _warnings.Add($"{unconverted.Count} trigger(s) of type {string.Join(", ", unconverted.Select(p => p.TriggerType).Distinct())} are not converted, see https://github.com/f2calv/yamlizr/issues/182");
         foreach (var t in _build.Triggers.Where(p => p.TriggerType == DefinitionTriggerType.ContinuousIntegration))
         {
             var trigger = new TriggerAzDO();
@@ -220,11 +230,28 @@ public class YamlPipelineGenerator
     StageAzDO[] GenReleaseStages()
     {
         if (_release.Environments.IsNullOrEmpty()) return null;
+
+        //TODO(#182): release artifacts are not converted. Each artifact should become a resource or a
+        //download step; until then a generated release pipeline has no inputs.
+        //https://github.com/f2calv/yamlizr/issues/182
+        if (!_release.Artifacts.IsNullOrEmpty())
+            _warnings.Add($"{_release.Artifacts.Count} release artifact(s) are not converted, see https://github.com/f2calv/yamlizr/issues/182");
+
         var stages = new List<StageAzDO>();
         foreach (var environment in _release.Environments)
         {
             var jobs = GenJobs(environment);
             if (jobs.IsNullOrEmpty()) continue;
+
+            //TODO(#182): pre- and post-deployment approvals and gates should become an Environment
+            //with approval checks, or at minimum a documented manual step.
+            //https://github.com/f2calv/yamlizr/issues/182
+            if (HasApprovals(environment))
+                _warnings.Add($"stage '{environment.Name}' has deployment approvals or gates which are not converted, see https://github.com/f2calv/yamlizr/issues/182");
+
+            //TODO(#182): environment.Conditions carries the classic stage trigger, including
+            //artifact and environment dependencies, which should become stage dependsOn/condition.
+            //https://github.com/f2calv/yamlizr/issues/182
             var variables = GenVariables(VariableType.Release, environment);
             var stage = new StageAzDO
             {
@@ -235,13 +262,27 @@ public class YamlPipelineGenerator
             };
             stages.Add(stage);
         }
+        if (stages.Count > 1)
+            _warnings.Add($"{stages.Count} stages were generated without dependsOn, so they will run concurrently rather than in the classic environment order, see https://github.com/f2calv/yamlizr/issues/182");
         return stages.IsNullOrEmpty() ? null : stages.ToArray();
+
+        static bool HasApprovals(ReleaseDefinitionEnvironment environment)
+            //classic environments always carry an automated approval, only a real gate is worth reporting
+            => environment.PreDeployApprovals?.Approvals?.Any(p => !p.IsAutomated) == true
+                || environment.PostDeployApprovals?.Approvals?.Any(p => !p.IsAutomated) == true
+                || environment.PreDeploymentGates?.Gates?.Count > 0
+                || environment.PostDeploymentGates?.Gates?.Count > 0;
 
         List<Job> GenJobs(ReleaseDefinitionEnvironment environment)
         {
             var jobName = string.Empty;
             var jobs = new List<Job>();
             var duplicatePhaseNames = environment.DeployPhases.Select(p => p.Name).Distinct().Count() > 1;
+            //TODO(#182): --phasetype selects a single deploy phase type, the rest are skipped.
+            //https://github.com/f2calv/yamlizr/issues/182
+            var skipped = environment.DeployPhases.Count(p => p.PhaseType != _phaseType);
+            if (skipped > 0)
+                _warnings.Add($"stage '{environment.Name}' has {skipped} deploy phase(s) that are not {_phaseType} and are not converted, see https://github.com/f2calv/yamlizr/issues/182");
             var j = 0;
             foreach (var phase in environment.DeployPhases.Where(p => p.PhaseType == _phaseType).OrderBy(p => p.Rank))
             {

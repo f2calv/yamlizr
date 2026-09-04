@@ -298,7 +298,9 @@ class GenerateCommand : CommandBase
             }
         }
 
-        //todo: 4) construct multi-stage pipelines by pre-pending build stage onto release environment stages, connecting the two definitions via the Azure DevOps artifact
+        //TODO(#182): construct multi-stage pipelines by pre-pending the build stage onto the release
+        //environment stages, connecting the two definitions via the Azure DevOps artifact.
+        //https://github.com/f2calv/yamlizr/issues/182
 
         //new-up Sam Smith's library
         //https://github.com/samsmithnz/AzurePipelinesToGitHubActionsConverter
