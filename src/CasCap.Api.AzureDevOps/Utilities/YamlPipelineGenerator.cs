@@ -1,5 +1,4 @@
-﻿using AzurePipelinesToGitHubActionsConverter.Core.AzurePipelines;
-using CasCap.Common.Extensions;
+﻿using CasCap.Common.Extensions;
 using CasCap.Models;
 using Microsoft.TeamFoundation.Build.WebApi;
 using Microsoft.TeamFoundation.DistributedTask.WebApi;
@@ -24,6 +23,14 @@ public class YamlPipelineGenerator
     private readonly DeployPhaseTypes _phaseType;
 
     private readonly string _templatesFolder = "AzureDevOpsTaskGroups";
+
+    private readonly List<string> _warnings = [];
+
+    /// <summary>
+    /// Classic constructs encountered during generation that could not be represented in YAML.
+    /// </summary>
+    /// <remarks>The caller is expected to surface these in its run summary.</remarks>
+    public IReadOnlyList<string> Warnings => _warnings;
 
     enum VariableType
     {
@@ -68,7 +75,14 @@ public class YamlPipelineGenerator
             var buildStage = GenBuildStage();
             if (buildStage is not null)
                 if (buildStage.jobs.Length == 1)
-                    steps.AddRange(buildStage.jobs[0].steps);
+                {
+                    //flattening the only job to a bare step list discards its job-level settings, but a
+                    //default condition is not worth reporting
+                    var job = buildStage.jobs[0];
+                    if (job.condition is not null && job.condition != "succeeded()")
+                        _warnings.Add($"job '{job.job}' is the only job so its steps were flattened, dropping its condition '{job.condition}', see https://github.com/f2calv/yamlizr/issues/211");
+                    steps.AddRange(job.steps);
+                }
                 else
                     jobs.AddRange(buildStage.jobs);
         }
@@ -80,10 +94,17 @@ public class YamlPipelineGenerator
             if (releaseStages is not null)
             {
                 if (releaseStages.Length == 1)
-                    if (releaseStages[0].jobs.Length == 1)
-                        steps.AddRange(releaseStages[0].jobs[0].steps);
+                {
+                    //flattening the only stage discards its stage-level variables, which for a release
+                    //are the environment-scoped variables and variable groups
+                    var stage = releaseStages[0];
+                    if (!stage.variables.IsNullOrEmpty())
+                        _warnings.Add($"stage '{stage.stage}' is the only stage so it was flattened, dropping {stage.variables.Count} stage-level variable(s), see https://github.com/f2calv/yamlizr/issues/211");
+                    if (stage.jobs.Length == 1)
+                        steps.AddRange(stage.jobs[0].steps);
                     else
-                        jobs.AddRange(releaseStages[0].jobs);
+                        jobs.AddRange(stage.jobs);
+                }
                 else
                     stages.AddRange(releaseStages);
             }
@@ -98,10 +119,17 @@ public class YamlPipelineGenerator
 
     StageAzDO GenBuildStage()
     {
-        var phases = ((DesignerProcess)_build.Process).Phases.Where(p => p.Target is not null && p.Target.Type == 1).ToList();
+        var allPhases = ((DesignerProcess)_build.Process).Phases;
+        var phases = allPhases.Where(p => p.Target is not null && p.Target.Type == 1).ToList();
+        //TODO(#182): only agent phases (Target.Type 1) are converted; server and deployment-group
+        //phases are skipped. https://github.com/f2calv/yamlizr/issues/182
+        if (allPhases.Count > phases.Count)
+            _warnings.Add($"{allPhases.Count - phases.Count} non-agent build phase(s) are not converted, see https://github.com/f2calv/yamlizr/issues/182");
         if (phases.IsNullOrEmpty()) return null;
         var jobs = new List<Job>(phases.Count);
         var jobName = string.Empty;
+        //TODO(#368): inverted, this is true when the names DIFFER. Phases that all share one name get
+        //no suffix and so produce duplicate job identifiers. https://github.com/f2calv/yamlizr/issues/368
         var duplicatePhaseNames = phases.Select(p => p.Name).Distinct().Count() > 1;
         var j = 0;
         foreach (var phase in phases)
@@ -110,13 +138,15 @@ public class YamlPipelineGenerator
             foreach (var step in phase.Steps)
                 if (step.Enabled) steps.AddRange(GenSteps(step));
             if (steps.IsNullOrEmpty()) continue;
+            //a classic phase can have no name, which used to throw from Sanitize().Replace()
+            var phaseName = string.IsNullOrWhiteSpace(phase.Name) ? $"Phase {j + 1}" : phase.Name;
             var job = new Job
             {
                 cancelTimeoutInMinutes = phase.JobCancelTimeoutInMinutes,
                 condition = GenCondition(phase.Condition),
                 dependsOn = string.IsNullOrWhiteSpace(jobName) ? null : new[] { jobName },
-                displayName = phase.Name,
-                job = duplicatePhaseNames ? $"{phase.Name.Sanitize().Replace(" ", "_")}_{j}" : phase.Name.Sanitize().Replace(" ", "_"),
+                displayName = phaseName,
+                job = duplicatePhaseNames ? $"{phaseName.Sanitize().Replace(" ", "_")}_{j}" : phaseName.Sanitize().Replace(" ", "_"),
                 steps = steps.ToArray(),
                 timeoutInMinutes = phase.JobTimeoutInMinutes,
             };
@@ -124,12 +154,17 @@ public class YamlPipelineGenerator
             jobName = job.job;
             j++;
         }
-        return jobs.IsNullOrEmpty() ? null : new StageAzDO { displayName = _build.Name, stage = _build.Name.Sanitize().Replace(" ", "_"), variables = GenVariables(VariableType.Build), jobs = jobs.ToArray() };
+        return jobs.IsNullOrEmpty() ? null : new StageAzDO { displayName = _build.Name, stage = (_build.Name ?? "Build").Sanitize().Replace(" ", "_"), variables = GenVariables(VariableType.Build), jobs = jobs.ToArray() };
     }
 
     TriggerAzDO GenTrigger()
     {
         if (_build.Triggers.IsNullOrEmpty()) return null;
+        //TODO(#182): only continuous integration triggers are converted; pull request, scheduled and
+        //build-completion triggers are skipped. https://github.com/f2calv/yamlizr/issues/182
+        var unconverted = _build.Triggers.Where(p => p.TriggerType != DefinitionTriggerType.ContinuousIntegration).ToList();
+        if (!unconverted.IsNullOrEmpty())
+            _warnings.Add($"{unconverted.Count} trigger(s) of type {string.Join(", ", unconverted.Select(p => p.TriggerType).Distinct())} are not converted, see https://github.com/f2calv/yamlizr/issues/182");
         foreach (var t in _build.Triggers.Where(p => p.TriggerType == DefinitionTriggerType.ContinuousIntegration))
         {
             var trigger = new TriggerAzDO();
@@ -213,28 +248,61 @@ public class YamlPipelineGenerator
     StageAzDO[] GenReleaseStages()
     {
         if (_release.Environments.IsNullOrEmpty()) return null;
+
+        //TODO(#182): release artifacts are not converted. Each artifact should become a resource or a
+        //download step; until then a generated release pipeline has no inputs.
+        //https://github.com/f2calv/yamlizr/issues/182
+        if (!_release.Artifacts.IsNullOrEmpty())
+            _warnings.Add($"{_release.Artifacts.Count} release artifact(s) are not converted, see https://github.com/f2calv/yamlizr/issues/182");
+
         var stages = new List<StageAzDO>();
         foreach (var environment in _release.Environments)
         {
             var jobs = GenJobs(environment);
             if (jobs.IsNullOrEmpty()) continue;
+
+            //TODO(#182): pre- and post-deployment approvals and gates should become an Environment
+            //with approval checks, or at minimum a documented manual step.
+            //https://github.com/f2calv/yamlizr/issues/182
+            if (HasApprovals(environment))
+                _warnings.Add($"stage '{environment.Name}' has deployment approvals or gates which are not converted, see https://github.com/f2calv/yamlizr/issues/182");
+
+            //TODO(#182): environment.Conditions carries the classic stage trigger, including
+            //artifact and environment dependencies, which should become stage dependsOn/condition.
+            //https://github.com/f2calv/yamlizr/issues/182
             var variables = GenVariables(VariableType.Release, environment);
             var stage = new StageAzDO
             {
                 displayName = _release.Name,
                 jobs = jobs.ToArray(),
-                stage = environment.Name.Sanitize("_"),
+                stage = (environment.Name ?? $"Stage_{stages.Count + 1}").Sanitize("_"),
                 variables = variables.IsNullOrEmpty() ? null : variables,
             };
             stages.Add(stage);
         }
+        if (stages.Count > 1)
+            _warnings.Add($"{stages.Count} stages were generated without dependsOn, so they will run concurrently rather than in the classic environment order, see https://github.com/f2calv/yamlizr/issues/182");
         return stages.IsNullOrEmpty() ? null : stages.ToArray();
+
+        static bool HasApprovals(ReleaseDefinitionEnvironment environment)
+            //classic environments always carry an automated approval, only a real gate is worth reporting
+            => environment.PreDeployApprovals?.Approvals?.Any(p => !p.IsAutomated) == true
+                || environment.PostDeployApprovals?.Approvals?.Any(p => !p.IsAutomated) == true
+                || environment.PreDeploymentGates?.Gates?.Count > 0
+                || environment.PostDeploymentGates?.Gates?.Count > 0;
 
         List<Job> GenJobs(ReleaseDefinitionEnvironment environment)
         {
             var jobName = string.Empty;
             var jobs = new List<Job>();
+            //TODO(#368): inverted as in GenBuildStage, and counted over every deploy phase rather than
+            //only those matching _phaseType. https://github.com/f2calv/yamlizr/issues/368
             var duplicatePhaseNames = environment.DeployPhases.Select(p => p.Name).Distinct().Count() > 1;
+            //TODO(#182): --phasetype selects a single deploy phase type, the rest are skipped.
+            //https://github.com/f2calv/yamlizr/issues/182
+            var skipped = environment.DeployPhases.Count(p => p.PhaseType != _phaseType);
+            if (skipped > 0)
+                _warnings.Add($"stage '{environment.Name}' has {skipped} deploy phase(s) that are not {_phaseType} and are not converted, see https://github.com/f2calv/yamlizr/issues/182");
             var j = 0;
             foreach (var phase in environment.DeployPhases.Where(p => p.PhaseType == _phaseType).OrderBy(p => p.Rank))
             {
@@ -244,13 +312,15 @@ public class YamlPipelineGenerator
                         steps.AddRange(GenSteps(task));
                 if (steps.IsNullOrEmpty()) continue;
                 var deploymentInput = phase.GetDeploymentInput();
+                //a classic deploy phase can have no name, which used to throw from Sanitize().Replace()
+                var phaseName = string.IsNullOrWhiteSpace(phase.Name) ? $"Phase {j + 1}" : phase.Name;
                 var job = new Job
                 {
                     cancelTimeoutInMinutes = deploymentInput.JobCancelTimeoutInMinutes,
                     condition = GenCondition(deploymentInput.Condition),
                     dependsOn = string.IsNullOrWhiteSpace(jobName) ? null : new[] { jobName },
-                    displayName = phase.Name,
-                    job = duplicatePhaseNames ? $"{phase.Name.Sanitize().Replace(" ", "_")}_{j}" : phase.Name.Sanitize().Replace(" ", "_"),
+                    displayName = phaseName,
+                    job = duplicatePhaseNames ? $"{phaseName.Sanitize().Replace(" ", "_")}_{j}" : phaseName.Sanitize().Replace(" ", "_"),
                     steps = new List<Step>(steps).ToArray(),
                     timeoutInMinutes = deploymentInput.TimeoutInMinutes,
                 };
@@ -274,8 +344,12 @@ public class YamlPipelineGenerator
     private List<Step> GenSteps(Guid Id, string displayName, string semver, IDictionary<string, string> inputs, IDictionary<string, string> env,
         string condition, bool continueOnError, int timeoutInMinutes, Dictionary<string, string> parameters = null)
     {
-        var version = SemVersion.Parse(semver.Replace(".*", ".0"), SemVersionStyles.OptionalPatch).Major;
-        if (_taskMap.TryGetValue(Id, out var taskObjs) && taskObjs.TryGetValue((int)version, out var taskObj))
+        if (!TryParseMajorVersion(semver, out var version))
+        {
+            _warnings.Add($"step '{displayName}' (task {Id}) has an unusable version '{semver}' and was not converted");
+            return [];
+        }
+        if (_taskMap.TryGetValue(Id, out var taskObjs) && taskObjs.TryGetValue(version, out var taskObj))
             return new List<Step>
             {
                 new Step
@@ -290,12 +364,20 @@ public class YamlPipelineGenerator
                     timeoutInMinutes = timeoutInMinutes,
                 }
             };
-        var template = GetOrCreateTaskGroupTemplate() ?? new Template { steps = Array.Empty<Step>() };
+        var template = GetOrCreateTaskGroupTemplate();
+        if (template is null)
+        {
+            //Neither an installed task nor a known task group, e.g. the extension has since been
+            //uninstalled. Previously this fell through to a Template with a null taskGroup and threw
+            //an NRE, see https://github.com/f2calv/yamlizr/issues/177
+            _warnings.Add($"step '{displayName}' references task or task group {Id} v{version}, which is not installed in this organisation, and was not converted");
+            return [];
+        }
         return _inlineTaskGroups ? new List<Step>(template.steps) : GetSteps(template, inputs);
 
         Template GetOrCreateTaskGroupTemplate()
         {
-            var key = new TaskGroupVersion(Id, (int)version);
+            var key = new TaskGroupVersion(Id, version);
             if (_taskGroupTemplateMap.TryGetValue(key, out var template))
                 return template;
             else
@@ -396,5 +478,16 @@ public class YamlPipelineGenerator
                 inputs[key] = input.DefaultValue;
         }
         return new List<Step> { new Step { template = $"../{_templatesFolder}/{filename}", parameters = inputs.IsNullOrEmpty() ? null : inputs } };
+    }
+
+    /// <summary>Reads the major version from a classic task version spec such as <c>2.*</c>.</summary>
+    static bool TryParseMajorVersion(string semver, out int major)
+    {
+        major = 0;
+        if (string.IsNullOrWhiteSpace(semver)) return false;
+        if (!SemVersion.TryParse(semver.Replace(".*", ".0"), SemVersionStyles.OptionalPatch, out var version)) return false;
+        if (version.Major < int.MinValue || version.Major > int.MaxValue) return false;
+        major = (int)version.Major;
+        return true;
     }
 }

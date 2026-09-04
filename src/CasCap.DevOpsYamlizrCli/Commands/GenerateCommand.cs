@@ -3,32 +3,36 @@ using CasCap.Common.Extensions;
 using CasCap.Models;
 using CasCap.Utilities;
 using Figgle.Fonts;
-using McMaster.Extensions.CommandLineUtils;
-using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Microsoft.TeamFoundation.Build.WebApi;
 using Microsoft.VisualStudio.Services.ReleaseManagement.WebApi;
 using ShellProgressBar;
 using System.Collections.Concurrent;
-using System.ComponentModel.DataAnnotations;
-using System.Diagnostics;
 
 namespace CasCap.Commands;
 
 [Command(Description = "Generate Azure DevOps YAML pipelines from classic definitions.")]
 class GenerateCommand : CommandBase
 {
-    public GenerateCommand(ILogger<GenerateCommand> logger, ILoggerFactory loggerFactory, IConsole console)
-        : base(logger, loggerFactory, console) { }
+    private readonly IOptions<AzureDevOpsOptions> _azureDevOpsOptions;
 
-    [Required]
-    [Option("-pat", Description = "Azure DevOps PAT (Personal Access Token).")]
+    public GenerateCommand(
+        ILogger<GenerateCommand> logger,
+        IOptions<AzureDevOpsOptions> azureDevOpsOptions,
+        ILoggerFactory loggerFactory,
+        IConsole console
+        )
+        : base(logger, loggerFactory, console)
+    {
+        _azureDevOpsOptions = azureDevOpsOptions;
+    }
+
+    [Option("-pat|--token", Description = "Azure DevOps Personal Access Token, or a pipeline access token e.g. $(System.AccessToken).")]
     public string PAT { get; }
 
-    [Required]
     [Option("-org|--organisation", Description = "Azure DevOps Organisation Uri.")]
     public string organisationUri { get; }
 
-    [Required]
     [Option("-proj|--project", Description = "Azure DevOps Project Name.")]
     public string project { get; }
 
@@ -41,7 +45,7 @@ class GenerateCommand : CommandBase
     [Option("--phasetype", Description = "Filter deployment phases [default: AgentBasedDeployment]")]
     public DeployPhaseTypes phaseType { get; set; } = DeployPhaseTypes.AgentBasedDeployment;
 
-    [Option("--parallelism", Description = "Parallel execution mode (work in progress) [default: false]")]
+    [Option("--parallelism", Description = "Generate pipelines in parallel [default: false]")]
     public bool parallelism { get; }
 
     [Option("--inline", Description = "Inline taskgroup steps [default: false]")]
@@ -57,14 +61,28 @@ class GenerateCommand : CommandBase
     {
         if (gitHubActions) inlineTaskGroups = true;//github actions don't support templates
 
-        if (string.IsNullOrWhiteSpace(PAT) || (PAT.Trim().Length != 52 && PAT.Trim().Length != 84))
+        //a command line option always wins over configuration, which wins over the pipeline environment
+        var accessToken = FirstNonEmpty(PAT, _azureDevOpsOptions.Value.PAT, Environment.GetEnvironmentVariable("SYSTEM_ACCESSTOKEN"));
+        var organisationValue = FirstNonEmpty(organisationUri, _azureDevOpsOptions.Value.OrganisationUri, Environment.GetEnvironmentVariable("SYSTEM_COLLECTIONURI"));
+        var projectName = FirstNonEmpty(project, _azureDevOpsOptions.Value.Project, Environment.GetEnvironmentVariable("SYSTEM_TEAMPROJECT"));
+
+        //Note: the token is deliberately not length-checked, see https://github.com/f2calv/yamlizr/issues/181
+        if (string.IsNullOrWhiteSpace(accessToken))
         {
-            _logger.LogError($"{nameof(PAT)} missing or invalid!");
+            _logger.LogError("{ClassName} no access token supplied, pass --token or set {ConfigurationKey}",
+                nameof(GenerateCommand), $"{AzureDevOpsOptions.ConfigurationSectionName}:{nameof(AzureDevOpsOptions.PAT)}");
             return 1;
         }
-        if (string.IsNullOrWhiteSpace(organisationUri))
+        if (!Uri.TryCreate(organisationValue, UriKind.Absolute, out var organisation))
         {
-            _logger.LogError($"{nameof(organisationUri)} missing or invalid!");
+            _logger.LogError("{ClassName} organisation must be an absolute Uri, e.g. https://dev.azure.com/myorg, but was {OrganisationUri}",
+                nameof(GenerateCommand), organisationValue);
+            return 1;
+        }
+        if (string.IsNullOrWhiteSpace(projectName))
+        {
+            _logger.LogError("{ClassName} no project supplied, pass --project or set {ConfigurationKey}",
+                nameof(GenerateCommand), $"{AzureDevOpsOptions.ConfigurationSectionName}:{nameof(AzureDevOpsOptions.Project)}");
             return 1;
         }
 
@@ -93,10 +111,10 @@ class GenerateCommand : CommandBase
         _console.ForegroundColor = fgColor;
         #endregion
 
-        if (!Connect(PAT, organisationUri))
+        if (!await ConnectAsync(accessToken, organisation))
             return 1;
 
-        if (!await GetProject(project))
+        if (!await GetProjectAsync(projectName))
             return 1;
 
         var rootPath = AppDomain.CurrentDomain.BaseDirectory;//or Directory.GetCurrentDirectory()?
@@ -116,7 +134,7 @@ class GenerateCommand : CommandBase
         buildDefinitionReferences = await _buildClient.GetDefinitionsAsync(_project.Id);
         pbar.Tick($"{buildDefinitionReferences.Count} build definition reference(s) retrieved.");
         pbar.Dispose();
-        buildDefinitions = new List<BuildDefinition>(buildDefinitionReferences.Count);
+        buildDefinitions = new ConcurrentBag<BuildDefinition>();
 
         pbar = new ProgressBar(1, $"Loading release definitions...", pbarOptions);
         releaseDefinitions = await _releaseClient.GetReleaseDefinitionsAsync(_project.Id);
@@ -131,7 +149,7 @@ class GenerateCommand : CommandBase
         var taskGroupTemplateMap = new ConcurrentDictionary<TaskGroupVersion, Template>();
 
         pbar = new ProgressBar(1, $"Loading extensions...", pbarOptions);
-        var tasks = await _apiSvc.GetAllExtensions(organisationUri);
+        var tasks = await _apiSvc.GetAllExtensions(organisation.AbsoluteUri.TrimEnd('/'));
         foreach (var task in tasks)
             task.inputMap = task.inputs.ToDictionary(k => k.name, v => v);
         pbar.Tick($"{tasks.Count} installed extension(s) retrieved.");
@@ -154,11 +172,10 @@ class GenerateCommand : CommandBase
         pbar.Dispose();
         var variableGroupMap = variableGroups.ToDictionary(k => k.Id, v => v);
 
-        pbar.Dispose();
-
         //new-up collection to store build/release definitions and pipelines
-        var results = new List<(BuildDefinition buildDefinition, ReleaseDefinition releaseDefinition, Pipeline pipeline)>();
-        var errors = new List<string>();
+        var results = new ConcurrentBag<(BuildDefinition buildDefinition, ReleaseDefinition releaseDefinition, Pipeline pipeline)>();
+        var errors = new ConcurrentQueue<string>();
+        var warnings = new ConcurrentQueue<string>();
 
         //1) load all Designer build definitions
         if (!buildDefinitionReferences.IsNullOrEmpty())
@@ -175,19 +192,8 @@ class GenerateCommand : CommandBase
             pbar = new ProgressBar(buildDefinitionReferences.Count, $"Retrieving {buildDefinitionReferences.Count} full build definition reference(s)...", pbarOptions) { EstimatedDuration = TimeSpan.FromMilliseconds(buildDefinitionReferences.Count * 100) };
 
             var processedDefinitionCount = 0;
-            if (parallelism || 1 == 1)//always parallel as this is pretty solid...
-#if NET6_0_OR_GREATER
-                await Parallel.ForEachAsync(buildDefinitionReferences, async (definitionReference, token) =>
-                {
-                    if (token.IsCancellationRequested) return;
-                    await ProcessDefinition(definitionReference);
-                });
-#else
-                await buildDefinitionReferences.ForEachAsyncSemaphore(definitionReference => ProcessDefinition(definitionReference));
-#endif
-            else
-                foreach (var definitionReference in buildDefinitionReferences)
-                    await ProcessDefinition(definitionReference);
+            await Parallel.ForEachAsync(buildDefinitionReferences, async (definitionReference, token) =>
+                await ProcessDefinition(definitionReference));
 
             pbar.Dispose();
 
@@ -201,7 +207,7 @@ class GenerateCommand : CommandBase
                         buildDefinitions.Add(build);
                 }
                 else
-                    errors.Add($"Retrieval of build definition id {definitionReference.Id} '{definitionReference.Name}' failed");
+                    errors.Enqueue($"Retrieval of build definition id {definitionReference.Id} '{definitionReference.Name}' failed");
 
                 Interlocked.Increment(ref processedDefinitionCount);
                 pbar.Tick(processedDefinitionCount, $"Retrieved {processedDefinitionCount} of {buildDefinitionReferences.Count} full build definition(s).");
@@ -243,8 +249,10 @@ class GenerateCommand : CommandBase
                     );
 
                 var pipeline = generator.GenPipeline();
+                foreach (var warning in generator.Warnings)
+                    warnings.Enqueue($"build definition id {buildDefinition.Id} '{buildDefinition.Name}': {warning}");
                 if (pipeline is null)
-                    errors.Add($"Processing build definition id {buildDefinition.Id} '{buildDefinition.Name}' failed");
+                    errors.Enqueue($"Processing build definition id {buildDefinition.Id} '{buildDefinition.Name}' failed");
                 else
                     results.Add((buildDefinition, null, pipeline));
 
@@ -270,15 +278,8 @@ class GenerateCommand : CommandBase
 
             var processedDefinitionCount = 0;
             if (parallelism)
-#if NET6_0_OR_GREATER
                 await Parallel.ForEachAsync(releaseDefinitions, async (releaseDefinition, token) =>
-                {
-                    if (token.IsCancellationRequested) return;
-                    await ProcessDefinition(releaseDefinition);
-                });
-#else
-                await releaseDefinitions.ForEachAsyncSemaphore(releaseDefinition => ProcessDefinition(releaseDefinition));
-#endif
+                    await ProcessDefinition(releaseDefinition));
             else
                 foreach (var releaseDefinition in releaseDefinitions)
                     await ProcessDefinition(releaseDefinition);
@@ -302,8 +303,10 @@ class GenerateCommand : CommandBase
                     );
 
                 var pipeline = generator.GenPipeline();
+                foreach (var warning in generator.Warnings)
+                    warnings.Enqueue($"release definition id {releaseDefinition.Id} '{releaseDefinition.Name}': {warning}");
                 if (pipeline is null)
-                    errors.Add($"Processing release definition id {releaseDefinition.Id} '{releaseDefinition.Name}' failed (generated pipeline is null)");
+                    errors.Enqueue($"Processing release definition id {releaseDefinition.Id} '{releaseDefinition.Name}' failed (generated pipeline is null)");
                 else
                     results.Add((null, releaseDefinition, pipeline));
 
@@ -314,7 +317,9 @@ class GenerateCommand : CommandBase
             }
         }
 
-        //todo: 4) construct multi-stage pipelines by pre-pending build stage onto release environment stages, connecting the two definitions via the Azure DevOps artifact
+        //TODO(#182): construct multi-stage pipelines by pre-pending the build stage onto the release
+        //environment stages, connecting the two definitions via the Azure DevOps artifact.
+        //https://github.com/f2calv/yamlizr/issues/182
 
         //new-up Sam Smith's library
         //https://github.com/samsmithnz/AzurePipelinesToGitHubActionsConverter
@@ -337,19 +342,7 @@ class GenerateCommand : CommandBase
             pbar = new ProgressBar(definitions.Count, $"Persisting {definitions.Count} build pipeline(s) to disk{(gitHubActions ? " with GitHub Actions conversion" : string.Empty)}...", pbarOptions) { EstimatedDuration = TimeSpan.FromMilliseconds(releaseDefinitions.Count * 100) };
 
             var processedDefinitionCount = 0;
-            if (parallelism || 1 == 1)//always parallel as this is pretty solid...
-#if NET6_0_OR_GREATER
-                await Parallel.ForEachAsync(definitions, async (result, token) =>
-                {
-                    if (token.IsCancellationRequested) return;
-                    await ProcessDefinition(result);
-                });
-#else
-                await definitions.ForEachAsyncSemaphore(result => ProcessDefinition(result));
-#endif
-            else
-                foreach (var result in definitions)
-                    await ProcessDefinition(result);
+            await Parallel.ForEachAsync(definitions, async (result, token) => await ProcessDefinition(result));
 
             pbar.Dispose();
             _console.WriteLine();//for some reason the progressbar gets corrupted so temporarily add blank line...
@@ -380,19 +373,7 @@ class GenerateCommand : CommandBase
             pbar = new ProgressBar(definitions.Count, $"Persisting {definitions.Count} release pipeline(s) to disk{(gitHubActions ? " with GitHub Actions conversion" : string.Empty)}...", pbarOptions) { EstimatedDuration = TimeSpan.FromMilliseconds(releaseDefinitions.Count * 100) };
 
             var processedDefinitionCount = 0;
-            if (parallelism || 1 == 1)//always parallel as this is pretty solid...
-#if NET6_0_OR_GREATER
-                await Parallel.ForEachAsync(definitions, async (result, token) =>
-                {
-                    if (token.IsCancellationRequested) return;
-                    await ProcessDefinition(result);
-                });
-#else
-                await definitions.ForEachAsyncSemaphore(result => ProcessDefinition(result));
-#endif
-            else
-                foreach (var result in definitions)
-                    await ProcessDefinition(result);
+            await Parallel.ForEachAsync(definitions, async (result, token) => await ProcessDefinition(result));
 
             pbar.Dispose();
             _console.WriteLine();//for some reason the progressbar gets corrupted so temporarily add blank line...
@@ -413,7 +394,7 @@ class GenerateCommand : CommandBase
             var count = 0;
             if (pipeline is null)
             {
-                errors.Add($"definition id {Id} '{Name}' cannot be YAML'ised at this time...");
+                errors.Enqueue($"definition id {Id} '{Name}' cannot be YAML'ised at this time...");
                 return count;
             }
             var azureDevOpsYAML = pipeline.ToString();
@@ -434,9 +415,9 @@ class GenerateCommand : CommandBase
                 }
                 catch (Exception ex)
                 {
-                    errors.Add($"definition id {Id} '{Name}' GitHub Action conversion failed");
-                    Debug.WriteLine(ex.Message);
-                    //throw ex;
+                    errors.Enqueue($"definition id {Id} '{Name}' GitHub Action conversion failed");
+                    _logger.LogWarning(ex, "{ClassName} GitHub Actions conversion failed for definition id {DefinitionId}",
+                        nameof(GenerateCommand), Id);
                 }
             return count;
         }
@@ -460,6 +441,13 @@ class GenerateCommand : CommandBase
             _console.WriteLine($" done.");
         }
 
+        if (!warnings.IsNullOrEmpty())
+        {
+            _console.ForegroundColor = ConsoleColor.Yellow;
+            _console.WriteLine($"{warnings.Count} classic construct(s) could not be converted and are missing from the generated YAML;");
+            foreach (var warning in warnings)
+                _console.WriteLine($"- {warning}");
+        }
         if (!errors.IsNullOrEmpty())
         {
             _console.ForegroundColor = ConsoleColor.Red;
@@ -474,4 +462,7 @@ class GenerateCommand : CommandBase
 
         return 0;
     }
+
+    static string FirstNonEmpty(params string[] values)
+        => Array.Find(values, p => !string.IsNullOrWhiteSpace(p));
 }

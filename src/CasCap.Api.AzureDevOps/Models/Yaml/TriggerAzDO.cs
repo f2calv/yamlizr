@@ -1,6 +1,4 @@
-﻿using AzurePipelinesToGitHubActionsConverter.Core.AzurePipelines;
-
-namespace CasCap.Models;
+﻿namespace CasCap.Models;
 
 public class TriggerAzDO : Trigger
 {

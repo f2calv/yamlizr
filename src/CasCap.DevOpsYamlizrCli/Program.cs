@@ -1,37 +1,46 @@
 ﻿using CasCap.Commands;
-using McMaster.Extensions.CommandLineUtils;
+using CasCap.Models;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Hosting;
+using System.Reflection;
 
 namespace CasCap;
 
-[Command("yamlizr")]
+/// <summary>Entry point and root command for the yamlizr command line interface.</summary>
+[Command(Name = "yamlizr", Description = "Azure DevOps Classic Designer-to-YAML pipeline conversion tool.")]
+[HelpOption("--help")]
+[VersionOptionFromMember("--version", MemberName = nameof(GetVersion))]
 [Subcommand(typeof(GenerateCommand))]
-class Program : CommandBase
+internal sealed class Program
 {
-    public Program(ILogger<Program> logger, ILoggerFactory loggerFactory, IConsole console) : base(logger, loggerFactory, console) { }
-
-    private static CommandLineApplication app;
-
-    public async static Task<int> Main(string[] args)
+    private static async Task<int> Main(string[] args)
     {
-        var services = new ServiceCollection()
-            .AddSingleton(PhysicalConsole.Singleton)
-            .AddLogging(logging =>
+        var host = new HostBuilder()
+            .ConfigureAppConfiguration((context, builder) =>
             {
-                logging.AddConsole();
-                logging.AddDebug();
+                //The tool runs from the global tool store, so the shipped defaults are loaded from the
+                //assembly directory while a per-project override is loaded from the working directory.
+                builder.SetBasePath(AppContext.BaseDirectory)
+                    .AddJsonFile("appsettings.json", optional: true, reloadOnChange: false)
+                    .AddJsonFile(Path.Combine(Directory.GetCurrentDirectory(), "appsettings.json"), optional: true, reloadOnChange: false)
+                    .AddUserSecrets<Program>(optional: true)
+                    .AddEnvironmentVariables();
             })
-            .BuildServiceProvider();
+            .ConfigureLogging((context, logging) =>
+            {
+                logging.AddConfiguration(context.Configuration.GetSection("Logging"));
+                logging.AddConsole();
+            })
+            .ConfigureServices((context, services) =>
+            {
+                services.AddSingleton(PhysicalConsole.Singleton);
+                services.Configure<AzureDevOpsOptions>(context.Configuration.GetSection(AzureDevOpsOptions.ConfigurationSectionName));
+            });
 
-        var result = 0;
         try
         {
-            app = new CommandLineApplication<Program>();
-            app.Conventions
-                .UseDefaultConventions()
-                .UseConstructorInjection(services);
-            result = await app.ExecuteAsync(args);
+            return await host.RunCommandLineApplicationAsync<Program>(args);
         }
         catch (CommandParsingException ex)
         {
@@ -41,18 +50,20 @@ class Program : CommandBase
             {
                 await Console.Error.WriteLineAsync();
                 await Console.Error.WriteLineAsync("Did you mean this?");
-                await Console.Error.WriteLineAsync("    " + uex.NearestMatches.First());
+                await Console.Error.WriteLineAsync($"    {uex.NearestMatches.First()}");
             }
 
-            result = -1;
+            return 1;
         }
-        return result;
     }
 
-    public async Task OnExecuteAsync()
+    private int OnExecute(CommandLineApplication app, IConsole console)
     {
-        await Task.Delay(0);
-        _console.WriteLine("Specify a subcommand...");
+        console.WriteLine("You must specify a subcommand.");
         app.ShowHelp();
+        return 1;
     }
+
+    private static string GetVersion()
+        => typeof(Program).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion ?? "unknown";
 }

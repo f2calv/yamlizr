@@ -1,6 +1,4 @@
-﻿using AzurePipelinesToGitHubActionsConverter.Core.AzurePipelines;
-using CasCap.Utilities;
-using YamlDotNet.Serialization;
+﻿using CasCap.Utilities;
 
 namespace CasCap.Models;
 

@@ -11,17 +11,27 @@
     <Description>Azure DevOps Classic-to-YAML Pipelines CLI</Description>
     <PackageTags>azure,devops,classic,yaml,pipelines,cli,codegen</PackageTags>
     <PackAsTool>true</PackAsTool>
+    <ToolCommandName>yamlizr</ToolCommandName>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="ConsoleTables" />
+    <None Include="README.md" Pack="true" PackagePath="\" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="Figgle" />
     <PackageReference Include="Figgle.Fonts" />
     <PackageReference Include="McMaster.Extensions.CommandLineUtils" />
     <PackageReference Include="McMaster.Extensions.Hosting.CommandLine" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.UserSecrets" />
     <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" />
     <PackageReference Include="Microsoft.Extensions.Hosting" />
     <PackageReference Include="ShellProgressBar" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="appsettings.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
   <ItemGroup>

@@ -1,253 +1,117 @@
-# Copilot Instructions for yamlizr
+# Copilot Instructions
 
-## Repository Overview
+<!-- Synced section ------------------------------------------------------
+	This file plus the shared files under `.github/instructions/` are kept
+	aligned across f2calv .NET repositories. The repo-specific
+	"Project-Specific Overrides" section below is excluded from sync.
+	Edit once, sync everywhere.
+	------------------------------------------------------------------- -->
 
-**yamlizr** is a .NET Global Tool that converts Azure DevOps Classic Designer Build/Release Definitions and Task Groups into YAML Pipeline or GitHub Actions equivalents. The tool uses the Azure DevOps .NET Client Libraries to pre-cache data and converts it into pipeline objects using YamlDotNet.
+## Instruction Files
 
-### Repository Details
+Detailed conventions live in scoped instruction files under `.github/instructions/`, auto-applied by file type:
 
-- **Type**: .NET Console Application (CLI tool) packaged as a NuGet global tool
-- **Size**: Small (~3.7 MB, ~126 files)
-- **Target Frameworks**: Multi-targeted for net8.0, net9.0, and net10.0
-- **Primary Language**: C# (19 source files)
-- **Solution Format**: Modern XML-based solution file (`yamlizr.slnx`)
-- **Runtime**: .NET 10.0.102 SDK is available
+| File | Applies to | Covers |
+| --- | --- | --- |
+| `csharp.instructions.md` | `**/*.cs` | C# / .NET style, XML docs, logging, performance, Web API |
+| `csharp.testing.instructions.md` | `**/*Tests/**/*.cs` | xUnit test structure, naming, theories, assertions |
+| `dotnet.instructions.md` | `**/*.csproj`, `*.slnx`, `Directory.*.props` | Central build/package config, solution format, SDK selection |
+| `github-actions.instructions.md` | workflows / `action.yml` | GitHub Actions naming, YAML, security, GitVersion |
+| `bash.instructions.md` | `**/*.sh` | Bash scripting structure, error handling, logging, testability |
+| `documentation.instructions.md` | `**/*.md` | README consistency and Mermaid diagrams |
+| `configuration.instructions.md` | `**/appsettings*.json` | Options/appsettings synchronization and secret safety |
 
-## Project Structure
+The conventions below always apply, regardless of the file being edited.
 
-### Main Projects
+## Copilot Workflow
 
-1. **CasCap.DevOpsYamlizrCli** - CLI tool (executable, packaged as global tool)
-   - Location: `src/CasCap.DevOpsYamlizrCli/`
-   - Entry Point: `Program.cs`
-   - Output: `yamlizr` command-line tool
+- **Test execution**: Never run tests automatically; they may be integration tests requiring an Azure DevOps organisation and a Personal Access Token. Always prompt (ideally with a visual yes/no button) before running any tests.
+- **Preserve git history during renames/moves**: When renaming or relocating files, first perform the rename/move (preferably via `git mv`), then make content edits to the file at its new path. Do not delete and recreate files when a rename or move is intended.
+- **Multi-repo commits**: When a single change spans multiple repositories, separate per-repository commit messages are acceptable (but not mandatory). Prefer them where the changes are disconnected, or where one repository should not know about the other.
+- **Build after refactoring**: After any refactoring, build the entire solution (not only the affected project) to catch compilation errors in dependent projects. When multiple solutions exist, prefer `yamlizr.Debug.slnx`.
 
-2. **CasCap.Api.AzureDevOps** - Core library
-   - Location: `src/CasCap.Api.AzureDevOps/`
-   - Contains: Models/, Services/, Utilities/
+## Public Repository Confidentiality
 
-3. **CasCap.Api.AzureDevOps.Tests** - Test project (xUnit)
-   - Location: `src/CasCap.Api.AzureDevOps.Tests/`
-   - Framework: xUnit with coverlet for code coverage
+- Treat every non-public repository's identity and contents as confidential, even when they appear in the local workspace, conversation context, diffs, logs, or tool output.
+- Never publish private repository names, URLs, owner/repository coordinates, branches, file paths, architecture, deployment details, or inferred existence in tracked files, commit messages, issues, pull request titles/descriptions/reviews/comments, release notes, workflow annotations, examples, or other public-facing content.
+- Describe required relationships generically (for example, "private GitOps repository" or "internal service") and supply private coordinates only through secrets, repository variables, or caller-provided values.
+- Before creating or updating public GitHub content, review the proposed text and metadata for private identifiers and implementation details.
 
-### Key Configuration Files
+## Repository Structure
 
-- **Root Directory**:
-  - `Directory.Build.props` - Common MSBuild properties for all projects
-  - `Directory.Packages.props` - Central Package Management (CPM) configuration
-  - `global.json` - .NET SDK configuration
-  - `GitVersion.yml` - Semantic versioning configuration
-  - `.editorconfig` - C# code style preferences
-  - `.pre-commit-config.yaml` - Pre-commit hooks configuration
+Every f2calv repository follows a consistent layout, regardless of language:
 
-- **CI/CD**:
-  - `.github/workflows/ci.yml` - Main CI workflow
-  - Uses reusable workflows from `f2calv/gha-workflows@v1`
+- Root files include `README.md`, `LICENSE`, `GitVersion.yml`, `.editorconfig`, `.gitattributes`, `.gitignore`, and `.pre-commit-config.yaml`.
+- Source code lives under `src/`.
+- Tooling lives in dot-prefixed folders such as `.github/`, `.scripts/`, `.devcontainer/`, `.docker/`, `.config/`, and `.vscode/`.
+- Additional documentation beyond the root `README.md` lives as Markdown under `docs/`.
+- `.editorconfig` is the source of truth for indentation, line endings, and analyzer or formatting rules.
+- `GitVersion.yml` in the root drives semantic-versioning rules.
 
-## Build & Test Instructions
+## Miscellaneous
 
-### Prerequisites
+- When detecting new conventions or patterns, add them to the appropriate `.github/instructions/*.instructions.md` file (or this file for cross-cutting workflow rules) and apply them retroactively where applicable.
+- Keep this file and the shared `.github/instructions/` files aligned with the common guidelines used by sibling .NET repositories.
 
-- .NET 8.0, 9.0, or 10.0 SDK (any will work due to multi-targeting)
-- No need to install pre-commit locally unless running linting
+---
 
-### Build Process
+## Project-Specific Overrides
 
-**IMPORTANT**: Always run these commands from the repository root directory (`/home/runner/work/yamlizr/yamlizr`).
+### Repository Purpose
 
-1. **Restore Dependencies** (run first):
+This repository is a .NET global tool named `yamlizr` which converts Azure DevOps Classic Designer
+Build and Release Definitions, and any Task Groups they reference, into their YAML Pipeline or
+GitHub Actions equivalent. It is published to NuGet as the `yamlizr` package.
 
-   ```bash
-   dotnet restore
-   ```
+It contains three projects:
 
-   - Duration: ~5-10 seconds
-   - Expected warnings: NU1903 warnings about System.Data.SqlClient vulnerability (these are known and can be ignored)
+| Project | Purpose |
+| --- | --- |
+| `CasCap.Api.AzureDevOps` | Library: Azure DevOps REST access, pipeline models, and the YAML generator |
+| `CasCap.DevOpsYamlizrCli` | The `yamlizr` global tool: command surface, console presentation, orchestration |
+| `CasCap.Api.AzureDevOps.Tests` | xUnit v3 tests running on `Microsoft.Testing.Platform` |
 
-2. **Build the Solution**:
+### Conversion Fidelity Boundary
 
-   ```bash
-   dotnet build
-   ```
+The tool is deliberately a blunt instrument: it emits as much YAML as it can and expects the user
+to review and edit the result. That does not license silent data loss.
 
-   - Duration: ~10-15 seconds
-   - Builds all 3 projects for all target frameworks (net8.0, net9.0, net10.0)
-   - Configuration: Debug (default) or Release
-   - Expected warnings: Same NU1903 warnings as restore
-   - Success criteria: "Build succeeded" with 0 errors
+- When a classic construct cannot be represented, record it and surface it in the run summary
+  rather than dropping it without trace.
+- Never emit YAML that looks complete but silently omits a step, a variable, a condition, or a
+  dependency.
+- Generated YAML is not "production ready" and the README must keep saying so.
 
-3. **Run Tests**:
+### Console Output
 
-   ```bash
-   dotnet test
-   ```
+- Console presentation is this tool's user interface and legitimately uses `IConsole`, tables and
+  progress bars. This is the single exception to the `csharp.instructions.md` rule against writing
+  to the console. It does not license `Console.WriteLine` or `Debug.WriteLine` for **diagnostics**,
+  which must still flow through `ILogger<T>`.
+- Never swallow an exception into `Debug.WriteLine`. Log it through `ILogger<T>` and report a
+  user-actionable message through `IConsole`.
+- Never call `Debugger.Break()` in shipped code or in tests.
 
-   - Duration: ~10-15 seconds
-   - Runs xUnit tests with code coverage via coverlet
-   - Currently: 1 test in the test project
-   - Success criteria: "Passed! - Failed: 0, Passed: 1, Skipped: 0"
+### Credential Handling
 
-4. **Clean Build Artifacts**:
-
-   ```bash
-   dotnet clean
-   ```
-
-   OR use the PowerShell script:
-
-   ```powershell
-   pwsh clean.ps1
-   ```
-
-   - Removes all bin/ and obj/ directories recursively
-
-### Build Sequence for Code Changes
-
-**ALWAYS follow this order**:
-
-1. `dotnet restore` - Required before building
-2. `dotnet build` - Build and check for compilation errors
-3. `dotnet test` - Verify tests pass
-4. Commit changes
-
-**Note**: Do not skip `dotnet restore` after modifying `.csproj` files or `Directory.Packages.props`.
-
-## CI/CD Pipeline
-
-### GitHub Actions Workflows
-
-The CI pipeline consists of two reusable workflows:
-
-1. **Lint Job** (`f2calv/gha-workflows/.github/workflows/lint.yml@v1`):
-   - Runs pre-commit hooks via Python
-   - Checks: XML, YAML, JSON5, large files, trailing whitespace, markdown formatting
-   - Pre-commit version: 3.7.1
-   - **Limitation**: Some hooks may fail locally due to network restrictions (e.g., gitlab.com access)
-
-2. **Build & Publish Job** (`f2calv/gha-workflows/.github/workflows/dotnet-publish-nuget.yml@v1`):
-   - Performs versioning using GitVersion
-   - Builds in Release configuration by default
-   - Executes tests (can be disabled with `execute-tests: false`)
-   - Publishes NuGet packages when on main branch
-   - Creates GitHub releases when appropriate
-
-### Triggers
-
-- Push to any branch except `preview/**` (ignoring LICENSE, README.md)
-- Pull requests to main branch
-- Manual workflow dispatch
-
-## Code Style & Conventions
-
-### C# Conventions (enforced via .editorconfig)
-
-- **Indentation**: 4 spaces
-- **Line endings**: LF (Unix-style)
-- **Braces**: Always use braces for control flow
-- **Namespaces**: Block-scoped (not file-scoped)
-- **var usage**: Prefer explicit types (`false` for all var preferences)
-- **Expression bodies**: Use for properties, accessors, lambdas; avoid for methods
-- **Naming**: PascalCase for types/members, interfaces start with "I"
-
-### Build Properties
-
-- **LangVersion**: C# 14.0
-- **Nullable**: Not enabled globally (per-project basis)
-- **ImplicitUsings**: Enabled
-- **Warnings**: IDE1006, IDE0079, IDE0042, CS0162, S125, NETSDK1233 are suppressed
-
-## Known Issues & Workarounds
-
-### Package Vulnerabilities
-
-- **System.Data.SqlClient 4.8.5**: Known high severity vulnerability (GHSA-98g6-xh36-x2p7)
-- This is a transitive dependency from Azure DevOps client libraries
-- **Workaround**: Currently accepted as known issue; not blocking builds
-
-### Pre-commit Hooks
-
-- Pre-commit hooks reference gitlab.com which may be blocked in some environments
-- **Workaround**: CI runs pre-commit in isolated Python venv; local pre-commit runs may fail due to network restrictions
-
-### Multi-Targeting
-
-- Projects target net8.0, net9.0, and net10.0
-- NETSDK1233 warning is suppressed for .NET 10 support
-- All frameworks must build successfully for CI to pass
-
-## Dependencies
-
-### Key External Dependencies
-
-- Azure DevOps .NET Client Libraries (Microsoft.TeamFoundation.*, Microsoft.VisualStudio.Services.*)
-- YamlDotNet - YAML serialization
-- AzurePipelinesToGitHubActionsConverter.Core - GitHub Actions conversion
-- McMaster.Extensions.CommandLineUtils - CLI framework
-- xUnit - Testing framework
-- coverlet - Code coverage
-
-### Package Management
-
-- Uses Central Package Management (CPM) via `Directory.Packages.props`
-- All package versions are defined centrally
-- Projects reference packages without version attributes
-
-## Validation Steps
-
-### Before Committing
-
-1. Ensure code builds: `dotnet build`
-2. Ensure tests pass: `dotnet test`
-3. Check for code style issues (local .editorconfig compliance)
-4. Review changes against existing conventions
-
-### CI Will Validate
-
-- Pre-commit hooks (YAML, JSON, markdown, file sizes, whitespace)
-- Multi-framework builds (net8.0, net9.0, net10.0)
-- All tests pass
-- NuGet package creation succeeds
-
-## Additional Notes
-
-### Solution File
-
-- Uses modern XML solution format (`.slnx`) instead of legacy `.sln`
-- Contains 3 projects and solution items folder
-- Visual Studio 2022 and later support this format
-
-### Tool Usage
-
-The CLI tool is intended to:
-
-- Connect to Azure DevOps using a PAT token
-- Download and convert Build/Release definitions to YAML
-- Output can be Azure Pipelines or GitHub Actions format
-- See README.md for full CLI usage documentation
-
-### Architecture
-
-- **CLI Layer**: Commands, parsing, progress bars
-- **API Layer**: Azure DevOps integration, model conversion
-- **Tests**: Configuration-based testing with user secrets support
-
-## Quick Reference
-
-```bash
-# Full build validation sequence
-cd /home/runner/work/yamlizr/yamlizr
-dotnet restore
-dotnet build
-dotnet test
-
-# Expected output: Build succeeded with ~12 NU1903 warnings (safe to ignore)
-# Expected tests: 1 passed
-
-# Clean artifacts
-dotnet clean
-
-# Build for specific configuration
-dotnet build -c Release
-```
-
-**Trust these instructions** - they have been validated against the actual repository. Only perform additional searches if you encounter unexpected errors or need information not covered here.
+- The only credential is an Azure DevOps Personal Access Token, or an OAuth access token issued to
+  a pipeline's build service identity. Both are supplied by the caller; the tool must never persist
+  either one.
+- Do not validate a credential by its length or shape. A pipeline-issued access token is a
+  different length from a PAT, and Azure DevOps is free to change both. Validate by attempting the
+  call and reporting the failure.
+- Never log, echo, or embed a PAT, an access token, an `Authorization` header, or the Base64
+  basic-auth string derived from a token — including in progress output, error text, exception
+  detail, and generated YAML.
+- Never write a real organisation name, project name, or definition name into a tracked example.
+
+### Known Transitive Advisories
+
+The Azure DevOps client libraries drag in packages that carry published advisories. `System.Drawing.Common`
+5.0.0 (GHSA-rxg9-xrhp-64gj, critical) raises `NU1904` and `System.Security.Cryptography.Xml` 5.0.0
+(GHSA-vh55-786g-wjwj, moderate) raises `NU1902`. There is no direct reference to remove and no upstream
+release that drops them.
+
+These warnings are deliberately **not** added to `NoWarn`. Suppressing a critical advisory hides the
+risk without reducing it, and the warning is the only signal that an upstream fix has landed. Re-check
+on every dependency bump.

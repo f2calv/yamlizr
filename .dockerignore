@@ -1,0 +1,16 @@
+# Deny everything, then explicitly allow only what the build needs. Keeping the
+# build context minimal speeds up `docker build` and stops unrelated file edits
+# (docs, IDE state, .git) from invalidating cached layers. It also means a new
+# kind of local-only file cannot leak into the image by default.
+*
+
+!Directory.Build.props
+!Directory.Packages.props
+!icon.png
+!src/**/*.csproj
+!src/**/*.cs
+!src/**/appsettings*.json
+
+# The test project is never part of the runtime image. Excluding it keeps test
+# edits from busting the restore layer cache.
+**/*.Tests

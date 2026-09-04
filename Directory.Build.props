@@ -4,13 +4,8 @@
     <RootNamespace>CasCap</RootNamespace>
     <LangVersion>14.0</LangVersion>
     <ImplicitUsings>enable</ImplicitUsings>
-    <!--nullable we enable on a per project basis-->
-    <!--<Nullable>enable</Nullable>-->
+    <!--Nullable is not yet enabled, see https://github.com/f2calv/yamlizr/issues/365-->
     <UserSecretsId>b08b24aa-70ab-4ecd-aef9-cce6d49054ec</UserSecretsId>
-  </PropertyGroup>
-
-  <PropertyGroup>
-    <Author>Alex Vincent</Author>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -39,9 +34,12 @@
     <!-- IDE0079 - Remove unnecessary suppression -->
     <!-- IDE0042 - Variable declaration can be deconstructed -->
     <!-- CS0162 - Unreachable code detected. -->
+    <!-- CS1574 - XML comment has cref attribute that could not be resolved. -->
     <!-- S125 - Remove this commented out code. -->
     <!-- NETSDK1233 - Targeting .NET 10.0 or higher in Visual Studio 2022 XX.XX is not supported. -->
-    <NoWarn>IDE1006;IDE0079;IDE0042;CS0162;S125;NETSDK1233</NoWarn>
+    <!-- Note: NU190x NuGet audit warnings are deliberately NOT suppressed - see the known
+         transitive advisories section of .github/copilot-instructions.md. -->
+    <NoWarn>IDE1006;IDE0079;IDE0042;CS0162;CS1574;S125;NETSDK1233</NoWarn>
   </PropertyGroup>
 
   <PropertyGroup>

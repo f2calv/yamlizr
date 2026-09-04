@@ -1,5 +1,4 @@
 ﻿using YamlDotNet.Core;
-using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.EventEmitters;
 
 namespace CasCap.Utilities;

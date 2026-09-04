@@ -20,6 +20,9 @@ on:
     branches-ignore:
       - "preview/**"
     paths-ignore:
+      - .github/copilot-instructions.md
+      - .github/dependabot.yml
+      - .github/instructions/**
       - LICENSE
       - README.md
   pull_request:
@@ -59,12 +62,29 @@ jobs:
           #The nuget.org username matches the GitHub owner. If they ever diverge this must
           #become a literal, or the token exchange fails with an opaque 401.
           nuget-user: ${{ github.repository_owner }}
-          configuration: ${{ inputs.configuration }}
+          configuration: ${{ inputs.configuration || 'Release' }}
           push-preview: ${{ inputs.push-preview }}
           version: ${{ needs.versioning.outputs.version }}
+          solution-name: yamlizr.Release.slnx
+          #Integration tests need a live Azure DevOps organisation and a token, the rest are credential-free.
+          dotnet-test-args: --filter-not-trait Category=Integration
+
+  image:
+    uses: f2calv/gha-workflows/.github/workflows/container-image-build.yml@v1
+    needs: [versioning, build]
+    permissions:
+      packages: write #push to ghcr.io
+      contents: read #checkout
+    with:
+      registry: ghcr.io/${{ github.repository_owner }}
+      tag: ${{ needs.versioning.outputs.version }}
+      tag-major: ${{ needs.versioning.outputs.major }}
+      tag-minor: ${{ needs.versioning.outputs.minor }}
+      platform: linux/amd64,linux/arm64,linux/arm/v7
+      push-image: ${{ github.ref_name == github.event.repository.default_branch }}
 
   release:
-    needs: [versioning, build]
+    needs: [versioning, build, image]
     if: needs.versioning.outputs.release-exists == 'false'
       && (github.ref == format('refs/heads/{0}', github.event.repository.default_branch) || inputs.push-preview == true)
     uses: f2calv/gha-workflows/.github/workflows/gha-release-versioning.yml@v1
