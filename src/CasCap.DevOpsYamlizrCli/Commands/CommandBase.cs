@@ -8,7 +8,6 @@ using Microsoft.VisualStudio.Services.ReleaseManagement.WebApi.Clients;
 using Microsoft.VisualStudio.Services.WebApi;
 using ShellProgressBar;
 using System.Collections.Concurrent;
-using System.Diagnostics;
 
 namespace CasCap.Commands;
 
@@ -70,7 +69,7 @@ public abstract class CommandBase
         CollapseWhenFinished = true,
     };
 
-    protected async Task<bool> GetProject(string project)
+    protected async Task<bool> GetProjectAsync(string project, CancellationToken cancellationToken = default)
     {
         _console.Write($"Retrieving Azure DevOps Project '{project}' ... ");
         try
@@ -79,36 +78,46 @@ public abstract class CommandBase
         }
         catch (Exception ex)
         {
-            Debug.WriteLine(ex);
+            _console.WriteLine();
+            _logger.LogError(ex, "{ClassName} could not retrieve project {Project}", nameof(CommandBase), project);
+            _console.WriteLine($"Unable to retrieve project '{project}': {ex.Message}");
+            return false;
         }
         if (_project is not null)
             _console.WriteLine($" retrieved :)");
         else
-            _console.Write($" not found :(");
+            _console.WriteLine($" not found :(");
         return _project is not null;
     }
 
-    protected bool Connect(string PAT, string organisationUri)
+    /// <remarks>
+    /// The credential is validated by connecting, never by inspecting its length. A pipeline-issued
+    /// access token is a different length from a Personal Access Token - see
+    /// <see href="https://github.com/f2calv/yamlizr/issues/181" />.
+    /// </remarks>
+    protected async Task<bool> ConnectAsync(string accessToken, Uri organisationUri, CancellationToken cancellationToken = default)
     {
-        var uri = new Uri(organisationUri);
-        _console.Write($"Connecting to DevOps REST API, {uri} ...");
+        _console.Write($"Connecting to Azure DevOps REST API, {organisationUri} ...");
         try
         {
-            _credentials = new VssBasicCredential(string.Empty, PAT);
-            _connection = new VssConnection(uri, _credentials);
+            _credentials = new VssBasicCredential(string.Empty, accessToken);
+            _connection = new VssConnection(organisationUri, _credentials);
+            await _connection.ConnectAsync(cancellationToken);
             _projectClient = _connection.GetClient<ProjectHttpClient>();
             _buildClient = _connection.GetClient<BuildHttpClient>();
             _releaseClient = _connection.GetClient<ReleaseHttpClient>();
             _taskAgentClient = _connection.GetClient<TaskAgentHttpClient>();
-            _apiSvc = new ApiService(_loggerFactory.CreateLogger<ApiService>(), PAT);
+            _apiSvc = new ApiService(_loggerFactory.CreateLogger<ApiService>(), accessToken);
         }
         catch (Exception ex)
         {
-            Debug.WriteLine(ex);
-            _console.WriteLine($"Unable to authenticate with DevOps REST API :(");
+            _console.WriteLine();
+            _logger.LogError(ex, "{ClassName} could not authenticate against {OrganisationUri}", nameof(CommandBase), organisationUri);
+            _console.WriteLine($"Unable to authenticate with the Azure DevOps REST API: {ex.Message}");
+            _console.WriteLine("Check the organisation Uri, and that the token grants Build (Read), Release (Read), Task Groups (Read) and Variable Groups (Read).");
             return false;
         }
-        Console.WriteLine($" connected :)");
+        _console.WriteLine($" connected :)");
         return true;
     }
 }

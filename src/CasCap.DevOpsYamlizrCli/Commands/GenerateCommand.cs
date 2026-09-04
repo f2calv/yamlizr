@@ -18,7 +18,7 @@ class GenerateCommand : CommandBase
         : base(logger, loggerFactory, console) { }
 
     [Required]
-    [Option("-pat", Description = "Azure DevOps PAT (Personal Access Token).")]
+    [Option("-pat|--token", Description = "Azure DevOps Personal Access Token, or a pipeline access token e.g. $(System.AccessToken).")]
     public string PAT { get; }
 
     [Required]
@@ -54,14 +54,16 @@ class GenerateCommand : CommandBase
     {
         if (gitHubActions) inlineTaskGroups = true;//github actions don't support templates
 
-        if (string.IsNullOrWhiteSpace(PAT) || (PAT.Trim().Length != 52 && PAT.Trim().Length != 84))
+        //Note: the token is deliberately not length-checked, see https://github.com/f2calv/yamlizr/issues/181
+        if (string.IsNullOrWhiteSpace(PAT))
         {
-            _logger.LogError($"{nameof(PAT)} missing or invalid!");
+            _logger.LogError("{ClassName} no access token supplied, pass one with -pat", nameof(GenerateCommand));
             return 1;
         }
-        if (string.IsNullOrWhiteSpace(organisationUri))
+        if (!Uri.TryCreate(organisationUri, UriKind.Absolute, out var organisation))
         {
-            _logger.LogError($"{nameof(organisationUri)} missing or invalid!");
+            _logger.LogError("{ClassName} organisation must be an absolute Uri, e.g. https://dev.azure.com/myorg, but was {OrganisationUri}",
+                nameof(GenerateCommand), organisationUri);
             return 1;
         }
 
@@ -90,10 +92,10 @@ class GenerateCommand : CommandBase
         _console.ForegroundColor = fgColor;
         #endregion
 
-        if (!Connect(PAT, organisationUri))
+        if (!await ConnectAsync(PAT, organisation))
             return 1;
 
-        if (!await GetProject(project))
+        if (!await GetProjectAsync(project))
             return 1;
 
         var rootPath = AppDomain.CurrentDomain.BaseDirectory;//or Directory.GetCurrentDirectory()?
