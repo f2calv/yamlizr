@@ -128,6 +128,8 @@ public class YamlPipelineGenerator
         if (phases.IsNullOrEmpty()) return null;
         var jobs = new List<Job>(phases.Count);
         var jobName = string.Empty;
+        //TODO(#368): inverted, this is true when the names DIFFER. Phases that all share one name get
+        //no suffix and so produce duplicate job identifiers. https://github.com/f2calv/yamlizr/issues/368
         var duplicatePhaseNames = phases.Select(p => p.Name).Distinct().Count() > 1;
         var j = 0;
         foreach (var phase in phases)
@@ -293,6 +295,8 @@ public class YamlPipelineGenerator
         {
             var jobName = string.Empty;
             var jobs = new List<Job>();
+            //TODO(#368): inverted as in GenBuildStage, and counted over every deploy phase rather than
+            //only those matching _phaseType. https://github.com/f2calv/yamlizr/issues/368
             var duplicatePhaseNames = environment.DeployPhases.Select(p => p.Name).Distinct().Count() > 1;
             //TODO(#182): --phasetype selects a single deploy phase type, the rest are skipped.
             //https://github.com/f2calv/yamlizr/issues/182

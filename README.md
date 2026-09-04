@@ -209,6 +209,7 @@ without a trace. Progress on closing these gaps is tracked in
 | Triggers other than continuous integration (pull request, scheduled, build completion) | Not converted. |
 | Steps referencing an uninstalled extension | Not converted; reported by name and task id. |
 | Stage or job settings on a single-stage or single-job definition | A lone stage or job is flattened into a bare step list, dropping stage-level variables and a non-default job condition. |
+| Phases that all share one name | Generated job identifiers collide, producing YAML that will not validate, see [issue #368](https://github.com/f2calv/yamlizr/issues/368). |
 | Combined build plus release multi-stage pipelines | Build and release definitions are emitted as separate files. |
 
 ### Known Issues
