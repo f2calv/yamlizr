@@ -8,7 +8,6 @@ using Microsoft.VisualStudio.Services.ReleaseManagement.WebApi;
 using ShellProgressBar;
 using System.Collections.Concurrent;
 using System.ComponentModel.DataAnnotations;
-using System.Diagnostics;
 
 namespace CasCap.Commands;
 
@@ -39,7 +38,7 @@ class GenerateCommand : CommandBase
     [Option("--phasetype", Description = "Filter deployment phases [default: AgentBasedDeployment]")]
     public DeployPhaseTypes phaseType { get; set; } = DeployPhaseTypes.AgentBasedDeployment;
 
-    [Option("--parallelism", Description = "Parallel execution mode (work in progress) [default: false]")]
+    [Option("--parallelism", Description = "Generate pipelines in parallel [default: false]")]
     public bool parallelism { get; }
 
     [Option("--inline", Description = "Inline taskgroup steps [default: false]")]
@@ -114,7 +113,7 @@ class GenerateCommand : CommandBase
         buildDefinitionReferences = await _buildClient.GetDefinitionsAsync(_project.Id);
         pbar.Tick($"{buildDefinitionReferences.Count} build definition reference(s) retrieved.");
         pbar.Dispose();
-        buildDefinitions = new List<BuildDefinition>(buildDefinitionReferences.Count);
+        buildDefinitions = new ConcurrentBag<BuildDefinition>();
 
         pbar = new ProgressBar(1, $"Loading release definitions...", pbarOptions);
         releaseDefinitions = await _releaseClient.GetReleaseDefinitionsAsync(_project.Id);
@@ -152,11 +151,9 @@ class GenerateCommand : CommandBase
         pbar.Dispose();
         var variableGroupMap = variableGroups.ToDictionary(k => k.Id, v => v);
 
-        pbar.Dispose();
-
         //new-up collection to store build/release definitions and pipelines
-        var results = new List<(BuildDefinition buildDefinition, ReleaseDefinition releaseDefinition, Pipeline pipeline)>();
-        var errors = new List<string>();
+        var results = new ConcurrentBag<(BuildDefinition buildDefinition, ReleaseDefinition releaseDefinition, Pipeline pipeline)>();
+        var errors = new ConcurrentQueue<string>();
 
         //1) load all Designer build definitions
         if (!buildDefinitionReferences.IsNullOrEmpty())
@@ -173,19 +170,8 @@ class GenerateCommand : CommandBase
             pbar = new ProgressBar(buildDefinitionReferences.Count, $"Retrieving {buildDefinitionReferences.Count} full build definition reference(s)...", pbarOptions) { EstimatedDuration = TimeSpan.FromMilliseconds(buildDefinitionReferences.Count * 100) };
 
             var processedDefinitionCount = 0;
-            if (parallelism || 1 == 1)//always parallel as this is pretty solid...
-#if NET6_0_OR_GREATER
-                await Parallel.ForEachAsync(buildDefinitionReferences, async (definitionReference, token) =>
-                {
-                    if (token.IsCancellationRequested) return;
-                    await ProcessDefinition(definitionReference);
-                });
-#else
-                await buildDefinitionReferences.ForEachAsyncSemaphore(definitionReference => ProcessDefinition(definitionReference));
-#endif
-            else
-                foreach (var definitionReference in buildDefinitionReferences)
-                    await ProcessDefinition(definitionReference);
+            await Parallel.ForEachAsync(buildDefinitionReferences, async (definitionReference, token) =>
+                await ProcessDefinition(definitionReference));
 
             pbar.Dispose();
 
@@ -199,7 +185,7 @@ class GenerateCommand : CommandBase
                         buildDefinitions.Add(build);
                 }
                 else
-                    errors.Add($"Retrieval of build definition id {definitionReference.Id} '{definitionReference.Name}' failed");
+                    errors.Enqueue($"Retrieval of build definition id {definitionReference.Id} '{definitionReference.Name}' failed");
 
                 Interlocked.Increment(ref processedDefinitionCount);
                 pbar.Tick(processedDefinitionCount, $"Retrieved {processedDefinitionCount} of {buildDefinitionReferences.Count} full build definition(s).");
@@ -242,7 +228,7 @@ class GenerateCommand : CommandBase
 
                 var pipeline = generator.GenPipeline();
                 if (pipeline is null)
-                    errors.Add($"Processing build definition id {buildDefinition.Id} '{buildDefinition.Name}' failed");
+                    errors.Enqueue($"Processing build definition id {buildDefinition.Id} '{buildDefinition.Name}' failed");
                 else
                     results.Add((buildDefinition, null, pipeline));
 
@@ -268,15 +254,8 @@ class GenerateCommand : CommandBase
 
             var processedDefinitionCount = 0;
             if (parallelism)
-#if NET6_0_OR_GREATER
                 await Parallel.ForEachAsync(releaseDefinitions, async (releaseDefinition, token) =>
-                {
-                    if (token.IsCancellationRequested) return;
-                    await ProcessDefinition(releaseDefinition);
-                });
-#else
-                await releaseDefinitions.ForEachAsyncSemaphore(releaseDefinition => ProcessDefinition(releaseDefinition));
-#endif
+                    await ProcessDefinition(releaseDefinition));
             else
                 foreach (var releaseDefinition in releaseDefinitions)
                     await ProcessDefinition(releaseDefinition);
@@ -301,7 +280,7 @@ class GenerateCommand : CommandBase
 
                 var pipeline = generator.GenPipeline();
                 if (pipeline is null)
-                    errors.Add($"Processing release definition id {releaseDefinition.Id} '{releaseDefinition.Name}' failed (generated pipeline is null)");
+                    errors.Enqueue($"Processing release definition id {releaseDefinition.Id} '{releaseDefinition.Name}' failed (generated pipeline is null)");
                 else
                     results.Add((null, releaseDefinition, pipeline));
 
@@ -335,19 +314,7 @@ class GenerateCommand : CommandBase
             pbar = new ProgressBar(definitions.Count, $"Persisting {definitions.Count} build pipeline(s) to disk{(gitHubActions ? " with GitHub Actions conversion" : string.Empty)}...", pbarOptions) { EstimatedDuration = TimeSpan.FromMilliseconds(releaseDefinitions.Count * 100) };
 
             var processedDefinitionCount = 0;
-            if (parallelism || 1 == 1)//always parallel as this is pretty solid...
-#if NET6_0_OR_GREATER
-                await Parallel.ForEachAsync(definitions, async (result, token) =>
-                {
-                    if (token.IsCancellationRequested) return;
-                    await ProcessDefinition(result);
-                });
-#else
-                await definitions.ForEachAsyncSemaphore(result => ProcessDefinition(result));
-#endif
-            else
-                foreach (var result in definitions)
-                    await ProcessDefinition(result);
+            await Parallel.ForEachAsync(definitions, async (result, token) => await ProcessDefinition(result));
 
             pbar.Dispose();
             _console.WriteLine();//for some reason the progressbar gets corrupted so temporarily add blank line...
@@ -378,19 +345,7 @@ class GenerateCommand : CommandBase
             pbar = new ProgressBar(definitions.Count, $"Persisting {definitions.Count} release pipeline(s) to disk{(gitHubActions ? " with GitHub Actions conversion" : string.Empty)}...", pbarOptions) { EstimatedDuration = TimeSpan.FromMilliseconds(releaseDefinitions.Count * 100) };
 
             var processedDefinitionCount = 0;
-            if (parallelism || 1 == 1)//always parallel as this is pretty solid...
-#if NET6_0_OR_GREATER
-                await Parallel.ForEachAsync(definitions, async (result, token) =>
-                {
-                    if (token.IsCancellationRequested) return;
-                    await ProcessDefinition(result);
-                });
-#else
-                await definitions.ForEachAsyncSemaphore(result => ProcessDefinition(result));
-#endif
-            else
-                foreach (var result in definitions)
-                    await ProcessDefinition(result);
+            await Parallel.ForEachAsync(definitions, async (result, token) => await ProcessDefinition(result));
 
             pbar.Dispose();
             _console.WriteLine();//for some reason the progressbar gets corrupted so temporarily add blank line...
@@ -411,7 +366,7 @@ class GenerateCommand : CommandBase
             var count = 0;
             if (pipeline is null)
             {
-                errors.Add($"definition id {Id} '{Name}' cannot be YAML'ised at this time...");
+                errors.Enqueue($"definition id {Id} '{Name}' cannot be YAML'ised at this time...");
                 return count;
             }
             var azureDevOpsYAML = pipeline.ToString();
@@ -432,9 +387,9 @@ class GenerateCommand : CommandBase
                 }
                 catch (Exception ex)
                 {
-                    errors.Add($"definition id {Id} '{Name}' GitHub Action conversion failed");
-                    Debug.WriteLine(ex.Message);
-                    //throw ex;
+                    errors.Enqueue($"definition id {Id} '{Name}' GitHub Action conversion failed");
+                    _logger.LogWarning(ex, "{ClassName} GitHub Actions conversion failed for definition id {DefinitionId}",
+                        nameof(GenerateCommand), Id);
                 }
             return count;
         }

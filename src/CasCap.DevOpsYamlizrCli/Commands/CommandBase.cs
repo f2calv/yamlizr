@@ -7,6 +7,7 @@ using Microsoft.VisualStudio.Services.ReleaseManagement.WebApi;
 using Microsoft.VisualStudio.Services.ReleaseManagement.WebApi.Clients;
 using Microsoft.VisualStudio.Services.WebApi;
 using ShellProgressBar;
+using System.Collections.Concurrent;
 using System.Diagnostics;
 
 namespace CasCap.Commands;
@@ -41,7 +42,8 @@ public abstract class CommandBase
 
     protected TeamProject _project;
     protected List<BuildDefinitionReference> buildDefinitionReferences;
-    protected List<BuildDefinition> buildDefinitions;
+    //appended-to from parallel loops, so it must be a concurrent collection
+    protected ConcurrentBag<BuildDefinition> buildDefinitions;
     protected List<ReleaseDefinition> releaseDefinitions;
 
     protected ProgressBar pbar;
