@@ -16,7 +16,7 @@ If you find this tool of use then please give it a thumbs-up by giving this repo
 You need Docker and an Azure DevOps [Personal Access Token](#personal-access-token), nothing else.
 
 ```bash
-docker run --rm \
+docker run --pull always --rm \
   --user "$(id -u):$(id -g)" \
   -e CasCap__AzureDevOpsOptions__PAT="<your token here>" \
   -v "$(pwd)/out:/data" \
@@ -24,6 +24,19 @@ docker run --rm \
     -org https://dev.azure.com/myorg \
     -proj MyProject \
     -out /data \
+    --create-directory
+```
+
+The same thing in PowerShell. Docker Desktop maps file ownership for you, so no `--user` is needed;
+
+```pwsh
+docker run --pull always --rm `
+  -e CasCap__AzureDevOpsOptions__PAT="<your token here>" `
+  -v "${PWD}/out:/data" `
+  ghcr.io/f2calv/yamlizr generate `
+    -org https://dev.azure.com/myorg `
+    -proj MyProject `
+    -out /data `
     --create-directory
 ```
 
@@ -48,6 +61,8 @@ docker pull ghcr.io/f2calv/yamlizr
 
 Notes on running the image;
 
+- **Staying current.** `--pull always` re-checks the registry on every run, so a floating tag such as
+  `latest` cannot go stale. Omit it once you have pinned an exact version, which never changes.
 - **File ownership.** The image runs as a non-root user (uid 1654). On Linux pass
   `--user "$(id -u):$(id -g)"` so the generated files belong to you. This is unnecessary on Docker
   Desktop for Windows or macOS.
@@ -116,7 +131,6 @@ Required values, each of which may instead come from [configuration](#configurat
 Optional arguments;
 
 - `-out|--outputpath` path to the YAML output folder, defaults to the current directory.
-
 - `--filter <some string here>` filter build/release definitions (if you want to use a more granular approach).
 - `--phasetype <phase type here>` filter deployment jobs by Deploy Phase Type the default is `AgentBasedDeployment` DeployPhaseTypes(tested), other (un-tested) options are `RunOnServer`, `MachineGroupBasedDeployment` & `DeploymentGates`.
 
@@ -132,7 +146,7 @@ Optional switches;
 Convert every Build and Release Definition in a project, as a container;
 
 ```bash
-docker run --rm \
+docker run --pull always --rm \
   --user "$(id -u):$(id -g)" \
   --env-file ./yamlizr.env \
   -v "$(pwd)/out:/data" \
