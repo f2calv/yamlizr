@@ -28,7 +28,7 @@ The conventions below always apply, regardless of the file being edited.
 - **Test execution**: Never run tests automatically; they may be integration tests requiring an Azure DevOps organisation and a Personal Access Token. Always prompt (ideally with a visual yes/no button) before running any tests.
 - **Preserve git history during renames/moves**: When renaming or relocating files, first perform the rename/move (preferably via `git mv`), then make content edits to the file at its new path. Do not delete and recreate files when a rename or move is intended.
 - **Multi-repo commits**: When a single change spans multiple repositories, separate per-repository commit messages are acceptable (but not mandatory). Prefer them where the changes are disconnected, or where one repository should not know about the other.
-- **Build after refactoring**: After any refactoring, build the entire solution (not only the affected project) to catch compilation errors in dependent projects. This repository builds from the root `yamlizr.slnx`.
+- **Build after refactoring**: After any refactoring, build the entire solution (not only the affected project) to catch compilation errors in dependent projects. When multiple solutions exist, prefer `yamlizr.Debug.slnx`.
 
 ## Public Repository Confidentiality
 
@@ -105,9 +105,12 @@ to review and edit the result. That does not license silent data loss.
   detail, and generated YAML.
 - Never write a real organisation name, project name, or definition name into a tracked example.
 
-### Known Transitive Vulnerability
+### Known Transitive Advisories
 
-`System.Data.SqlClient` 4.8.5 arrives transitively through the Azure DevOps client libraries and
-carries GHSA-98g6-xh36-x2p7. It is currently accepted and the `NU190x` warnings are suppressed in
-`Directory.Build.props`. Re-check on every dependency bump and remove the suppression as soon as an
-upstream release drops the reference.
+The Azure DevOps client libraries drag in packages that carry published advisories. `System.Drawing.Common`
+5.0.0 (GHSA-rxg9-xrhp-64gj, critical) currently raises `NU1904` on every project. There is no direct
+reference to remove and no upstream release that drops it.
+
+These warnings are deliberately **not** added to `NoWarn`. Suppressing a critical advisory hides the
+risk without reducing it, and the warning is the only signal that an upstream fix has landed. Re-check
+on every dependency bump.

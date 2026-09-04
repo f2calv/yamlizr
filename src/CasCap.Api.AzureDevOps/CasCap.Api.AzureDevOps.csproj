@@ -12,8 +12,6 @@
 
   <ItemGroup>
     <PackageReference Include="AzurePipelinesToGitHubActionsConverter.Core" />
-    <PackageReference Include="CasCap.Common.Extensions" />
-    <PackageReference Include="CasCap.Common.Net" />
     <PackageReference Include="Microsoft.TeamFoundation.DistributedTask.WebApi" />
     <PackageReference Include="Microsoft.TeamFoundationServer.Client" />
     <PackageReference Include="Microsoft.VisualStudio.Services.Client" />
@@ -22,6 +20,16 @@
     <PackageReference Include="System.Configuration.ConfigurationManager" />
     <PackageReference Include="semver" />
     <PackageReference Include="YamlDotNet" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(Configuration)'=='Release'">
+    <PackageReference Include="CasCap.Common.Extensions" />
+    <PackageReference Include="CasCap.Common.Net" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(Configuration)'!='Release'">
+    <ProjectReference Include="..\..\..\CasCap.Common\src\CasCap.Common.Extensions\CasCap.Common.Extensions.csproj" />
+    <ProjectReference Include="..\..\..\CasCap.Common\src\CasCap.Common.Net\CasCap.Common.Net.csproj" />
   </ItemGroup>
 
 </Project>

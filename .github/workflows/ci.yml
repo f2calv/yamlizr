@@ -59,9 +59,10 @@ jobs:
           #The nuget.org username matches the GitHub owner. If they ever diverge this must
           #become a literal, or the token exchange fails with an opaque 401.
           nuget-user: ${{ github.repository_owner }}
-          configuration: ${{ inputs.configuration }}
+          configuration: ${{ inputs.configuration || 'Release' }}
           push-preview: ${{ inputs.push-preview }}
           version: ${{ needs.versioning.outputs.version }}
+          solution-name: yamlizr.Release.slnx
 
   release:
     needs: [versioning, build]

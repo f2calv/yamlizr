@@ -20,7 +20,9 @@ applyTo: '**/*.csproj,**/*.slnx,**/Directory.Build.props,**/Directory.Packages.p
 ## Solution Format
 
 - Use the modern XML `.slnx` solution format.
-- This repository builds from a single root `yamlizr.slnx` containing the library, the CLI, and the test project.
+- Keep Debug and Release variants named `yamlizr.Debug.slnx` and `yamlizr.Release.slnx`.
+- The Debug solution uses local `ProjectReference` items for the CasCap.Common projects; the Release solution uses published `PackageReference` items.
+- Prefer the Debug solution for local builds. CI builds the Release solution.
 - All three projects multi-target `net8.0`, `net9.0` and `net10.0`. A change that compiles on one framework must be verified on all of them before it is considered done.
 
 ## SDK Selection

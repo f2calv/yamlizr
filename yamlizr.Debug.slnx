@@ -1,8 +1,13 @@
-﻿<Solution>
+<Solution>
   <Folder Name="/yamlizr/Solution Items/">
     <File Path=".editorconfig" />
     <File Path="Directory.Build.props" />
     <File Path="Directory.Packages.props" />
+  </Folder>
+  <Folder Name="/yamlizr/CasCap.Common/">
+    <Project Path="../CasCap.Common/src/CasCap.Common.Extensions/CasCap.Common.Extensions.csproj" />
+    <Project Path="../CasCap.Common/src/CasCap.Common.Net/CasCap.Common.Net.csproj" />
+    <Project Path="../CasCap.Common/src/CasCap.Common.Testing/CasCap.Common.Testing.csproj" />
   </Folder>
   <Folder Name="/yamlizr/">
     <Project Path="src/CasCap.Api.AzureDevOps.Tests/CasCap.Api.AzureDevOps.Tests.csproj" />
