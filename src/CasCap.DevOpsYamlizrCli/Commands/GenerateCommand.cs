@@ -106,7 +106,10 @@ class GenerateCommand : CommandBase
         _console.WriteLine();
         _console.WriteLine($"To update/refresh this tool; ");
         _console.ForegroundColor = ConsoleColor.Cyan;
-        _console.WriteLine($"   dotnet tool update --global yamlizr");
+        //set by the .NET base images, so a container user is not told to update a global tool they do not have
+        _console.WriteLine(Environment.GetEnvironmentVariable("DOTNET_RUNNING_IN_CONTAINER") == "true"
+            ? "   docker pull ghcr.io/f2calv/yamlizr"
+            : "   dotnet tool update --global yamlizr");
         _console.WriteLine();
         _console.ForegroundColor = fgColor;
         #endregion
