@@ -156,6 +156,7 @@ class GenerateCommand : CommandBase
         //new-up collection to store build/release definitions and pipelines
         var results = new ConcurrentBag<(BuildDefinition buildDefinition, ReleaseDefinition releaseDefinition, Pipeline pipeline)>();
         var errors = new ConcurrentQueue<string>();
+        var warnings = new ConcurrentQueue<string>();
 
         //1) load all Designer build definitions
         if (!buildDefinitionReferences.IsNullOrEmpty())
@@ -229,6 +230,8 @@ class GenerateCommand : CommandBase
                     );
 
                 var pipeline = generator.GenPipeline();
+                foreach (var warning in generator.Warnings)
+                    warnings.Enqueue($"build definition id {buildDefinition.Id} '{buildDefinition.Name}': {warning}");
                 if (pipeline is null)
                     errors.Enqueue($"Processing build definition id {buildDefinition.Id} '{buildDefinition.Name}' failed");
                 else
@@ -281,6 +284,8 @@ class GenerateCommand : CommandBase
                     );
 
                 var pipeline = generator.GenPipeline();
+                foreach (var warning in generator.Warnings)
+                    warnings.Enqueue($"release definition id {releaseDefinition.Id} '{releaseDefinition.Name}': {warning}");
                 if (pipeline is null)
                     errors.Enqueue($"Processing release definition id {releaseDefinition.Id} '{releaseDefinition.Name}' failed (generated pipeline is null)");
                 else
@@ -415,6 +420,13 @@ class GenerateCommand : CommandBase
             _console.WriteLine($" done.");
         }
 
+        if (!warnings.IsNullOrEmpty())
+        {
+            _console.ForegroundColor = ConsoleColor.Yellow;
+            _console.WriteLine($"{warnings.Count} classic construct(s) could not be converted and are missing from the generated YAML;");
+            foreach (var warning in warnings)
+                _console.WriteLine($"- {warning}");
+        }
         if (!errors.IsNullOrEmpty())
         {
             _console.ForegroundColor = ConsoleColor.Red;

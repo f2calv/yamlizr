@@ -24,6 +24,14 @@ public class YamlPipelineGenerator
 
     private readonly string _templatesFolder = "AzureDevOpsTaskGroups";
 
+    private readonly List<string> _warnings = [];
+
+    /// <summary>
+    /// Classic constructs encountered during generation that could not be represented in YAML.
+    /// </summary>
+    /// <remarks>The caller is expected to surface these in its run summary.</remarks>
+    public IReadOnlyList<string> Warnings => _warnings;
+
     enum VariableType
     {
         Build,
@@ -273,8 +281,12 @@ public class YamlPipelineGenerator
     private List<Step> GenSteps(Guid Id, string displayName, string semver, IDictionary<string, string> inputs, IDictionary<string, string> env,
         string condition, bool continueOnError, int timeoutInMinutes, Dictionary<string, string> parameters = null)
     {
-        var version = SemVersion.Parse(semver.Replace(".*", ".0"), SemVersionStyles.OptionalPatch).Major;
-        if (_taskMap.TryGetValue(Id, out var taskObjs) && taskObjs.TryGetValue((int)version, out var taskObj))
+        if (!TryParseMajorVersion(semver, out var version))
+        {
+            _warnings.Add($"step '{displayName}' (task {Id}) has an unusable version '{semver}' and was not converted");
+            return [];
+        }
+        if (_taskMap.TryGetValue(Id, out var taskObjs) && taskObjs.TryGetValue(version, out var taskObj))
             return new List<Step>
             {
                 new Step
@@ -289,12 +301,20 @@ public class YamlPipelineGenerator
                     timeoutInMinutes = timeoutInMinutes,
                 }
             };
-        var template = GetOrCreateTaskGroupTemplate() ?? new Template { steps = Array.Empty<Step>() };
+        var template = GetOrCreateTaskGroupTemplate();
+        if (template is null)
+        {
+            //Neither an installed task nor a known task group, e.g. the extension has since been
+            //uninstalled. Previously this fell through to a Template with a null taskGroup and threw
+            //an NRE, see https://github.com/f2calv/yamlizr/issues/177
+            _warnings.Add($"step '{displayName}' references task or task group {Id} v{version}, which is not installed in this organisation, and was not converted");
+            return [];
+        }
         return _inlineTaskGroups ? new List<Step>(template.steps) : GetSteps(template, inputs);
 
         Template GetOrCreateTaskGroupTemplate()
         {
-            var key = new TaskGroupVersion(Id, (int)version);
+            var key = new TaskGroupVersion(Id, version);
             if (_taskGroupTemplateMap.TryGetValue(key, out var template))
                 return template;
             else
@@ -395,5 +415,16 @@ public class YamlPipelineGenerator
                 inputs[key] = input.DefaultValue;
         }
         return new List<Step> { new Step { template = $"../{_templatesFolder}/{filename}", parameters = inputs.IsNullOrEmpty() ? null : inputs } };
+    }
+
+    /// <summary>Reads the major version from a classic task version spec such as <c>2.*</c>.</summary>
+    static bool TryParseMajorVersion(string semver, out int major)
+    {
+        major = 0;
+        if (string.IsNullOrWhiteSpace(semver)) return false;
+        if (!SemVersion.TryParse(semver.Replace(".*", ".0"), SemVersionStyles.OptionalPatch, out var version)) return false;
+        if (version.Major < int.MinValue || version.Major > int.MaxValue) return false;
+        major = (int)version.Major;
+        return true;
     }
 }
