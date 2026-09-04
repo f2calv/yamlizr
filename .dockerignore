@@ -1,0 +1,20 @@
+# Keep the build context small and, more importantly, keep local configuration and
+# credentials out of the image. Every file copied into an image is public.
+**/bin/
+**/obj/
+**/TestResults/
+**/.vs/
+**/.vscode/
+**/.git/
+**/.github/
+**/.devcontainer/
+**/*.user
+**/appsettings.Local.json
+**/appsettings.Local.*.json
+**/appsettings.Test.json
+**/secrets.json
+**/*.slnx
+**/launchSettings.json
+docs/
+*.md
+!README.md

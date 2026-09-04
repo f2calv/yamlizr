@@ -138,6 +138,33 @@ yamlizr generate -out c:/temp/myoutputfolder
 
 Never commit a token. Use User Secrets locally and a secret-backed environment variable in CI.
 
+### Container
+
+A multi-architecture image (`linux/amd64`, `linux/arm64`, `linux/arm/v7`) is published to GitHub
+Container Registry alongside the NuGet package, so yamlizr can be run with nothing installed but
+Docker. The .NET global tool remains the primary distribution; the image is an addition.
+
+```bash
+docker run --rm \
+  --user "$(id -u):$(id -g)" \
+  -e CasCap__AzureDevOpsOptions__PAT \
+  -v "$(pwd)/out:/data" \
+  ghcr.io/f2calv/yamlizr generate \
+    -org https://dev.azure.com/myorg \
+    -proj MyProject \
+    -out /data \
+    --create-directory
+```
+
+Notes;
+
+- The image runs as a non-root user, so pass `--user "$(id -u):$(id -g)"` on Linux to keep the
+  generated files owned by you rather than by uid 1654.
+- `--create-directory` skips the interactive folder prompt, which cannot be answered without a TTY.
+- Prefer `--env-file` or a bare `-e NAME` (which forwards the value from your shell) over
+  `-e NAME=value`; an inline value is visible in `docker inspect` and shell history.
+- Never bake a token into an image. Every file in an image is public.
+
 ### Core Dependencies
 
 - [Azure DevOps .NET Client Libraries](https://docs.microsoft.com/en-us/azure/devops/integrate/concepts/dotnet-client-libraries?view=azure-devops)
