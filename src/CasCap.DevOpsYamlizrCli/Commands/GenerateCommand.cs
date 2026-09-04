@@ -61,10 +61,10 @@ class GenerateCommand : CommandBase
     {
         if (gitHubActions) inlineTaskGroups = true;//github actions don't support templates
 
-        //a command line option always wins over configuration
-        var accessToken = PAT ?? _azureDevOpsOptions.Value.PAT;
-        var organisationValue = organisationUri ?? _azureDevOpsOptions.Value.OrganisationUri;
-        var projectName = project ?? _azureDevOpsOptions.Value.Project;
+        //a command line option always wins over configuration, which wins over the pipeline environment
+        var accessToken = FirstNonEmpty(PAT, _azureDevOpsOptions.Value.PAT, Environment.GetEnvironmentVariable("SYSTEM_ACCESSTOKEN"));
+        var organisationValue = FirstNonEmpty(organisationUri, _azureDevOpsOptions.Value.OrganisationUri, Environment.GetEnvironmentVariable("SYSTEM_COLLECTIONURI"));
+        var projectName = FirstNonEmpty(project, _azureDevOpsOptions.Value.Project, Environment.GetEnvironmentVariable("SYSTEM_TEAMPROJECT"));
 
         //Note: the token is deliberately not length-checked, see https://github.com/f2calv/yamlizr/issues/181
         if (string.IsNullOrWhiteSpace(accessToken))
@@ -462,4 +462,7 @@ class GenerateCommand : CommandBase
 
         return 0;
     }
+
+    static string FirstNonEmpty(params string[] values)
+        => Array.Find(values, p => !string.IsNullOrWhiteSpace(p));
 }

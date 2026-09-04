@@ -77,6 +77,19 @@ scopes listed above and pass `$(System.AccessToken)`;
   displayName: yamlizr
 ```
 
+When an option is not supplied and nothing is configured, yamlizr falls back to the predefined
+pipeline variables `SYSTEM_ACCESSTOKEN`, `SYSTEM_COLLECTIONURI` and `SYSTEM_TEAMPROJECT`. Azure
+Pipelines only exposes `SYSTEM_ACCESSTOKEN` to a step when you map it explicitly;
+
+```yaml
+- script: |
+    dotnet tool update --global yamlizr
+    yamlizr generate -out $(Build.ArtifactStagingDirectory) --create-directory
+  displayName: yamlizr
+  env:
+    SYSTEM_ACCESSTOKEN: $(System.AccessToken)
+```
+
 Examples;
 
 ```powershell
@@ -113,7 +126,8 @@ have to put a credential on a process command line. A command line option always
 configured value.
 
 Configuration is read from `appsettings.json` (first from the tool's own directory, then from the
-current working directory), then .NET User Secrets, then environment variables;
+current working directory), then .NET User Secrets, then environment variables, and finally the
+predefined Azure Pipelines variables described above;
 
 ```json
 {
@@ -194,6 +208,7 @@ without a trace. Progress on closing these gaps is tracked in
 | Deploy phases other than `--phasetype` | Not converted. |
 | Triggers other than continuous integration (pull request, scheduled, build completion) | Not converted. |
 | Steps referencing an uninstalled extension | Not converted; reported by name and task id. |
+| Stage or job settings on a single-stage or single-job definition | A lone stage or job is flattened into a bare step list, dropping stage-level variables and a non-default job condition. |
 | Combined build plus release multi-stage pipelines | Build and release definitions are emitted as separate files. |
 
 ### Known Issues

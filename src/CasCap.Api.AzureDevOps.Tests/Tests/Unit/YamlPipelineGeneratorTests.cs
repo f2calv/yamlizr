@@ -97,6 +97,23 @@ public class YamlPipelineGeneratorTests
         Assert.Null(pipeline);
     }
 
+    //regression test for https://github.com/f2calv/yamlizr/issues/177, reported in PR #260
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("   ")]
+    public void GenPipeline_PhaseWithoutAName_IsGivenAGeneratedName(string phaseName)
+    {
+        var generator = YamlizrTestData.Generator(
+            YamlizrTestData.BuildDefinition(phaseName, YamlizrTestData.Step(YamlizrTestData.KnownTaskId)));
+
+        var pipeline = generator.GenPipeline();
+
+        //a single job is flattened to steps, so the generated name is only observable as no throw
+        Assert.NotNull(pipeline);
+        Assert.Single(pipeline.steps);
+    }
+
     [Fact]
     public void GenPipeline_NeitherBuildNorRelease_IsRejected()
     {

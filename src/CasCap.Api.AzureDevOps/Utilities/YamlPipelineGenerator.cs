@@ -75,7 +75,14 @@ public class YamlPipelineGenerator
             var buildStage = GenBuildStage();
             if (buildStage is not null)
                 if (buildStage.jobs.Length == 1)
-                    steps.AddRange(buildStage.jobs[0].steps);
+                {
+                    //flattening the only job to a bare step list discards its job-level settings, but a
+                    //default condition is not worth reporting
+                    var job = buildStage.jobs[0];
+                    if (job.condition is not null && job.condition != "succeeded()")
+                        _warnings.Add($"job '{job.job}' is the only job so its steps were flattened, dropping its condition '{job.condition}', see https://github.com/f2calv/yamlizr/issues/211");
+                    steps.AddRange(job.steps);
+                }
                 else
                     jobs.AddRange(buildStage.jobs);
         }
@@ -87,10 +94,17 @@ public class YamlPipelineGenerator
             if (releaseStages is not null)
             {
                 if (releaseStages.Length == 1)
-                    if (releaseStages[0].jobs.Length == 1)
-                        steps.AddRange(releaseStages[0].jobs[0].steps);
+                {
+                    //flattening the only stage discards its stage-level variables, which for a release
+                    //are the environment-scoped variables and variable groups
+                    var stage = releaseStages[0];
+                    if (!stage.variables.IsNullOrEmpty())
+                        _warnings.Add($"stage '{stage.stage}' is the only stage so it was flattened, dropping {stage.variables.Count} stage-level variable(s), see https://github.com/f2calv/yamlizr/issues/211");
+                    if (stage.jobs.Length == 1)
+                        steps.AddRange(stage.jobs[0].steps);
                     else
-                        jobs.AddRange(releaseStages[0].jobs);
+                        jobs.AddRange(stage.jobs);
+                }
                 else
                     stages.AddRange(releaseStages);
             }
@@ -122,13 +136,15 @@ public class YamlPipelineGenerator
             foreach (var step in phase.Steps)
                 if (step.Enabled) steps.AddRange(GenSteps(step));
             if (steps.IsNullOrEmpty()) continue;
+            //a classic phase can have no name, which used to throw from Sanitize().Replace()
+            var phaseName = string.IsNullOrWhiteSpace(phase.Name) ? $"Phase {j + 1}" : phase.Name;
             var job = new Job
             {
                 cancelTimeoutInMinutes = phase.JobCancelTimeoutInMinutes,
                 condition = GenCondition(phase.Condition),
                 dependsOn = string.IsNullOrWhiteSpace(jobName) ? null : new[] { jobName },
-                displayName = phase.Name,
-                job = duplicatePhaseNames ? $"{phase.Name.Sanitize().Replace(" ", "_")}_{j}" : phase.Name.Sanitize().Replace(" ", "_"),
+                displayName = phaseName,
+                job = duplicatePhaseNames ? $"{phaseName.Sanitize().Replace(" ", "_")}_{j}" : phaseName.Sanitize().Replace(" ", "_"),
                 steps = steps.ToArray(),
                 timeoutInMinutes = phase.JobTimeoutInMinutes,
             };
@@ -136,7 +152,7 @@ public class YamlPipelineGenerator
             jobName = job.job;
             j++;
         }
-        return jobs.IsNullOrEmpty() ? null : new StageAzDO { displayName = _build.Name, stage = _build.Name.Sanitize().Replace(" ", "_"), variables = GenVariables(VariableType.Build), jobs = jobs.ToArray() };
+        return jobs.IsNullOrEmpty() ? null : new StageAzDO { displayName = _build.Name, stage = (_build.Name ?? "Build").Sanitize().Replace(" ", "_"), variables = GenVariables(VariableType.Build), jobs = jobs.ToArray() };
     }
 
     TriggerAzDO GenTrigger()
@@ -257,7 +273,7 @@ public class YamlPipelineGenerator
             {
                 displayName = _release.Name,
                 jobs = jobs.ToArray(),
-                stage = environment.Name.Sanitize("_"),
+                stage = (environment.Name ?? $"Stage_{stages.Count + 1}").Sanitize("_"),
                 variables = variables.IsNullOrEmpty() ? null : variables,
             };
             stages.Add(stage);
@@ -292,13 +308,15 @@ public class YamlPipelineGenerator
                         steps.AddRange(GenSteps(task));
                 if (steps.IsNullOrEmpty()) continue;
                 var deploymentInput = phase.GetDeploymentInput();
+                //a classic deploy phase can have no name, which used to throw from Sanitize().Replace()
+                var phaseName = string.IsNullOrWhiteSpace(phase.Name) ? $"Phase {j + 1}" : phase.Name;
                 var job = new Job
                 {
                     cancelTimeoutInMinutes = deploymentInput.JobCancelTimeoutInMinutes,
                     condition = GenCondition(deploymentInput.Condition),
                     dependsOn = string.IsNullOrWhiteSpace(jobName) ? null : new[] { jobName },
-                    displayName = phase.Name,
-                    job = duplicatePhaseNames ? $"{phase.Name.Sanitize().Replace(" ", "_")}_{j}" : phase.Name.Sanitize().Replace(" ", "_"),
+                    displayName = phaseName,
+                    job = duplicatePhaseNames ? $"{phaseName.Sanitize().Replace(" ", "_")}_{j}" : phaseName.Sanitize().Replace(" ", "_"),
                     steps = new List<Step>(steps).ToArray(),
                     timeoutInMinutes = deploymentInput.TimeoutInMinutes,
                 };

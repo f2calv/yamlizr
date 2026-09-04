@@ -24,6 +24,11 @@ public static class YamlizrTestData
 
     /// <summary>Builds a classic designer build definition with a single agent phase.</summary>
     public static BuildDefinition BuildDefinition(params BuildDefinitionStep[] steps)
+        => BuildDefinition("Phase 1", steps);
+
+    /// <summary>Builds a classic designer build definition whose single agent phase carries the supplied name.</summary>
+    /// <remarks>A null name reproduces the classic definitions reported in issue #177.</remarks>
+    public static BuildDefinition BuildDefinition(string phaseName, params BuildDefinitionStep[] steps)
     {
         var definition = new BuildDefinition
         {
@@ -36,7 +41,7 @@ public static class YamlizrTestData
                 {
                     new Phase
                     {
-                        Name = "Phase 1",
+                        Name = phaseName,
                         Condition = "succeeded()",
                         Target = new AgentPoolQueueTarget(),
                         Steps = [.. steps],
