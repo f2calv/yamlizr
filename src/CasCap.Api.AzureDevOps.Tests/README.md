@@ -44,6 +44,12 @@ Azure DevOps organisation still gets a green credential-free run. The reported r
 Integration tests are read-only. They never create, update or delete a definition, task group or
 variable group.
 
+## Coverage Gap
+
+The unit tests build their definitions in code, so they verify generator logic but not the conversion
+of a real classic definition. Snapshot tests over the YAML produced from a curated Azure DevOps fixture
+project, run in CI, are tracked in [issue #366](https://github.com/f2calv/yamlizr/issues/366).
+
 ## Running
 
 ```bash

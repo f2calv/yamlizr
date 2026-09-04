@@ -4,7 +4,7 @@
     <RootNamespace>CasCap</RootNamespace>
     <LangVersion>14.0</LangVersion>
     <ImplicitUsings>enable</ImplicitUsings>
-    <!--Nullable is not yet enabled; the generator and models predate nullable reference types.-->
+    <!--Nullable is not yet enabled, see https://github.com/f2calv/yamlizr/issues/365-->
     <UserSecretsId>b08b24aa-70ab-4ecd-aef9-cce6d49054ec</UserSecretsId>
   </PropertyGroup>
 
