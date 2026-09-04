@@ -11,7 +11,13 @@
     <Description>Azure DevOps Classic-to-YAML Pipelines CLI</Description>
     <PackageTags>azure,devops,classic,yaml,pipelines,cli,codegen</PackageTags>
     <PackAsTool>true</PackAsTool>
+    <ToolCommandName>yamlizr</ToolCommandName>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
   </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="\" />
+  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Figgle" />

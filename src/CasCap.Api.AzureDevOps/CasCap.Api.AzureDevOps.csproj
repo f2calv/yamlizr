@@ -8,7 +8,12 @@
     <IsPackable>true</IsPackable>
     <Description>Azure DevOps helper/utility library.</Description>
     <PackageTags>azure,devops,rest,api,yaml,pipelines,codegen</PackageTags>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
   </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="\" />
+  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="AzurePipelinesToGitHubActionsConverter.Core" />
