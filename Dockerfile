@@ -15,6 +15,7 @@ WORKDIR /src
 ARG PROJECT=src/CasCap.DevOpsYamlizrCli/CasCap.DevOpsYamlizrCli.csproj
 ARG CONFIGURATION=Release
 ARG TARGET_FRAMEWORK=net10.0
+ARG VERSION=0.0.1
 
 # -- Dependency layer ----------------------------------------------------------
 # Copy only what restore reads, so editing a .cs file reuses the cached restore.
@@ -49,6 +50,7 @@ dotnet publish "$PROJECT" \
     --framework "$TARGET_FRAMEWORK" \
     --runtime "$RID" \
     --self-contained false \
+    -p:Version="$VERSION" \
     --output /out
 EOF
 
@@ -57,8 +59,14 @@ EOF
 #
 # No --platform override, so buildx resolves the base image for $TARGETPLATFORM
 # and the result is genuinely native to the target.
+#
+# aspnet, not runtime: Microsoft.Extensions.Http.Resilience arrives through
+# CasCap.Common.Net and carries a FrameworkReference to Microsoft.AspNetCore.App,
+# so the published runtimeconfig.json requires that shared framework even though
+# this is a console application. On the runtime image it fails at startup with
+# "No frameworks were found".
 # ------------------------------------------------------------------------------
-FROM mcr.microsoft.com/dotnet/runtime:10.0-noble-chiseled AS final
+FROM mcr.microsoft.com/dotnet/aspnet:10.0-noble-chiseled AS final
 WORKDIR /app
 COPY --from=build /out .
 
