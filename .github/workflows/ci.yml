@@ -63,6 +63,8 @@ jobs:
           push-preview: ${{ inputs.push-preview }}
           version: ${{ needs.versioning.outputs.version }}
           solution-name: yamlizr.Release.slnx
+          #Integration tests need a live Azure DevOps organisation and a token, the rest are credential-free.
+          dotnet-test-args: --filter-not-trait Category=Integration
 
   release:
     needs: [versioning, build]

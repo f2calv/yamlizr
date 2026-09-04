@@ -108,8 +108,9 @@ to review and edit the result. That does not license silent data loss.
 ### Known Transitive Advisories
 
 The Azure DevOps client libraries drag in packages that carry published advisories. `System.Drawing.Common`
-5.0.0 (GHSA-rxg9-xrhp-64gj, critical) currently raises `NU1904` on every project. There is no direct
-reference to remove and no upstream release that drops it.
+5.0.0 (GHSA-rxg9-xrhp-64gj, critical) raises `NU1904` and `System.Security.Cryptography.Xml` 5.0.0
+(GHSA-vh55-786g-wjwj, moderate) raises `NU1902`. There is no direct reference to remove and no upstream
+release that drops them.
 
 These warnings are deliberately **not** added to `NoWarn`. Suppressing a critical advisory hides the
 risk without reducing it, and the warning is the only signal that an upstream fix has landed. Re-check
