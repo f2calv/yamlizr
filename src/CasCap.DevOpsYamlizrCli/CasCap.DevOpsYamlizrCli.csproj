@@ -14,7 +14,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="ConsoleTables" />
     <PackageReference Include="Figgle" />
     <PackageReference Include="Figgle.Fonts" />
     <PackageReference Include="McMaster.Extensions.CommandLineUtils" />

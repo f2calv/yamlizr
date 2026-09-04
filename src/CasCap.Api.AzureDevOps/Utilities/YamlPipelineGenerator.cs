@@ -1,5 +1,4 @@
-﻿using AzurePipelinesToGitHubActionsConverter.Core.AzurePipelines;
-using CasCap.Common.Extensions;
+﻿using CasCap.Common.Extensions;
 using CasCap.Models;
 using Microsoft.TeamFoundation.Build.WebApi;
 using Microsoft.TeamFoundation.DistributedTask.WebApi;

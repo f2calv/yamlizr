@@ -7,6 +7,12 @@ updates:
       interval: weekly
       time: "04:00"
 
+  - package-ecosystem: devcontainers
+    directory: /
+    schedule:
+      interval: weekly
+      time: "04:00"
+
   - package-ecosystem: nuget
     directory: /
     schedule:
@@ -14,11 +20,7 @@ updates:
       time: "04:00"
     open-pull-requests-limit: 10
     ignore:
-    - dependency-name: YamlDotNet
-    - dependency-name: CasCap.Common.*
     #xunit.v3 majors are migrations, not bumps: 3.x to 4.0 forced Microsoft.Testing.Platform,
     #OutputType Exe and four package swaps. Minors and patches flow normally.
     - dependency-name: xunit.*
       update-types: ["version-update:semver-major"]
-    - dependency-name: semver
-    - dependency-name: ShellProgressBar

@@ -1,6 +1,4 @@
 ﻿using CasCap.Services;
-using McMaster.Extensions.CommandLineUtils;
-using Microsoft.Extensions.Logging;
 using Microsoft.TeamFoundation.Build.WebApi;
 using Microsoft.TeamFoundation.Core.WebApi;
 using Microsoft.TeamFoundation.DistributedTask.WebApi;

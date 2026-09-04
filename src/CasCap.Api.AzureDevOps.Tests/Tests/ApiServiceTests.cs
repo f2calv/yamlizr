@@ -1,5 +1,4 @@
 using System.Diagnostics;
-using Xunit;
 
 namespace CasCap.Api.AzureDevOps.Tests;
 
