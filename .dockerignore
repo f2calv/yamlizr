@@ -1,20 +1,16 @@
-# Keep the build context small and, more importantly, keep local configuration and
-# credentials out of the image. Every file copied into an image is public.
-**/bin/
-**/obj/
-**/TestResults/
-**/.vs/
-**/.vscode/
-**/.git/
-**/.github/
-**/.devcontainer/
-**/*.user
-**/appsettings.Local.json
-**/appsettings.Local.*.json
-**/appsettings.Test.json
-**/secrets.json
-**/*.slnx
-**/launchSettings.json
-docs/
-*.md
-!README.md
+# Deny everything, then explicitly allow only what the build needs. Keeping the
+# build context minimal speeds up `docker build` and stops unrelated file edits
+# (docs, IDE state, .git) from invalidating cached layers. It also means a new
+# kind of local-only file cannot leak into the image by default.
+*
+
+!Directory.Build.props
+!Directory.Packages.props
+!icon.png
+!src/**/*.csproj
+!src/**/*.cs
+!src/**/appsettings*.json
+
+# The test project is never part of the runtime image. Excluding it keeps test
+# edits from busting the restore layer cache.
+**/*.Tests
