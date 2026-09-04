@@ -82,9 +82,44 @@ jobs:
       tag-minor: ${{ needs.versioning.outputs.minor }}
       platform: linux/amd64,linux/arm64,linux/arm/v7
       push-image: ${{ github.ref_name == github.event.repository.default_branch }}
+      args: --build-arg VERSION=${{ needs.versioning.outputs.version }}
+
+  #The image job proves the image builds, not that it runs. 3.1.6 shipped an image that
+  #exited immediately with "No frameworks were found", so build a single architecture
+  #locally and execute it.
+  image-smoke-test:
+    runs-on: ubuntu-latest
+    needs: [versioning]
+    permissions:
+      contents: read #checkout
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: docker/setup-buildx-action@v4
+
+      - name: docker build --load
+        run: |
+          docker build \
+            --build-arg VERSION=${{ needs.versioning.outputs.version }} \
+            --tag yamlizr:smoke-test \
+            --load \
+            .
+
+      - name: docker run --version
+        run: |
+          VERSION=$(docker run --rm yamlizr:smoke-test --version)
+          echo "reported version: $VERSION"
+          #SourceLink may append +<sha> to the informational version, so match the prefix
+          case "$VERSION" in
+            "${{ needs.versioning.outputs.version }}"*) ;;
+            *) echo "::error::expected a version starting with ${{ needs.versioning.outputs.version }}, got $VERSION"; exit 1 ;;
+          esac
+
+      - name: docker run generate --help
+        run: docker run --rm yamlizr:smoke-test generate --help
 
   release:
-    needs: [versioning, build, image]
+    needs: [versioning, build, image, image-smoke-test]
     if: needs.versioning.outputs.release-exists == 'false'
       && (github.ref == format('refs/heads/{0}', github.event.repository.default_branch) || inputs.push-preview == true)
     uses: f2calv/gha-workflows/.github/workflows/gha-release-versioning.yml@v1
