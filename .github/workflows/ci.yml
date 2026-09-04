@@ -78,8 +78,6 @@ jobs:
     with:
       registry: ghcr.io/${{ github.repository_owner }}
       tag: ${{ needs.versioning.outputs.version }}
-      tag-major: ${{ needs.versioning.outputs.major }}
-      tag-minor: ${{ needs.versioning.outputs.minor }}
       platform: linux/amd64,linux/arm64,linux/arm/v7
       push-image: ${{ github.ref_name == github.event.repository.default_branch }}
       args: --build-arg VERSION=${{ needs.versioning.outputs.version }}

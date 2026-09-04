@@ -43,9 +43,8 @@ docker pull ghcr.io/f2calv/yamlizr
 
 | Tag | Meaning |
 | --- | --- |
-| `latest` | The most recent release. |
-| `4`, `4.0` | Floating major/minor, picks up the latest patch. |
-| `4.0.0` | An exact release. |
+| `latest` | The most recent release, moves with every release. |
+| `4.0.0` | An exact release. Published image versions are immutable and are never overwritten, so pin this in automation. |
 
 Notes on running the image;
 
