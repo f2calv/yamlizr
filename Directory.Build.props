@@ -39,9 +39,12 @@
     <!-- IDE0079 - Remove unnecessary suppression -->
     <!-- IDE0042 - Variable declaration can be deconstructed -->
     <!-- CS0162 - Unreachable code detected. -->
+    <!-- CS1574 - XML comment has cref attribute that could not be resolved. -->
     <!-- S125 - Remove this commented out code. -->
     <!-- NETSDK1233 - Targeting .NET 10.0 or higher in Visual Studio 2022 XX.XX is not supported. -->
-    <NoWarn>IDE1006;IDE0079;IDE0042;CS0162;S125;NETSDK1233</NoWarn>
+    <!-- NU1901/NU1902/NU1903 - System.Data.SqlClient 4.8.5 (GHSA-98g6-xh36-x2p7) arrives transitively
+         via the Azure DevOps client libraries; accepted until an upstream release drops the reference. -->
+    <NoWarn>IDE1006;IDE0079;IDE0042;CS0162;CS1574;S125;NETSDK1233;NU1901;NU1902;NU1903</NoWarn>
   </PropertyGroup>
 
   <PropertyGroup>
