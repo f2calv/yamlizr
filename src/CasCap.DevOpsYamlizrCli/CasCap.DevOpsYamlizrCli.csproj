@@ -18,9 +18,14 @@
     <PackageReference Include="Figgle.Fonts" />
     <PackageReference Include="McMaster.Extensions.CommandLineUtils" />
     <PackageReference Include="McMaster.Extensions.Hosting.CommandLine" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.UserSecrets" />
     <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" />
     <PackageReference Include="Microsoft.Extensions.Hosting" />
     <PackageReference Include="ShellProgressBar" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="appsettings.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
   <ItemGroup>

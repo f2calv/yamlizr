@@ -3,29 +3,36 @@ using CasCap.Common.Extensions;
 using CasCap.Models;
 using CasCap.Utilities;
 using Figgle.Fonts;
+using Microsoft.Extensions.Options;
 using Microsoft.TeamFoundation.Build.WebApi;
 using Microsoft.VisualStudio.Services.ReleaseManagement.WebApi;
 using ShellProgressBar;
 using System.Collections.Concurrent;
-using System.ComponentModel.DataAnnotations;
 
 namespace CasCap.Commands;
 
 [Command(Description = "Generate Azure DevOps YAML pipelines from classic definitions.")]
 class GenerateCommand : CommandBase
 {
-    public GenerateCommand(ILogger<GenerateCommand> logger, ILoggerFactory loggerFactory, IConsole console)
-        : base(logger, loggerFactory, console) { }
+    private readonly IOptions<AzureDevOpsOptions> _azureDevOpsOptions;
 
-    [Required]
+    public GenerateCommand(
+        ILogger<GenerateCommand> logger,
+        IOptions<AzureDevOpsOptions> azureDevOpsOptions,
+        ILoggerFactory loggerFactory,
+        IConsole console
+        )
+        : base(logger, loggerFactory, console)
+    {
+        _azureDevOpsOptions = azureDevOpsOptions;
+    }
+
     [Option("-pat|--token", Description = "Azure DevOps Personal Access Token, or a pipeline access token e.g. $(System.AccessToken).")]
     public string PAT { get; }
 
-    [Required]
     [Option("-org|--organisation", Description = "Azure DevOps Organisation Uri.")]
     public string organisationUri { get; }
 
-    [Required]
     [Option("-proj|--project", Description = "Azure DevOps Project Name.")]
     public string project { get; }
 
@@ -54,16 +61,28 @@ class GenerateCommand : CommandBase
     {
         if (gitHubActions) inlineTaskGroups = true;//github actions don't support templates
 
+        //a command line option always wins over configuration
+        var accessToken = PAT ?? _azureDevOpsOptions.Value.PAT;
+        var organisationValue = organisationUri ?? _azureDevOpsOptions.Value.OrganisationUri;
+        var projectName = project ?? _azureDevOpsOptions.Value.Project;
+
         //Note: the token is deliberately not length-checked, see https://github.com/f2calv/yamlizr/issues/181
-        if (string.IsNullOrWhiteSpace(PAT))
+        if (string.IsNullOrWhiteSpace(accessToken))
         {
-            _logger.LogError("{ClassName} no access token supplied, pass one with -pat", nameof(GenerateCommand));
+            _logger.LogError("{ClassName} no access token supplied, pass --token or set {ConfigurationKey}",
+                nameof(GenerateCommand), $"{AzureDevOpsOptions.ConfigurationSectionName}:{nameof(AzureDevOpsOptions.PAT)}");
             return 1;
         }
-        if (!Uri.TryCreate(organisationUri, UriKind.Absolute, out var organisation))
+        if (!Uri.TryCreate(organisationValue, UriKind.Absolute, out var organisation))
         {
             _logger.LogError("{ClassName} organisation must be an absolute Uri, e.g. https://dev.azure.com/myorg, but was {OrganisationUri}",
-                nameof(GenerateCommand), organisationUri);
+                nameof(GenerateCommand), organisationValue);
+            return 1;
+        }
+        if (string.IsNullOrWhiteSpace(projectName))
+        {
+            _logger.LogError("{ClassName} no project supplied, pass --project or set {ConfigurationKey}",
+                nameof(GenerateCommand), $"{AzureDevOpsOptions.ConfigurationSectionName}:{nameof(AzureDevOpsOptions.Project)}");
             return 1;
         }
 
@@ -92,10 +111,10 @@ class GenerateCommand : CommandBase
         _console.ForegroundColor = fgColor;
         #endregion
 
-        if (!await ConnectAsync(PAT, organisation))
+        if (!await ConnectAsync(accessToken, organisation))
             return 1;
 
-        if (!await GetProjectAsync(project))
+        if (!await GetProjectAsync(projectName))
             return 1;
 
         var rootPath = AppDomain.CurrentDomain.BaseDirectory;//or Directory.GetCurrentDirectory()?
@@ -130,7 +149,7 @@ class GenerateCommand : CommandBase
         var taskGroupTemplateMap = new ConcurrentDictionary<TaskGroupVersion, Template>();
 
         pbar = new ProgressBar(1, $"Loading extensions...", pbarOptions);
-        var tasks = await _apiSvc.GetAllExtensions(organisationUri);
+        var tasks = await _apiSvc.GetAllExtensions(organisation.AbsoluteUri.TrimEnd('/'));
         foreach (var task in tasks)
             task.inputMap = task.inputs.ToDictionary(k => k.name, v => v);
         pbar.Tick($"{tasks.Count} installed extension(s) retrieved.");

@@ -106,6 +106,38 @@ All YAML files generated are output into sub-folders of a project folder, i.e. u
 - `c:/temp/myoutputfolder/<your AzDO project>/GitHubBuilds/*.yml`
 - `c:/temp/myoutputfolder/<your AzDO project>/GitHubReleases/*.yml`
 
+### Configuration
+
+The token, organisation and project can also come from configuration, so an unattended run does not
+have to put a credential on a process command line. A command line option always wins over a
+configured value.
+
+Configuration is read from `appsettings.json` (first from the tool's own directory, then from the
+current working directory), then .NET User Secrets, then environment variables;
+
+```json
+{
+  "CasCap": {
+    "AzureDevOpsOptions": {
+      "PAT": null,
+      "OrganisationUri": "https://dev.azure.com/myorg",
+      "Project": "MyProject"
+    }
+  }
+}
+```
+
+The equivalent environment variables use the standard double-underscore separator;
+
+```pwsh
+$env:CasCap__AzureDevOpsOptions__PAT = '<your token here>'
+$env:CasCap__AzureDevOpsOptions__OrganisationUri = 'https://dev.azure.com/myorg'
+$env:CasCap__AzureDevOpsOptions__Project = 'MyProject'
+yamlizr generate -out c:/temp/myoutputfolder
+```
+
+Never commit a token. Use User Secrets locally and a secret-backed environment variable in CI.
+
 ### Core Dependencies
 
 - [Azure DevOps .NET Client Libraries](https://docs.microsoft.com/en-us/azure/devops/integrate/concepts/dotnet-client-libraries?view=azure-devops)
