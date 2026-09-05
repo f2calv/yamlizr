@@ -1,0 +1,23 @@
+{
+  "inputs": [
+    {
+      "id": "ado_org",
+      "type": "promptString",
+      "description": "Azure DevOps organisation name (the segment after dev.azure.com/)"
+    }
+  ],
+  "servers": {
+    "ado": {
+      "type": "stdio",
+      "command": "pwsh",
+      "args": [
+        "-NoProfile",
+        "-NonInteractive",
+        "-File",
+        "${workspaceFolder}/.scripts/Start-AdoMcpServer.ps1",
+        "-Organisation",
+        "${input:ado_org}"
+      ]
+    }
+  }
+}
