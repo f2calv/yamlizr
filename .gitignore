@@ -418,6 +418,9 @@ FodyWeavers.xsd
 # Local History for Visual Studio Code
 .history/
 
+# Sibling repositories mirrored in by build.ps1/build.sh for a Dockerfile.Debug build
+/deps/
+
 # Built Visual Studio Code Extensions
 *.vsix
 
