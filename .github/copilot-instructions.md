@@ -18,6 +18,7 @@ Detailed conventions live in scoped instruction files under `.github/instruction
 | `dotnet.instructions.md` | `**/*.csproj`, `*.slnx`, `Directory.*.props` | Central build/package config, solution format, SDK selection |
 | `github-actions.instructions.md` | workflows / `action.yml` | GitHub Actions naming, YAML, security, GitVersion |
 | `bash.instructions.md` | `**/*.sh` | Bash scripting structure, error handling, logging, testability |
+| `powershell.instructions.md` | `**/*.ps1`, `*.psm1`, `*.psd1` | PowerShell structure, strict mode, error handling, secret safety |
 | `documentation.instructions.md` | `**/*.md` | README consistency and Mermaid diagrams |
 | `configuration.instructions.md` | `**/appsettings*.json` | Options/appsettings synchronization and secret safety |
 
