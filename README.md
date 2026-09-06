@@ -332,10 +332,6 @@ generated YAML** and must be re-created by hand. Progress on closing these gaps 
 | Steps whose task version cannot be parsed | ❌ | Reported by display name and task id. |
 | Combined build plus release multi-stage pipelines | ❌ | Build and release definitions are emitted as separate files. |
 
-## Known Issues
-
-- ShellProgressBar occasionally corrupts its own output; the console writes a blank line after each bar as a workaround.
-
 ## Core Dependencies
 
 - [Azure DevOps .NET Client Libraries](https://docs.microsoft.com/en-us/azure/devops/integrate/concepts/dotnet-client-libraries?view=azure-devops)
