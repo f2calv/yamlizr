@@ -127,11 +127,12 @@ public class YamlPipelineGenerator
         if (allPhases.Count > phases.Count)
             _warnings.Add($"{allPhases.Count - phases.Count} non-agent build phase(s) are not converted, see https://github.com/f2calv/yamlizr/issues/182");
         if (phases.IsNullOrEmpty()) return null;
-        var jobs = new List<Job>(phases.Count);
-        var jobName = string.Empty;
         //TODO(#368): inverted, this is true when the names DIFFER. Phases that all share one name get
         //no suffix and so produce duplicate job identifiers. https://github.com/f2calv/yamlizr/issues/368
         var duplicatePhaseNames = phases.Select(p => p.Name).Distinct().Count() > 1;
+
+        // Identifiers are assigned up front, because a phase may depend on one declared after it.
+        var converted = new List<(Phase phase, string jobId, List<Step> steps)>(phases.Count);
         var j = 0;
         foreach (var phase in phases)
         {
@@ -141,21 +142,32 @@ public class YamlPipelineGenerator
             if (steps.IsNullOrEmpty()) continue;
             //a classic phase can have no name, which used to throw from Sanitize().Replace()
             var phaseName = string.IsNullOrWhiteSpace(phase.Name) ? $"Phase {j + 1}" : phase.Name;
+            var identifier = ToIdentifier(phaseName, $"Phase_{j + 1}");
+            converted.Add((phase, duplicatePhaseNames ? $"{identifier}_{j}" : identifier, steps));
+            j++;
+        }
+        if (converted.IsNullOrEmpty()) return null;
+
+        var jobIdByRefName = new Dictionary<string, string>(converted.Count, StringComparer.OrdinalIgnoreCase);
+        foreach (var (phase, jobId, _) in converted)
+            if (!string.IsNullOrWhiteSpace(phase.RefName)) jobIdByRefName[phase.RefName] = jobId;
+
+        var jobs = new List<Job>(converted.Count);
+        foreach (var (phase, jobId, steps) in converted)
+        {
             var job = new Job
             {
                 cancelTimeoutInMinutes = phase.JobCancelTimeoutInMinutes,
                 condition = GenCondition(phase.Condition),
-                dependsOn = string.IsNullOrWhiteSpace(jobName) ? null : new[] { jobName },
-                displayName = phaseName,
-                job = duplicatePhaseNames ? $"{ToIdentifier(phaseName, $"Phase_{j + 1}")}_{j}" : ToIdentifier(phaseName, $"Phase_{j + 1}"),
+                dependsOn = GenDependsOn(phase, jobIdByRefName),
+                displayName = string.IsNullOrWhiteSpace(phase.Name) ? jobId : phase.Name,
+                job = jobId,
                 steps = steps.ToArray(),
                 timeoutInMinutes = phase.JobTimeoutInMinutes,
             };
             jobs.Add(job);
-            jobName = job.job;
-            j++;
         }
-        if (jobs.IsNullOrEmpty()) return null;
+
         var stageVariables = GenVariables(VariableType.Build);
         return new StageAzDO
         {
@@ -164,6 +176,32 @@ public class YamlPipelineGenerator
             variables = stageVariables.IsNullOrEmpty() ? null : stageVariables,
             jobs = jobs.ToArray(),
         };
+    }
+
+    /// <summary>
+    /// Maps a classic phase's declared dependencies onto the identifiers of the generated jobs.
+    /// </summary>
+    /// <remarks>
+    /// A classic phase names its dependencies explicitly by refName, and may name more than one. This
+    /// previously emitted the preceding job in iteration order instead, which serialised phases that
+    /// were meant to run in parallel and silently dropped every dependency of a fan-in but the last.
+    /// </remarks>
+    private string[] GenDependsOn(Phase phase, Dictionary<string, string> jobIdByRefName)
+    {
+        if (phase.Dependencies.IsNullOrEmpty()) return null;
+
+        var dependsOn = new List<string>(phase.Dependencies.Count);
+        foreach (var dependency in phase.Dependencies)
+        {
+            if (jobIdByRefName.TryGetValue(dependency.Scope ?? string.Empty, out var jobId))
+            {
+                if (!dependsOn.Contains(jobId)) dependsOn.Add(jobId);
+            }
+            else
+                _warnings.Add($"phase '{phase.Name}' depends on '{dependency.Scope}', which was not converted, so the dependency is missing from the generated YAML");
+        }
+
+        return dependsOn.Count == 0 ? null : dependsOn.ToArray();
     }
 
     TriggerAzDO GenTrigger()
