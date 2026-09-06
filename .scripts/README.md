@@ -44,7 +44,7 @@ $token = Read-Host 'PAT' -MaskInput
 ./.scripts/New-FixtureDefinitions.ps1 -OrganisationUri https://dev.azure.com/contoso -Project demo -Pat $token
 ```
 
-Required scopes for the full-access token: Project and Team (read), Build (read and execute), Release (read, write, execute and manage), Task Groups (read, create and manage), Variable Groups (read, create and manage).
+Required scopes for the full-access token: Project and Team (read), Build (read and execute), Release (read, write, execute and manage), Task Groups (read, create and manage), Variable Groups (read, create and manage), Deployment Groups (read and manage).
 
 `Code` is deliberately not required. A classic Build definition must name a repository, and the binding for a GitHub repository carries a service connection id plus a page of provider metadata that cannot be reconstructed from a repository name. The script copies that binding from an existing definition rather than enumerating Azure Repos, which would need `Code` and would fail in an organisation that has no Azure Repos repository. Nothing is ever pushed to the borrowed repository, and no fixture definition is ever queued.
 
@@ -84,6 +84,7 @@ Names below assume the default prefix.
 | `yamlizr.test.multi-phase` | Three agent phases, phase-to-phase dependencies, a fan-in, and a phase condition other than `succeeded()` |
 | `yamlizr.test.server-phase` | An agentless phase next to an agent phase, so the phase yamlizr skips is exercised |
 | `yamlizr.test.multiline-scripts` | Multi-line Bash, PowerShell and cmd scripts, a trailing blank line, and a whitespace-only script |
+| `yamlizr.test.task-variety` | Fourteen in-box tasks across two phases, covering step-level `env`, `timeoutInMinutes`, `continueOnError` and conditions other than `succeeded()` |
 | `yamlizr.test.task-groups` | A task group whose name contains spaces, referenced four times: defaults kept, defaults overridden, nested, and disabled |
 | `yamlizr.test.triggers-and-variables` | Continuous integration, pull request and scheduled triggers with branch and path filters, definition variables including a secret and one settable at queue time, and a linked variable group |
 | `yamlizr.test.uninstalled-extension` | A step whose task is not installed, covering the null path in [issue #177](https://github.com/f2calv/yamlizr/issues/177). Only created with `-IncludeUnknownTask` |
@@ -91,6 +92,7 @@ Names below assume the default prefix.
 | `yamlizr.test.Nested Task Group` | Calls the task group above, covering recursive expansion |
 | `yamlizr.test.common` | A variable group carrying plain, spaced and secret values |
 | `yamlizr.test.release-multi-stage` | Three environments, a build artifact, automated and manual pre-deployment approvals, stage-after-stage conditions, a continuous deployment trigger, stage-scoped variables, a disabled step and an optional gate |
+| `yamlizr.test.deployment-group` | A deployment group with no registered targets, carrying the deployment group phase on the Prod stage so the phase type yamlizr skips is exercised |
 | `yamlizr.test.validation` | An empty YAML pipeline used only as a target for validating generated YAML. Deliberately the one fixture left enabled |
 
 No value in the fixture is a real credential, and no definition is ever queued.

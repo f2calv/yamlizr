@@ -236,7 +236,9 @@ class GenerateCommand : CommandBase
                     ProcessDefinition(buildDefinition);
 
             pbar.Dispose();
-            _console.WriteLine();//for some reason the progressbar gets corrupted so temporarily add blank line...
+            //TODO(#373): ShellProgressBar corrupts its own output, so a blank line follows every bar.
+            //https://github.com/f2calv/yamlizr/issues/373
+            _console.WriteLine();
 
             void ProcessDefinition(BuildDefinition buildDefinition)
             {
@@ -288,7 +290,8 @@ class GenerateCommand : CommandBase
                     await ProcessDefinition(releaseDefinition);
 
             pbar.Dispose();
-            _console.WriteLine();//for some reason the progressbar gets corrupted so temporarily add blank line...
+            //TODO(#373): see the note on the build definition bar above.
+            _console.WriteLine();
 
             async Task ProcessDefinition(ReleaseDefinition releaseDefinition)
             {
@@ -348,7 +351,8 @@ class GenerateCommand : CommandBase
             await Parallel.ForEachAsync(definitions, async (result, token) => await ProcessDefinition(result));
 
             pbar.Dispose();
-            _console.WriteLine();//for some reason the progressbar gets corrupted so temporarily add blank line...
+            //TODO(#373): see the note on the build definition bar above.
+            _console.WriteLine();
 
             async Task ProcessDefinition((BuildDefinition buildDefinition, ReleaseDefinition releaseDefinition, Pipeline pipeline) result)
             {
@@ -379,7 +383,8 @@ class GenerateCommand : CommandBase
             await Parallel.ForEachAsync(definitions, async (result, token) => await ProcessDefinition(result));
 
             pbar.Dispose();
-            _console.WriteLine();//for some reason the progressbar gets corrupted so temporarily add blank line...
+            //TODO(#373): see the note on the build definition bar above.
+            _console.WriteLine();
 
             async Task ProcessDefinition((BuildDefinition buildDefinition, ReleaseDefinition releaseDefinition, Pipeline pipeline) result)
             {

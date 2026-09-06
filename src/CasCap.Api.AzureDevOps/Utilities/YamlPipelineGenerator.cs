@@ -389,11 +389,11 @@ public class YamlPipelineGenerator
             var jobs = GenJobs(environment);
             if (jobs.IsNullOrEmpty()) continue;
 
-            //TODO(#182): pre- and post-deployment approvals and gates should become an Environment
-            //with approval checks, or at minimum a documented manual step.
-            //https://github.com/f2calv/yamlizr/issues/182
+            //TODO(#374): approvals and gates have no in-document YAML equivalent. The stage needs to
+            //emit a deployment job targeting an Environment, and the checks are configured on that
+            //Environment outside the pipeline. https://github.com/f2calv/yamlizr/issues/374
             if (HasApprovals(environment))
-                _warnings.Add($"stage '{environment.Name}' has deployment approvals or gates which are not converted, see https://github.com/f2calv/yamlizr/issues/182");
+                _warnings.Add($"stage '{environment.Name}' has deployment approvals or gates which are not converted, see https://github.com/f2calv/yamlizr/issues/374");
 
             //TODO(#182): environment.Conditions carries the classic stage trigger, including
             //artifact and environment dependencies, which should become stage dependsOn/condition.

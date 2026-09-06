@@ -208,6 +208,21 @@ public class YamlPipelineGeneratorTests
         Assert.Equal(["Agent_job"], pipeline.jobs[1].dependsOn);
     }
 
+    //the README claims a deploy phase of another type is reported, and nothing asserted the warning
+    [Fact]
+    public void GenPipeline_DeployPhaseOfAnotherType_IsSkippedAndReported()
+    {
+        var generator = YamlizrTestData.Generator(
+            YamlizrTestData.ReleaseDefinitionWithADeploymentGroupPhase("Prod"));
+
+        var pipeline = generator.GenPipeline();
+
+        //only the agent phase survives, so the sole remaining job is flattened to steps
+        Assert.NotNull(pipeline.steps);
+        Assert.Contains(generator.Warnings, p =>
+            p.Contains("deploy phase(s) that are not") && p.Contains("AgentBasedDeployment"));
+    }
+
     [Fact]
     public void GenPipeline_NeitherBuildNorRelease_IsRejected()
     {

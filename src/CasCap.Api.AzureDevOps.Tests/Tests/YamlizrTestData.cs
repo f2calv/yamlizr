@@ -194,6 +194,38 @@ public static class YamlizrTestData
         return environment;
     }
 
+    /// <summary>
+    /// Builds a release definition whose single environment carries an agent phase and a deployment
+    /// group phase, which the generator is expected to skip and report.
+    /// </summary>
+    /// <param name="environmentName">Environment name, emitted as the stage.</param>
+    public static ReleaseDefinition ReleaseDefinitionWithADeploymentGroupPhase(string environmentName)
+    {
+        var definition = NewReleaseDefinition();
+        var environment = NewEnvironment(environmentName, 1, "Agent job");
+
+        environment.DeployPhases.Add(new MachineGroupBasedDeployPhase
+        {
+            Name = "Deployment group phase",
+            Rank = 2,
+            DeploymentInput = new MachineGroupDeploymentInput { Condition = "succeeded()" },
+            WorkflowTasks =
+            {
+                new WorkflowTask
+                {
+                    Enabled = true,
+                    Name = "sample step",
+                    TaskId = KnownTaskId,
+                    Version = "1.*",
+                    DefinitionType = "task",
+                }
+            }
+        });
+
+        definition.Environments.Add(environment);
+        return definition;
+    }
+
     /// <summary>Creates a generator over a release definition with no task groups or variable groups.</summary>
     public static YamlPipelineGenerator Generator(ReleaseDefinition release, Dictionary<Guid, Dictionary<int, TaskObj>> taskMap = null)
         => new(
