@@ -44,7 +44,7 @@ $token = Read-Host 'PAT' -MaskInput
 ./.scripts/New-FixtureDefinitions.ps1 -OrganisationUri https://dev.azure.com/contoso -Project demo -Pat $token
 ```
 
-Required scopes for the full-access token: Project and Team (read), Build (read and execute), Release (read, write, execute and manage), Task Groups (read, create and manage), Variable Groups (read, create and manage).
+Required scopes for the full-access token: Project and Team (read), Build (read and execute), Release (read, write, execute and manage), Task Groups (read, create and manage), Variable Groups (read, create and manage), Deployment Groups (read and manage).
 
 `Code` is deliberately not required. A classic Build definition must name a repository, and the binding for a GitHub repository carries a service connection id plus a page of provider metadata that cannot be reconstructed from a repository name. The script copies that binding from an existing definition rather than enumerating Azure Repos, which would need `Code` and would fail in an organisation that has no Azure Repos repository. Nothing is ever pushed to the borrowed repository, and no fixture definition is ever queued.
 
