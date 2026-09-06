@@ -3,6 +3,7 @@ using CasCap.Models;
 using CasCap.Utilities;
 using Microsoft.TeamFoundation.Build.WebApi;
 using Microsoft.VisualStudio.Services.ReleaseManagement.WebApi;
+using Microsoft.VisualStudio.Services.ReleaseManagement.WebApi.Contracts;
 using System.Collections.Concurrent;
 using TaskDefinitionReference = Microsoft.TeamFoundation.Build.WebApi.TaskDefinitionReference;
 using TaskGroup = Microsoft.TeamFoundation.DistributedTask.WebApi.TaskGroup;
@@ -80,6 +81,67 @@ public static class YamlizrTestData
         => new(
             build,
             null,
+            taskMap ?? TaskMap(),
+            new Dictionary<TaskGroupVersion, TaskGroup>(),
+            new ConcurrentDictionary<TaskGroupVersion, Template>(),
+            new Dictionary<int, VariableGroup>(),
+            inlineTaskGroups: false,
+            DeployPhaseTypes.AgentBasedDeployment);
+
+    /// <summary>Builds a classic release definition with one agent-based deploy phase per named environment.</summary>
+    /// <param name="environmentNames">Environment names, in rank order.</param>
+    public static ReleaseDefinition ReleaseDefinition(params string[] environmentNames)
+    {
+        //the SDK leaves these collections null, unlike the build definition equivalents
+        var definition = new ReleaseDefinition
+        {
+            Id = 7,
+            Name = "sample release",
+            Environments = [],
+        };
+
+        var rank = 1;
+        foreach (var environmentName in environmentNames)
+        {
+            var environment = new ReleaseDefinitionEnvironment
+            {
+                Name = environmentName,
+                Rank = rank,
+                DeployPhases = [],
+                Variables = new Dictionary<string, ConfigurationVariableValue>(),
+                VariableGroups = [],
+            };
+
+            environment.DeployPhases.Add(new AgentBasedDeployPhase
+            {
+                Name = "Agent job",
+                Rank = 1,
+                DeploymentInput = new AgentDeploymentInput { Condition = "succeeded()" },
+                WorkflowTasks =
+                {
+                    new WorkflowTask
+                    {
+                        Enabled = true,
+                        Name = "sample step",
+                        TaskId = KnownTaskId,
+                        Version = "1.*",
+                        DefinitionType = "task",
+                    }
+                }
+            });
+
+            definition.Environments.Add(environment);
+            rank++;
+        }
+
+        return definition;
+    }
+
+    /// <summary>Creates a generator over a release definition with no task groups or variable groups.</summary>
+    public static YamlPipelineGenerator Generator(ReleaseDefinition release, Dictionary<Guid, Dictionary<int, TaskObj>> taskMap = null)
+        => new(
+            null,
+            release,
             taskMap ?? TaskMap(),
             new Dictionary<TaskGroupVersion, TaskGroup>(),
             new ConcurrentDictionary<TaskGroupVersion, Template>(),

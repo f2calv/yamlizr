@@ -376,11 +376,13 @@ public class YamlPipelineGenerator
             //artifact and environment dependencies, which should become stage dependsOn/condition.
             //https://github.com/f2calv/yamlizr/issues/182
             var variables = GenVariables(VariableType.Release, environment);
+            var stageName = ToIdentifier(environment.Name, $"Stage_{stages.Count + 1}");
             var stage = new StageAzDO
             {
-                displayName = _release.Name,
+                // The release definition names the document, not each stage within it.
+                displayName = string.IsNullOrWhiteSpace(environment.Name) ? stageName : environment.Name,
                 jobs = jobs.ToArray(),
-                stage = ToIdentifier(environment.Name, $"Stage_{stages.Count + 1}"),
+                stage = stageName,
                 variables = variables.IsNullOrEmpty() ? null : variables,
             };
             stages.Add(stage);

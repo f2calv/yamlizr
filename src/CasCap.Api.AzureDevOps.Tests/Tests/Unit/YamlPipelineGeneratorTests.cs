@@ -115,6 +115,30 @@ public class YamlPipelineGeneratorTests
     }
 
     [Fact]
+    public void GenPipeline_MultipleEnvironments_NamesEachStageAfterItsEnvironment()
+    {
+        var generator = YamlizrTestData.Generator(YamlizrTestData.ReleaseDefinition("Dev", "Test", "Prod"));
+
+        var pipeline = generator.GenPipeline();
+
+        Assert.NotNull(pipeline.stages);
+        Assert.Equal(["Dev", "Test", "Prod"], pipeline.stages.Select(p => p.stage));
+        //the release definition names the document, so repeating it on every stage loses the environment
+        Assert.Equal(["Dev", "Test", "Prod"], pipeline.stages.Select(p => p.displayName));
+    }
+
+    [Fact]
+    public void GenPipeline_EnvironmentWithoutAName_FallsBackToTheStageIdentifier()
+    {
+        var generator = YamlizrTestData.Generator(YamlizrTestData.ReleaseDefinition("Dev", "   "));
+
+        var pipeline = generator.GenPipeline();
+
+        var unnamed = Assert.Single(pipeline.stages, p => p.stage == "Stage_2");
+        Assert.Equal("Stage_2", unnamed.displayName);
+    }
+
+    [Fact]
     public void GenPipeline_NeitherBuildNorRelease_IsRejected()
     {
         var generator = new YamlPipelineGenerator(
