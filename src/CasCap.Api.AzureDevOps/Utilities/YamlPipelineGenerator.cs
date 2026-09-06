@@ -147,7 +147,7 @@ public class YamlPipelineGenerator
                 condition = GenCondition(phase.Condition),
                 dependsOn = string.IsNullOrWhiteSpace(jobName) ? null : new[] { jobName },
                 displayName = phaseName,
-                job = duplicatePhaseNames ? $"{phaseName.Sanitize().Replace(" ", "_")}_{j}" : phaseName.Sanitize().Replace(" ", "_"),
+                job = duplicatePhaseNames ? $"{ToIdentifier(phaseName, $"Phase_{j + 1}")}_{j}" : ToIdentifier(phaseName, $"Phase_{j + 1}"),
                 steps = steps.ToArray(),
                 timeoutInMinutes = phase.JobTimeoutInMinutes,
             };
@@ -160,7 +160,7 @@ public class YamlPipelineGenerator
         return new StageAzDO
         {
             displayName = _build.Name,
-            stage = (_build.Name ?? "Build").Sanitize().Replace(" ", "_"),
+            stage = ToIdentifier(_build.Name, "Build"),
             variables = stageVariables.IsNullOrEmpty() ? null : stageVariables,
             jobs = jobs.ToArray(),
         };
@@ -254,6 +254,32 @@ public class YamlPipelineGenerator
 
     private static string GenCondition(string condition) => string.IsNullOrWhiteSpace(condition) || condition.Equals("succeeded()", StringComparison.OrdinalIgnoreCase) ? "succeeded()" : condition;
 
+    /// <summary>
+    /// Converts a classic phase or environment name into a YAML job or stage identifier.
+    /// </summary>
+    /// <remarks>
+    /// Azure DevOps accepts almost anything as a classic phase name, but a YAML identifier must match
+    /// <c>[A-Za-z_][A-Za-z0-9_]*</c>. Sanitize() is not enough on its own: it only strips characters
+    /// that are illegal in a file name, so a comma or a full stop survives into the identifier and the
+    /// pipeline is rejected on upload.
+    /// </remarks>
+    internal static string ToIdentifier(string name, string fallback)
+    {
+        if (string.IsNullOrWhiteSpace(name)) return fallback;
+
+        var builder = new StringBuilder(name.Length);
+        foreach (var c in name)
+            builder.Append(char.IsAsciiLetterOrDigit(c) || c == '_' ? c : '_');
+
+        // Collapse runs so "Phase three, fan-in" does not become Phase_three__fan_in.
+        var identifier = Regex.Replace(builder.ToString(), "_{2,}", "_").Trim('_');
+
+        if (identifier.Length == 0) return fallback;
+
+        // An identifier may not start with a digit.
+        return char.IsAsciiDigit(identifier[0]) ? $"_{identifier}" : identifier;
+    }
+
     StageAzDO[] GenReleaseStages()
     {
         if (_release.Environments.IsNullOrEmpty()) return null;
@@ -284,7 +310,7 @@ public class YamlPipelineGenerator
             {
                 displayName = _release.Name,
                 jobs = jobs.ToArray(),
-                stage = (environment.Name ?? $"Stage_{stages.Count + 1}").Sanitize("_"),
+                stage = ToIdentifier(environment.Name, $"Stage_{stages.Count + 1}"),
                 variables = variables.IsNullOrEmpty() ? null : variables,
             };
             stages.Add(stage);
@@ -329,7 +355,7 @@ public class YamlPipelineGenerator
                     condition = GenCondition(deploymentInput.Condition),
                     dependsOn = string.IsNullOrWhiteSpace(jobName) ? null : new[] { jobName },
                     displayName = phaseName,
-                    job = duplicatePhaseNames ? $"{phaseName.Sanitize().Replace(" ", "_")}_{j}" : phaseName.Sanitize().Replace(" ", "_"),
+                    job = duplicatePhaseNames ? $"{ToIdentifier(phaseName, $"Phase_{j + 1}")}_{j}" : ToIdentifier(phaseName, $"Phase_{j + 1}"),
                     steps = new List<Step>(steps).ToArray(),
                     timeoutInMinutes = deploymentInput.TimeoutInMinutes,
                 };
