@@ -1,4 +1,4 @@
-﻿using Microsoft.TeamFoundation.DistributedTask.WebApi;
+using Microsoft.TeamFoundation.DistributedTask.WebApi;
 
 namespace CasCap.Models;
 
@@ -12,5 +12,5 @@ public class Template : Pipeline
     /// <summary>The task group this template was generated from.</summary>
     /// <remarks>Carried for the file name and version only, so it is never serialised.</remarks>
     [YamlIgnore]
-    public TaskGroup taskGroup { get; set; }
+    public TaskGroup? taskGroup { get; set; }
 }

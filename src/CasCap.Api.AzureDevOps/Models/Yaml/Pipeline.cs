@@ -1,4 +1,4 @@
-﻿using CasCap.Utilities;
+using CasCap.Utilities;
 
 namespace CasCap.Models;
 
@@ -13,48 +13,48 @@ namespace CasCap.Models;
 public class Pipeline
 {
     /// <summary>Build number format, emitted as the pipeline <c>name</c>.</summary>
-    public string name { get; set; }
+    public string? name { get; set; }
 
     /// <summary>Parameters this document declares when it is used as a template.</summary>
     /// <remarks>A sequence, not a mapping; see <see cref="TemplateParameter"/>.</remarks>
-    public List<TemplateParameter> parameters { get; set; }
+    public List<TemplateParameter>? parameters { get; set; }
 
     /// <summary>Container image every job runs in.</summary>
-    public string container { get; set; }
+    public string? container { get; set; }
 
     /// <summary>Repositories, containers and pipelines the run consumes.</summary>
-    public Resources resources { get; set; }
+    public Resources? resources { get; set; }
 
     /// <summary>Continuous integration trigger.</summary>
-    public TriggerAzDO trigger { get; set; }
+    public TriggerAzDO? trigger { get; set; }
 
     /// <summary>Pull request trigger.</summary>
-    public TriggerAzDO pr { get; set; }
+    public TriggerAzDO? pr { get; set; }
 
     /// <summary>Scheduled triggers.</summary>
-    public Schedule[] schedules { get; set; }
+    public Schedule[]? schedules { get; set; }
 
     /// <summary>Agent pool every job runs on unless it overrides this.</summary>
-    public Pool pool { get; set; }
+    public Pool? pool { get; set; }
 
     /// <summary>Matrix or parallel execution strategy.</summary>
-    public Strategy strategy { get; set; }
+    public Strategy? strategy { get; set; }
 
     /// <summary>Pipeline-scoped variables, including linked variable groups.</summary>
     /// <remarks>Omitted entirely when empty, because <c>variables: []</c> is rejected by the schema.</remarks>
-    public List<Variable> variables { get; set; }
+    public List<Variable>? variables { get; set; }
 
     /// <summary>Stages, used when the definition produced more than one.</summary>
-    public StageAzDO[] stages { get; set; }
+    public StageAzDO[]? stages { get; set; }
 
     /// <summary>Jobs, used when the definition produced a single stage with more than one job.</summary>
-    public Job[] jobs { get; set; }
+    public Job[]? jobs { get; set; }
 
     /// <summary>Steps, used when the definition produced a single job.</summary>
-    public Step[] steps { get; set; }
+    public Step[]? steps { get; set; }
 
     /// <summary>Service containers available to the run.</summary>
-    public Dictionary<string, string> services { get; set; }
+    public Dictionary<string, string>? services { get; set; }
 
     /// <summary>Serialises this pipeline to Azure Pipelines YAML.</summary>
     /// <remarks>
