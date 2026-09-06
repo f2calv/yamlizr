@@ -113,7 +113,7 @@ public class YamlPipelineGenerator
                     //default condition is not worth reporting
                     var job = buildStage.jobs[0];
                     if (job.condition is not null && job.condition != "succeeded()")
-                        _warnings.Add($"job '{job.job}' is the only job so its steps were flattened, dropping its condition '{job.condition}', see https://github.com/f2calv/yamlizr/issues/211");
+                        _warnings.Add($"job '{job.job}' is the only job so its steps were flattened, dropping its condition '{job.condition}', see https://github.com/f2calv/yamlizr/issues/376");
                     steps.AddRange(job.steps);
                 }
                 else
@@ -132,7 +132,7 @@ public class YamlPipelineGenerator
                     //are the environment-scoped variables and variable groups
                     var stage = releaseStages[0];
                     if (!stage.variables.IsNullOrEmpty())
-                        _warnings.Add($"stage '{stage.stage}' is the only stage so it was flattened, dropping {stage.variables.Count} stage-level variable(s), see https://github.com/f2calv/yamlizr/issues/211");
+                        _warnings.Add($"stage '{stage.stage}' is the only stage so it was flattened, dropping {stage.variables.Count} stage-level variable(s), see https://github.com/f2calv/yamlizr/issues/376");
                     if (stage.jobs.Length == 1)
                         steps.AddRange(stage.jobs[0].steps);
                     else
