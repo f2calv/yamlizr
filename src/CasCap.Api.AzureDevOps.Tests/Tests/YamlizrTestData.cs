@@ -54,23 +54,64 @@ public static class YamlizrTestData
     }
 
     /// <summary>Builds a single enabled step referencing the supplied task id and version spec.</summary>
-    public static BuildDefinitionStep Step(Guid taskId, string versionSpec = "1.*", string displayName = "sample step")
+    public static BuildDefinitionStep Step(Guid taskId, string versionSpec = "1.*", string displayName = "sample step", IDictionary<string, string> inputs = null)
         => new()
         {
             Enabled = true,
             DisplayName = displayName,
             TaskDefinition = new TaskDefinitionReference { Id = taskId, VersionSpec = versionSpec, DefinitionType = "task" },
+            Inputs = inputs ?? new Dictionary<string, string>(),
         };
 
+    /// <summary>Builds a classic designer build definition with one agent phase per supplied name.</summary>
+    /// <remarks>
+    /// More than one phase is required for the generator to emit jobs; a single phase is flattened to
+    /// a bare step list, which hides the job identifier. Each phase depends on the one before it.
+    /// </remarks>
+    /// <param name="queueName">Agent queue name, emitted as the pipeline pool.</param>
+    /// <param name="step">The step every phase carries.</param>
+    /// <param name="phaseNames">Phase names, in order.</param>
+    public static BuildDefinition BuildDefinitionWithPhases(string queueName, BuildDefinitionStep step, params string[] phaseNames)
+    {
+        var process = new DesignerProcess();
+
+        for (var i = 0; i < phaseNames.Length; i++)
+        {
+            var phase = new Phase
+            {
+                Name = phaseNames[i],
+                RefName = $"Phase_{i + 1}",
+                Condition = "succeeded()",
+                Target = new AgentPoolQueueTarget(),
+                Steps = [step],
+            };
+
+            if (i > 0) phase.Dependencies.Add(new Dependency { Scope = $"Phase_{i}", Event = "Completed" });
+            process.Phases.Add(phase);
+        }
+
+        return new BuildDefinition
+        {
+            Id = 43,
+            Name = "sample multi phase build",
+            Queue = new AgentPoolQueue { Name = queueName },
+            Process = process,
+        };
+    }
+
     /// <summary>Builds a task map containing one installed task, keyed the way the generator expects.</summary>
-    public static Dictionary<Guid, Dictionary<int, TaskObj>> TaskMap(string taskName = "SampleTask", int major = 1)
+    /// <remarks>
+    /// Naming a task that really exists matters when the generated YAML is submitted to Azure DevOps,
+    /// which rejects a reference to a task it cannot resolve.
+    /// </remarks>
+    public static Dictionary<Guid, Dictionary<int, TaskObj>> TaskMap(string taskName = "SampleTask", int major = 1, params string[] inputNames)
     {
         var task = new TaskObj
         {
             id = KnownTaskId,
             name = taskName,
             version = new CasCap.Models.TaskVersion { major = major },
-            inputs = [],
+            inputs = [.. inputNames.Select(p => new TaskInput { name = p })],
         };
         task.inputMap = task.inputs.ToDictionary(k => k.name, v => v);
         return new Dictionary<Guid, Dictionary<int, TaskObj>> { [KnownTaskId] = new() { [major] = task } };

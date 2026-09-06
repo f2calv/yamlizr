@@ -111,6 +111,38 @@ public class PipelineValidationTests : TestBase
         Assert.True(result.IsValid, result.Message);
     }
 
+    /// <summary>
+    /// Converts a definition whose phase names contain characters that are illegal in a YAML
+    /// identifier, then asks Azure DevOps to parse the result.
+    /// </summary>
+    /// <remarks>
+    /// The only test that runs the generator and validates what it actually produced. The samples
+    /// above would still pass if the generator regressed, because they are hand written; this one
+    /// fails, which is what makes it a regression test rather than a demonstration.
+    /// </remarks>
+    [Fact]
+    public async Task GeneratedYaml_ForPhaseNamesNeedingSanitising_IsAccepted()
+    {
+        Assert.SkipUnless(CanValidate, NoValidationPipeline);
+
+        //CmdLine really exists, because Azure DevOps rejects a reference to a task it cannot resolve
+        var taskMap = YamlizrTestData.TaskMap("CmdLine", 2, "script");
+        var step = YamlizrTestData.Step(
+            YamlizrTestData.KnownTaskId,
+            versionSpec: "2.*",
+            inputs: new Dictionary<string, string> { ["script"] = "echo hello" });
+
+        var definition = YamlizrTestData.BuildDefinitionWithPhases(
+            "Azure Pipelines", step, "Phase one", "Phase two", "Phase three, fan-in");
+
+        var pipeline = YamlizrTestData.Generator(definition, taskMap).GenPipeline();
+        var yaml = pipeline.ToString();
+
+        var result = await Validate(yaml);
+
+        Assert.True(result.IsValid, $"{result.Message}{Environment.NewLine}{yaml}");
+    }
+
     private Task<PipelineValidationResult> Validate(string yaml)
         => _apiSvc.Validate(Options.OrganisationUri, Options.Project, Options.ValidationPipelineId.Value, yaml, TestContext.Current.CancellationToken);
 }
