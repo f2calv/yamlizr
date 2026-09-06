@@ -1,4 +1,4 @@
-﻿using CasCap.Abstractions;
+using CasCap.Abstractions;
 using CasCap.Services;
 using Microsoft.TeamFoundation.Build.WebApi;
 using Microsoft.TeamFoundation.Core.WebApi;
@@ -30,50 +30,70 @@ public abstract class CommandBase
     protected /*readonly*/ IConsole _console;
 
     /// <summary>Azure DevOps REST calls the official client libraries do not cover.</summary>
-    protected /*readonly*/ IApiService _apiSvc;
+    protected IApiService ApiSvc => _apiSvc ?? throw NotConnected();
+    private IApiService? _apiSvc;
 
     /// <summary>Initialises the shared dependencies.</summary>
     /// <param name="logger">Logger for diagnostics.</param>
     /// <param name="loggerFactory">Factory for loggers created later in the run.</param>
     /// <param name="console">Console to write progress and results to.</param>
+    //TODO(#373): the suppression covers pbar and childPBar only, and CS8618 is reported here rather
+    //than at the field, so it has to sit on the constructor. It goes when the progress bar does.
+#pragma warning disable CS8618 // Non-nullable field is uninitialized. Consider declaring as nullable.
     protected CommandBase(ILogger<CommandBase> logger, ILoggerFactory loggerFactory, IConsole console)
+#pragma warning restore CS8618 // Non-nullable field is uninitialized. Consider declaring as nullable.
     {
         _logger = logger;
         _loggerFactory = loggerFactory;
         _console = console;
     }
 
+    //Everything below is created by ConnectAsync, so it is absent until that has succeeded. Each is
+    //read through an accessor that says so, rather than presenting a field that looks always present.
+    private static InvalidOperationException NotConnected([System.Runtime.CompilerServices.CallerMemberName] string? member = null)
+        => new($"'{member}' is not available because the command has not connected to Azure DevOps.");
+
     /// <summary>Client for team project metadata.</summary>
-    protected ProjectHttpClient _projectClient;
+    protected ProjectHttpClient ProjectClient => _projectClient ?? throw NotConnected();
+    private ProjectHttpClient? _projectClient;
 
     /// <summary>Client for classic Build definitions.</summary>
-    protected BuildHttpClient _buildClient;
+    protected BuildHttpClient BuildClient => _buildClient ?? throw NotConnected();
+    private BuildHttpClient? _buildClient;
 
     /// <summary>Client for classic Release definitions.</summary>
-    protected ReleaseHttpClient _releaseClient;
+    protected ReleaseHttpClient ReleaseClient => _releaseClient ?? throw NotConnected();
+    private ReleaseHttpClient? _releaseClient;
 
     /// <summary>Client for task groups and variable groups.</summary>
-    protected TaskAgentHttpClient _taskAgentClient;
+    protected TaskAgentHttpClient TaskAgentClient => _taskAgentClient ?? throw NotConnected();
+    private TaskAgentHttpClient? _taskAgentClient;
 
     /// <summary>Credential built from the supplied access token.</summary>
-    protected VssBasicCredential _credentials;
+    private VssBasicCredential? _credentials;
 
     /// <summary>Connection every client above is created from.</summary>
-    protected VssConnection _connection;
+    protected VssConnection Connection => _connection ?? throw NotConnected();
+    private VssConnection? _connection;
 
     /// <summary>The team project being converted.</summary>
-    protected TeamProject _project;
+    protected TeamProject Project => _project ?? throw NotConnected();
+    private TeamProject? _project;
 
     /// <summary>Build definition references, which carry a name and identifier but no process.</summary>
-    protected List<BuildDefinitionReference> buildDefinitionReferences;
+    protected List<BuildDefinitionReference> buildDefinitionReferences = [];
 
     /// <summary>Fully loaded build definitions.</summary>
     /// <remarks>Appended to from parallel loops, so it must be a concurrent collection.</remarks>
-    protected ConcurrentBag<BuildDefinition> buildDefinitions;
+    protected ConcurrentBag<BuildDefinition> buildDefinitions = [];
 
     /// <summary>Fully loaded release definitions.</summary>
-    protected List<ReleaseDefinition> releaseDefinitions;
+    protected List<ReleaseDefinition> releaseDefinitions = [];
 
+    //TODO(#373): ShellProgressBar cannot express a bar that does not exist yet, and every use site
+    //assigns one immediately before using it. Annotating the two fields would put a null test on all
+    //forty use sites for a type that issue #373 proposes deleting outright.
+    //https://github.com/f2calv/yamlizr/issues/373
     /// <summary>Progress bar for the current top-level operation.</summary>
     protected ProgressBar pbar;
 
@@ -113,7 +133,7 @@ public abstract class CommandBase
         _console.Write($"Retrieving Azure DevOps Project '{project}' ... ");
         try
         {
-            _project = await _projectClient.GetProject(project);
+            _project = await ProjectClient.GetProject(project);
         }
         catch (Exception ex)
         {
@@ -141,11 +161,11 @@ public abstract class CommandBase
         {
             _credentials = new VssBasicCredential(string.Empty, accessToken);
             _connection = new VssConnection(organisationUri, _credentials);
-            await _connection.ConnectAsync(cancellationToken);
-            _projectClient = _connection.GetClient<ProjectHttpClient>();
-            _buildClient = _connection.GetClient<BuildHttpClient>();
-            _releaseClient = _connection.GetClient<ReleaseHttpClient>();
-            _taskAgentClient = _connection.GetClient<TaskAgentHttpClient>();
+            await Connection.ConnectAsync(cancellationToken);
+            _projectClient = Connection.GetClient<ProjectHttpClient>();
+            _buildClient = Connection.GetClient<BuildHttpClient>();
+            _releaseClient = Connection.GetClient<ReleaseHttpClient>();
+            _taskAgentClient = Connection.GetClient<TaskAgentHttpClient>();
             _apiSvc = new ApiService(_loggerFactory.CreateLogger<ApiService>(), accessToken);
         }
         catch (Exception ex)

@@ -1,4 +1,4 @@
-﻿using AzurePipelinesToGitHubActionsConverter.Core;
+using AzurePipelinesToGitHubActionsConverter.Core;
 using CasCap.Common.Extensions;
 using CasCap.Models;
 using CasCap.Utilities;
@@ -123,8 +123,8 @@ class GenerateCommand : CommandBase
         var rootPath = AppDomain.CurrentDomain.BaseDirectory;//or Directory.GetCurrentDirectory()?
         if (outputPath is not null) rootPath = outputPath;
         //always output into a folder named after the project
-        if (!Path.GetFileName(rootPath).Equals(_project.Name, StringComparison.OrdinalIgnoreCase))
-            rootPath = Path.Combine(rootPath, _project.Name);
+        if (!Path.GetFileName(rootPath).Equals(Project.Name, StringComparison.OrdinalIgnoreCase))
+            rootPath = Path.Combine(rootPath, Project.Name);
         if (!Directory.Exists(rootPath))
             if (createDirectory || Prompt.GetYesNo($"Directory '{rootPath}' does not exist, create?", true))
                 Directory.CreateDirectory(rootPath);//create the output folder if it doesn't exist
@@ -134,25 +134,25 @@ class GenerateCommand : CommandBase
         _console.WriteLine($"Pre-loading relevant Azure DevOps objects, this may take some time...");
 
         pbar = new ProgressBar(1, $"Loading build definition references...", pbarOptions);
-        buildDefinitionReferences = await _buildClient.GetDefinitionsAsync(_project.Id);
+        buildDefinitionReferences = await BuildClient.GetDefinitionsAsync(Project.Id);
         pbar.Tick($"{buildDefinitionReferences.Count} build definition reference(s) retrieved.");
         pbar.Dispose();
         buildDefinitions = new ConcurrentBag<BuildDefinition>();
 
         pbar = new ProgressBar(1, $"Loading release definitions...", pbarOptions);
-        releaseDefinitions = await _releaseClient.GetReleaseDefinitionsAsync(_project.Id);
+        releaseDefinitions = await ReleaseClient.GetReleaseDefinitionsAsync(Project.Id);
         pbar.Tick($"{releaseDefinitions.Count} release definition(s) retrieved.");
         pbar.Dispose();
 
         pbar = new ProgressBar(1, $"Loading task groups...", pbarOptions);
-        var taskGroups = await _taskAgentClient.GetTaskGroupsAsync(_project.Id);
+        var taskGroups = await TaskAgentClient.GetTaskGroupsAsync(Project.Id);
         pbar.Tick($"{taskGroups.Count} task group(s) retrieved.");
         pbar.Dispose();
         var taskGroupMap = taskGroups.ToDictionary(k => new TaskGroupVersion(k.Id, k.Version.Major), v => taskGroups.FirstOrDefault(p => p.Id == v.Id && p.Version.Major == v.Version.Major));
         var taskGroupTemplateMap = new ConcurrentDictionary<TaskGroupVersion, Template>();
 
         pbar = new ProgressBar(1, $"Loading extensions...", pbarOptions);
-        var tasks = await _apiSvc.GetAllExtensions(organisation.AbsoluteUri.TrimEnd('/'));
+        var tasks = await ApiSvc.GetAllExtensions(organisation.AbsoluteUri.TrimEnd('/'));
         foreach (var task in tasks)
             task.inputMap = task.inputs.ToDictionary(k => k.name, v => v);
         pbar.Tick($"{tasks.Count} installed extension(s) retrieved.");
@@ -170,7 +170,7 @@ class GenerateCommand : CommandBase
         }
 
         pbar = new ProgressBar(1, $"Loading variable groups...", pbarOptions);
-        var variableGroups = await _taskAgentClient.GetVariableGroupsAsync(_project.Id);
+        var variableGroups = await TaskAgentClient.GetVariableGroupsAsync(Project.Id);
         pbar.Tick($"{variableGroups.Count} variable group(s) retrieved.");
         pbar.Dispose();
         var variableGroupMap = variableGroups.ToDictionary(k => k.Id, v => v);
@@ -202,7 +202,7 @@ class GenerateCommand : CommandBase
 
             async Task ProcessDefinition(BuildDefinitionReference definitionReference)
             {
-                var build = await _buildClient.GetDefinitionAsync(_project.Id, definitionReference.Id);
+                var build = await BuildClient.GetDefinitionAsync(Project.Id, definitionReference.Id);
 
                 if (build is not null && build.Process is not null)
                 {
@@ -295,7 +295,7 @@ class GenerateCommand : CommandBase
 
             async Task ProcessDefinition(ReleaseDefinition releaseDefinition)
             {
-                var release = await _releaseClient.GetReleaseDefinitionAsync(_project.Id, releaseDefinition.Id);
+                var release = await ReleaseClient.GetReleaseDefinitionAsync(Project.Id, releaseDefinition.Id);
 
                 var generator = new YamlPipelineGenerator(
                     null,
