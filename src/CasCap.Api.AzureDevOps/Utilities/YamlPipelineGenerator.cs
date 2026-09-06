@@ -11,6 +11,16 @@ using System.Text.RegularExpressions;
 
 namespace CasCap.Utilities;
 
+/// <summary>Converts one classic Build or Release definition into an Azure Pipelines YAML document.</summary>
+/// <remarks>
+/// An instance handles a single definition, and <see cref="Warnings"/> is only complete once
+/// <see cref="GenPipeline"/> has returned.
+/// <para>
+/// The conversion is deliberately incomplete: several classic constructs have no YAML equivalent.
+/// Anything that cannot be represented is recorded in <see cref="Warnings"/> rather than dropped
+/// silently, so the caller can report it.
+/// </para>
+/// </remarks>
 public class YamlPipelineGenerator
 {
     private readonly BuildDefinition _build;
@@ -38,6 +48,19 @@ public class YamlPipelineGenerator
         Release
     }
 
+    /// <summary>Creates a generator for a single definition.</summary>
+    /// <remarks>Exactly one of <paramref name="build"/> and <paramref name="release"/> must be supplied.</remarks>
+    /// <param name="build">The classic Build definition to convert, or null when converting a release.</param>
+    /// <param name="release">The classic Release definition to convert, or null when converting a build.</param>
+    /// <param name="taskMap">Installed tasks, keyed by task identifier then major version.</param>
+    /// <param name="taskGroupMap">Task groups, keyed by identifier and version.</param>
+    /// <param name="taskGroupTemplateMap">
+    /// Templates generated so far, shared across every definition in the run and appended to as task
+    /// groups are encountered, which is why it is concurrent.
+    /// </param>
+    /// <param name="variableGroupMap">Variable groups, keyed by identifier.</param>
+    /// <param name="inlineTaskGroups">True to expand task group steps in place instead of emitting a template reference.</param>
+    /// <param name="phaseType">The single deploy phase type to convert; other phases are reported and skipped.</param>
     public YamlPipelineGenerator(
         BuildDefinition build,
         ReleaseDefinition release,
@@ -59,6 +82,15 @@ public class YamlPipelineGenerator
         _phaseType = phaseType;
     }
 
+    /// <summary>Converts the definition supplied to the constructor.</summary>
+    /// <remarks>
+    /// The result is flattened to the simplest shape that fits, because the schema rejects a document
+    /// mixing them: several stages become <see cref="Pipeline.stages"/>, a single stage with several
+    /// jobs becomes <see cref="Pipeline.jobs"/>, and a single job becomes <see cref="Pipeline.steps"/>.
+    /// Flattening discards settings that only a stage or a job can carry, which is reported.
+    /// </remarks>
+    /// <returns>The generated pipeline, or null when the definition produced nothing convertible.</returns>
+    /// <exception cref="GenericException">Thrown when neither or both of a build and a release were supplied.</exception>
     public Pipeline GenPipeline()
     {
         var pipeline = new Pipeline();

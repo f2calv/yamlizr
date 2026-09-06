@@ -1,8 +1,14 @@
 ﻿namespace CasCap.Models;
 
+/// <summary>A continuous integration or pull request trigger.</summary>
+/// <remarks>
+/// Exists to let the emitted property order be controlled independently of <see cref="Trigger"/>.
+/// <para>
+/// Hiding the inherited <c>batch</c> and <c>autoCancel</c> properties with <c>new</c> is not viable:
+/// the serialiser then throws <see cref="System.Reflection.AmbiguousMatchException"/> because two
+/// properties of the same name are visible on the type.
+/// </para>
+/// </remarks>
 public class TriggerAzDO : Trigger
 {
-    // comment out batch else get the error Unhandled exception. System.Reflection.AmbiguousMatchException: Ambiguous match found for 'CasCap.Models.TriggerAzDO Boolean batch'.
-    //public new bool batch { get; set; }
-    //public new bool autoCancel { get; set; }
 }
