@@ -71,7 +71,8 @@ public class YamlPipelineGenerator
             pipeline.trigger = GenTrigger();
             if (_build.Queue is not null)
                 pipeline.pool = new Pool { name = _build.Queue.Name };
-            pipeline.variables = GenVariables(VariableType.Build);
+            var buildVariables = GenVariables(VariableType.Build);
+            pipeline.variables = buildVariables.IsNullOrEmpty() ? null : buildVariables;
             var buildStage = GenBuildStage();
             if (buildStage is not null)
                 if (buildStage.jobs.Length == 1)
@@ -88,8 +89,8 @@ public class YamlPipelineGenerator
         }
         else if (_build is null && _release is not null)//create release pipeline
         {
-            pipeline.variables = GenVariables(VariableType.Release);
-            if (pipeline.variables.Count == 0) pipeline.variables = null;
+            var releaseVariables = GenVariables(VariableType.Release);
+            pipeline.variables = releaseVariables.IsNullOrEmpty() ? null : releaseVariables;
             var releaseStages = GenReleaseStages();
             if (releaseStages is not null)
             {
@@ -154,7 +155,15 @@ public class YamlPipelineGenerator
             jobName = job.job;
             j++;
         }
-        return jobs.IsNullOrEmpty() ? null : new StageAzDO { displayName = _build.Name, stage = (_build.Name ?? "Build").Sanitize().Replace(" ", "_"), variables = GenVariables(VariableType.Build), jobs = jobs.ToArray() };
+        if (jobs.IsNullOrEmpty()) return null;
+        var stageVariables = GenVariables(VariableType.Build);
+        return new StageAzDO
+        {
+            displayName = _build.Name,
+            stage = (_build.Name ?? "Build").Sanitize().Replace(" ", "_"),
+            variables = stageVariables.IsNullOrEmpty() ? null : stageVariables,
+            jobs = jobs.ToArray(),
+        };
     }
 
     TriggerAzDO GenTrigger()
