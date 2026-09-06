@@ -84,6 +84,7 @@ Names below assume the default prefix.
 | `yamlizr.test.multi-phase` | Three agent phases, phase-to-phase dependencies, a fan-in, and a phase condition other than `succeeded()` |
 | `yamlizr.test.server-phase` | An agentless phase next to an agent phase, so the phase yamlizr skips is exercised |
 | `yamlizr.test.multiline-scripts` | Multi-line Bash, PowerShell and cmd scripts, a trailing blank line, and a whitespace-only script |
+| `yamlizr.test.task-variety` | Fourteen in-box tasks across two phases, covering step-level `env`, `timeoutInMinutes`, `continueOnError` and conditions other than `succeeded()` |
 | `yamlizr.test.task-groups` | A task group whose name contains spaces, referenced four times: defaults kept, defaults overridden, nested, and disabled |
 | `yamlizr.test.triggers-and-variables` | Continuous integration, pull request and scheduled triggers with branch and path filters, definition variables including a secret and one settable at queue time, and a linked variable group |
 | `yamlizr.test.uninstalled-extension` | A step whose task is not installed, covering the null path in [issue #177](https://github.com/f2calv/yamlizr/issues/177). Only created with `-IncludeUnknownTask` |

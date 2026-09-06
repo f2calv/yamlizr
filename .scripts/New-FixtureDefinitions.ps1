@@ -398,9 +398,11 @@ function New-TaskStep {
         [Parameter(Mandatory)][string]$TaskName,
         [Parameter(Mandatory)][string]$DisplayName,
         [hashtable]$Inputs = @{},
+        [hashtable]$Environment = @{},
         [bool]$Enabled = $true,
         [bool]$ContinueOnError = $false,
         [bool]$AlwaysRun = $false,
+        [int]$TimeoutInMinutes = 0,
         [string]$Condition = 'succeeded()'
     )
 
@@ -411,16 +413,45 @@ function New-TaskStep {
     $task = $script:Tasks[$TaskName]
 
     return @{
-        environment      = @{}
+        environment      = $Environment
         enabled          = $Enabled
         continueOnError  = $ContinueOnError
         alwaysRun        = $AlwaysRun
         displayName      = $DisplayName
-        timeoutInMinutes = 0
+        timeoutInMinutes = $TimeoutInMinutes
         condition        = $Condition
         task             = @{ id = $task.Id; versionSpec = $task.VersionSpec; definitionType = 'task' }
         inputs           = $Inputs
     }
+}
+
+function New-OptionalTaskStep {
+    <#
+    .SYNOPSIS
+        Builds a step only when the task is installed, warning and omitting it when it is not.
+    .DESCRIPTION
+        The in-box task catalogue varies between organisations, so a fixture spanning many tasks would
+        otherwise fail outright on the first one that is absent rather than building what it can.
+    #>
+    [CmdletBinding()]
+    [OutputType([hashtable])]
+    param(
+        [Parameter(Mandatory)][string]$TaskName,
+        [Parameter(Mandatory)][string]$DisplayName,
+        [hashtable]$Inputs = @{},
+        [hashtable]$Environment = @{},
+        [bool]$ContinueOnError = $false,
+        [int]$TimeoutInMinutes = 0,
+        [string]$Condition = 'succeeded()'
+    )
+
+    if (-not $script:Tasks.ContainsKey($TaskName)) {
+        Write-Warning "Task '$TaskName' is not installed, so the '$DisplayName' step is omitted from the fixture."
+        return
+    }
+
+    return New-TaskStep -TaskName $TaskName -DisplayName $DisplayName -Inputs $Inputs -Environment $Environment `
+        -ContinueOnError $ContinueOnError -TimeoutInMinutes $TimeoutInMinutes -Condition $Condition
 }
 
 function New-TaskGroupStep {
@@ -908,6 +939,76 @@ function New-FixtureBuildDefinitions {
             New-TaskStep -TaskName 'PowerShell' -DisplayName 'Multi-line PowerShell' -Inputs @{ targetType = 'inline'; script = $script:MultiLinePowerShell }
             New-TaskStep -TaskName 'CmdLine' -DisplayName 'Multi-line cmd with trailing blank line' -Inputs @{ script = "echo one`necho two`n`n" }
             New-TaskStep -TaskName 'Bash' -DisplayName 'Script that is only whitespace' -Inputs @{ targetType = 'inline'; script = "   `n   `n" }
+        )
+    )
+
+    # A spread of in-box tasks, so the generated YAML is more than script steps, and the step level
+    # env, timeout and continueOnError the README claims to convert are actually exercised.
+    $created.TaskVariety = Set-FixtureBuildDefinition -Name "$($script:Prefix)task-variety" -Phases @(
+        New-AgentPhase -Name 'Restore and build' -RefName 'Phase_1' -Steps @(
+            New-OptionalTaskStep -TaskName 'UseDotNet' -DisplayName 'Use the .NET SDK' -Inputs @{
+                packageType = 'sdk'
+                version     = '8.0.x'
+            }
+            New-OptionalTaskStep -TaskName 'NuGetToolInstaller' -DisplayName 'Install NuGet' -Inputs @{ versionSpec = '6.x' }
+            New-OptionalTaskStep -TaskName 'NuGetCommand' -DisplayName 'NuGet restore' -Inputs @{
+                command         = 'restore'
+                restoreSolution = '**/*.sln'
+            }
+            New-OptionalTaskStep -TaskName 'DotNetCoreCLI' -DisplayName 'dotnet build' -Inputs @{
+                command   = 'build'
+                projects  = '**/*.csproj'
+                arguments = '--configuration $(BuildConfiguration) --no-restore'
+            }
+            New-OptionalTaskStep -TaskName 'MSBuild' -DisplayName 'MSBuild with arguments' -Inputs @{
+                solution         = '**/*.sln'
+                configuration    = '$(BuildConfiguration)'
+                msbuildArguments = '/p:DeployOnBuild=true'
+            }
+            New-OptionalTaskStep -TaskName 'NodeTool' -DisplayName 'Use Node' -Inputs @{ versionSpec = '20.x' }
+            New-OptionalTaskStep -TaskName 'Npm' -DisplayName 'npm ci' -Inputs @{
+                command    = 'ci'
+                workingDir = 'src/web'
+            }
+        )
+        New-AgentPhase -Name 'Test and package' -RefName 'Phase_2' -DependsOn @('Phase_1') -Steps @(
+            New-OptionalTaskStep -TaskName 'DotNetCoreCLI' -DisplayName 'dotnet test, tolerating failure' `
+                -ContinueOnError $true -TimeoutInMinutes 15 `
+                -Environment @{
+                DOTNET_SKIP_FIRST_TIME_EXPERIENCE = 'true'
+                DOTNET_CLI_TELEMETRY_OPTOUT       = '1'
+            } -Inputs @{
+                command   = 'test'
+                projects  = '**/*Tests.csproj'
+                arguments = '--configuration $(BuildConfiguration) --collect:"XPlat Code Coverage"'
+            }
+            New-OptionalTaskStep -TaskName 'PublishTestResults' -DisplayName 'Publish test results' -Condition 'succeededOrFailed()' -Inputs @{
+                testResultsFormat = 'VSTest'
+                testResultsFiles  = '**/*.trx'
+                mergeTestResults  = 'true'
+            }
+            New-OptionalTaskStep -TaskName 'PublishCodeCoverageResults' -DisplayName 'Publish coverage' -Condition 'succeededOrFailed()' -Inputs @{
+                summaryFileLocation = '$(Agent.TempDirectory)/**/coverage.cobertura.xml'
+            }
+            New-OptionalTaskStep -TaskName 'CopyFiles' -DisplayName 'Stage the output' -Inputs @{
+                SourceFolder = '$(Build.SourcesDirectory)'
+                Contents     = '**/bin/$(BuildConfiguration)/**'
+                TargetFolder = '$(Build.ArtifactStagingDirectory)'
+            }
+            New-OptionalTaskStep -TaskName 'ArchiveFiles' -DisplayName 'Archive the staged output' -Inputs @{
+                rootFolderOrFile  = '$(Build.ArtifactStagingDirectory)'
+                includeRootFolder = 'false'
+                archiveType       = 'zip'
+                archiveFile       = '$(Build.ArtifactStagingDirectory)/package.zip'
+            }
+            New-OptionalTaskStep -TaskName 'PublishPipelineArtifact' -DisplayName 'Publish the package' -Inputs @{
+                targetPath = '$(Build.ArtifactStagingDirectory)/package.zip'
+                artifact   = 'package'
+            }
+            New-OptionalTaskStep -TaskName 'DeleteFiles' -DisplayName 'Clean the staging directory' -Condition 'always()' -Inputs @{
+                SourceFolder = '$(Build.ArtifactStagingDirectory)'
+                Contents     = '**/*'
+            }
         )
     )
 
