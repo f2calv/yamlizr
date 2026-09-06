@@ -146,14 +146,66 @@ public class YamlPipelineGeneratorTests
     [InlineData("1st phase")]
     public void GenPipeline_PhaseNameNeedingSanitising_ProducesAValidJobIdentifier(string phaseName)
     {
-        var definition = YamlizrTestData.BuildDefinitionWithPhases(
-            "Azure Pipelines", YamlizrTestData.Step(YamlizrTestData.KnownTaskId), "Phase one", phaseName);
+        var pipeline = GenerateWithPhases("Phase one", phaseName);
+
+        Assert.NotNull(pipeline.jobs);
+        //asserts the contract rather than exact names, which the sanitising cases below already cover
+        Assert.All(pipeline.jobs, p => Assert.Matches("^[A-Za-z_][A-Za-z0-9_]*$", p.job));
+    }
+
+    //https://github.com/f2calv/yamlizr/issues/368
+    [Fact]
+    public void GenPipeline_DistinctPhaseNames_AreNotSuffixed()
+    {
+        var pipeline = GenerateWithPhases("Alpha", "Beta");
+
+        Assert.Equal(["Alpha", "Beta"], pipeline.jobs.Select(p => p.job));
+    }
+
+    [Fact]
+    public void GenPipeline_PhasesSharingOneName_ProduceUniqueJobIdentifiers()
+    {
+        //a classic definition names every phase "Agent job" until someone renames them
+        var pipeline = GenerateWithPhases("Agent job", "Agent job", "Agent job");
+
+        Assert.Equal(["Agent_job", "Agent_job_1", "Agent_job_2"], pipeline.jobs.Select(p => p.job));
+        //dependsOn has to name the identifier actually emitted, not the shared phase name
+        Assert.Null(pipeline.jobs[0].dependsOn);
+        Assert.Equal(["Agent_job"], pipeline.jobs[1].dependsOn);
+        Assert.Equal(["Agent_job_1"], pipeline.jobs[2].dependsOn);
+    }
+
+    [Fact]
+    public void GenPipeline_PhaseNamesCollidingOnlyAfterSanitising_ProduceUniqueJobIdentifiers()
+    {
+        var pipeline = GenerateWithPhases("Build (x86)", "Build [x86]");
+
+        Assert.Equal(["Build_x86", "Build_x86_1"], pipeline.jobs.Select(p => p.job));
+    }
+
+    [Fact]
+    public void GenPipeline_UnnamedPhases_AreGivenUniqueGeneratedNames()
+    {
+        var pipeline = GenerateWithPhases("   ", null);
+
+        Assert.Equal(["Phase_1", "Phase_2"], pipeline.jobs.Select(p => p.job));
+    }
+
+    private static Pipeline GenerateWithPhases(params string[] phaseNames)
+        => YamlizrTestData.Generator(
+            YamlizrTestData.BuildDefinitionWithPhases(
+                "Azure Pipelines", YamlizrTestData.Step(YamlizrTestData.KnownTaskId), phaseNames))
+            .GenPipeline();
+
+    [Fact]
+    public void GenPipeline_DeployPhasesSharingOneName_ProduceUniqueJobIdentifiers()
+    {
+        var definition = YamlizrTestData.ReleaseDefinitionWithPhases("Dev", "Agent job", "Agent job");
 
         var pipeline = YamlizrTestData.Generator(definition).GenPipeline();
 
-        Assert.NotNull(pipeline.jobs);
-        //asserts the contract rather than an exact name, which also carries the issue #368 index suffix
-        Assert.All(pipeline.jobs, p => Assert.Matches("^[A-Za-z_][A-Za-z0-9_]*$", p.job));
+        Assert.Equal(["Agent_job", "Agent_job_1"], pipeline.jobs.Select(p => p.job));
+        Assert.Equal(["Agent_job"], pipeline.jobs[1].dependsOn);
     }
 
     [Fact]

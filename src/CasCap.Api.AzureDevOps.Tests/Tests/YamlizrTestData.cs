@@ -133,30 +133,50 @@ public static class YamlizrTestData
     /// <param name="environmentNames">Environment names, in rank order.</param>
     public static ReleaseDefinition ReleaseDefinition(params string[] environmentNames)
     {
-        //the SDK leaves these collections null, unlike the build definition equivalents
-        var definition = new ReleaseDefinition
-        {
-            Id = 7,
-            Name = "sample release",
-            Environments = [],
-        };
+        var definition = NewReleaseDefinition();
 
         var rank = 1;
         foreach (var environmentName in environmentNames)
-        {
-            var environment = new ReleaseDefinitionEnvironment
-            {
-                Name = environmentName,
-                Rank = rank,
-                DeployPhases = [],
-                Variables = new Dictionary<string, ConfigurationVariableValue>(),
-                VariableGroups = [],
-            };
+            definition.Environments.Add(NewEnvironment(environmentName, rank++, "Agent job"));
 
+        return definition;
+    }
+
+    /// <summary>Builds a classic release definition with one environment carrying a deploy phase per supplied name.</summary>
+    /// <remarks>
+    /// More than one deploy phase is required for the generator to emit jobs; the sole stage is
+    /// flattened, so a single phase would be reduced to a bare step list and hide the job identifier.
+    /// </remarks>
+    /// <param name="environmentName">Environment name, emitted as the stage.</param>
+    /// <param name="phaseNames">Deploy phase names, in rank order.</param>
+    public static ReleaseDefinition ReleaseDefinitionWithPhases(string environmentName, params string[] phaseNames)
+    {
+        var definition = NewReleaseDefinition();
+        definition.Environments.Add(NewEnvironment(environmentName, 1, phaseNames));
+        return definition;
+    }
+
+    //the SDK leaves these collections null, unlike the build definition equivalents
+    private static ReleaseDefinition NewReleaseDefinition()
+        => new() { Id = 7, Name = "sample release", Environments = [] };
+
+    private static ReleaseDefinitionEnvironment NewEnvironment(string name, int rank, params string[] phaseNames)
+    {
+        var environment = new ReleaseDefinitionEnvironment
+        {
+            Name = name,
+            Rank = rank,
+            DeployPhases = [],
+            Variables = new Dictionary<string, ConfigurationVariableValue>(),
+            VariableGroups = [],
+        };
+
+        var phaseRank = 1;
+        foreach (var phaseName in phaseNames)
             environment.DeployPhases.Add(new AgentBasedDeployPhase
             {
-                Name = "Agent job",
-                Rank = 1,
+                Name = phaseName,
+                Rank = phaseRank++,
                 DeploymentInput = new AgentDeploymentInput { Condition = "succeeded()" },
                 WorkflowTasks =
                 {
@@ -171,11 +191,7 @@ public static class YamlizrTestData
                 }
             });
 
-            definition.Environments.Add(environment);
-            rank++;
-        }
-
-        return definition;
+        return environment;
     }
 
     /// <summary>Creates a generator over a release definition with no task groups or variable groups.</summary>

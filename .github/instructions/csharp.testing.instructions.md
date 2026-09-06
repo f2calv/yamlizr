@@ -47,6 +47,16 @@ Tests/
 - Consolidate facts that differ only by input into one `[Theory]` with `[InlineData]`.
 - Keep `[Fact]` for tests whose setup or assertions do not parameterize cleanly.
 
+## Duplication
+
+Test code is held to the same duplication gate as production code. SonarCloud fails a pull request
+above 3% duplication on new code, and copy-pasted arrange blocks are the usual cause.
+
+- When two tests differ only by input, use a `[Theory]`. When they differ only by fixture or by the assertion, extract a private helper on the test class that takes the varying values as parameters.
+- Build a new fixture from an existing one rather than restating it. A fixture that varies a single dimension should delegate to a shared private builder in the same `*TestData.cs`, not repeat the object graph.
+- Extract a repeated arrange block once it appears in a third test, or as soon as it exceeds a handful of lines in a second.
+- Keep the intent readable after extracting. A helper named for what it asserts, such as `AssertGeneratedYamlIsAccepted`, is preferable to one named for its mechanics.
+
 ## Test Method Naming
 
 - Name test methods after the method or feature under test, such as `GenPipeline` or `SanitizesDefinitionName`.

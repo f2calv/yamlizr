@@ -125,6 +125,20 @@ public class PipelineValidationTests : TestBase
     {
         Assert.SkipUnless(CanValidate, NoValidationPipeline);
 
+        await AssertGeneratedYamlIsAccepted("Phase one", "Phase two", "Phase three, fan-in");
+    }
+
+    //https://github.com/f2calv/yamlizr/issues/368
+    [Fact]
+    public async Task GeneratedYaml_ForPhasesSharingOneName_IsAccepted()
+    {
+        Assert.SkipUnless(CanValidate, NoValidationPipeline);
+
+        await AssertGeneratedYamlIsAccepted("Agent job", "Agent job", "Agent job");
+    }
+
+    private async Task AssertGeneratedYamlIsAccepted(params string[] phaseNames)
+    {
         //CmdLine really exists, because Azure DevOps rejects a reference to a task it cannot resolve
         var taskMap = YamlizrTestData.TaskMap("CmdLine", 2, "script");
         var step = YamlizrTestData.Step(
@@ -132,11 +146,8 @@ public class PipelineValidationTests : TestBase
             versionSpec: "2.*",
             inputs: new Dictionary<string, string> { ["script"] = "echo hello" });
 
-        var definition = YamlizrTestData.BuildDefinitionWithPhases(
-            "Azure Pipelines", step, "Phase one", "Phase two", "Phase three, fan-in");
-
-        var pipeline = YamlizrTestData.Generator(definition, taskMap).GenPipeline();
-        var yaml = pipeline.ToString();
+        var definition = YamlizrTestData.BuildDefinitionWithPhases("Azure Pipelines", step, phaseNames);
+        var yaml = YamlizrTestData.Generator(definition, taskMap).GenPipeline().ToString();
 
         var result = await Validate(yaml);
 
