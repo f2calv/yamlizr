@@ -143,6 +143,29 @@ public class PipelineValidationTests : TestBase
         Assert.True(result.IsValid, $"{result.Message}{Environment.NewLine}{yaml}");
     }
 
+    //https://github.com/f2calv/yamlizr/issues/368
+    [Fact]
+    public async Task GeneratedYaml_ForPhasesSharingOneName_IsAccepted()
+    {
+        Assert.SkipUnless(CanValidate, NoValidationPipeline);
+
+        var taskMap = YamlizrTestData.TaskMap("CmdLine", 2, "script");
+        var step = YamlizrTestData.Step(
+            YamlizrTestData.KnownTaskId,
+            versionSpec: "2.*",
+            inputs: new Dictionary<string, string> { ["script"] = "echo hello" });
+
+        var definition = YamlizrTestData.BuildDefinitionWithPhases(
+            "Azure Pipelines", step, "Agent job", "Agent job", "Agent job");
+
+        var pipeline = YamlizrTestData.Generator(definition, taskMap).GenPipeline();
+        var yaml = pipeline.ToString();
+
+        var result = await Validate(yaml);
+
+        Assert.True(result.IsValid, $"{result.Message}{Environment.NewLine}{yaml}");
+    }
+
     private Task<PipelineValidationResult> Validate(string yaml)
         => _apiSvc.Validate(Options.OrganisationUri, Options.Project, Options.ValidationPipelineId.Value, yaml, TestContext.Current.CancellationToken);
 }

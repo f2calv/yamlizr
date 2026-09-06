@@ -159,11 +159,9 @@ public class YamlPipelineGenerator
         if (allPhases.Count > phases.Count)
             _warnings.Add($"{allPhases.Count - phases.Count} non-agent build phase(s) are not converted, see https://github.com/f2calv/yamlizr/issues/182");
         if (phases.IsNullOrEmpty()) return null;
-        //TODO(#368): inverted, this is true when the names DIFFER. Phases that all share one name get
-        //no suffix and so produce duplicate job identifiers. https://github.com/f2calv/yamlizr/issues/368
-        var duplicatePhaseNames = phases.Select(p => p.Name).Distinct().Count() > 1;
 
         // Identifiers are assigned up front, because a phase may depend on one declared after it.
+        var usedJobIds = new HashSet<string>(phases.Count, StringComparer.OrdinalIgnoreCase);
         var converted = new List<(Phase phase, string jobId, List<Step> steps)>(phases.Count);
         var j = 0;
         foreach (var phase in phases)
@@ -174,8 +172,7 @@ public class YamlPipelineGenerator
             if (steps.IsNullOrEmpty()) continue;
             //a classic phase can have no name, which used to throw from Sanitize().Replace()
             var phaseName = string.IsNullOrWhiteSpace(phase.Name) ? $"Phase {j + 1}" : phase.Name;
-            var identifier = ToIdentifier(phaseName, $"Phase_{j + 1}");
-            converted.Add((phase, duplicatePhaseNames ? $"{identifier}_{j}" : identifier, steps));
+            converted.Add((phase, ToUniqueIdentifier(phaseName, $"Phase_{j + 1}", usedJobIds), steps));
             j++;
         }
         if (converted.IsNullOrEmpty()) return null;
@@ -355,6 +352,27 @@ public class YamlPipelineGenerator
         return char.IsAsciiDigit(identifier[0]) ? $"_{identifier}" : identifier;
     }
 
+    /// <summary>
+    /// Returns the identifier for <paramref name="name"/>, suffixed only as far as needed to be unique
+    /// within <paramref name="used"/>, to which the result is added.
+    /// </summary>
+    /// <remarks>
+    /// Azure Pipelines requires job identifiers to be unique within a stage, and resolves dependsOn
+    /// case-insensitively, so uniqueness is tracked that way. Collisions are tested for rather than
+    /// predicted from the phase names, because two distinct names can sanitise to one identifier.
+    /// </remarks>
+    private static string ToUniqueIdentifier(string name, string fallback, HashSet<string> used)
+    {
+        var identifier = ToIdentifier(name, fallback);
+        if (used.Add(identifier)) return identifier;
+
+        var suffix = 1;
+        string candidate;
+        do candidate = $"{identifier}_{suffix++}";
+        while (!used.Add(candidate));
+        return candidate;
+    }
+
     StageAzDO[] GenReleaseStages()
     {
         if (_release.Environments.IsNullOrEmpty()) return null;
@@ -407,9 +425,7 @@ public class YamlPipelineGenerator
         {
             var jobName = string.Empty;
             var jobs = new List<Job>();
-            //TODO(#368): inverted as in GenBuildStage, and counted over every deploy phase rather than
-            //only those matching _phaseType. https://github.com/f2calv/yamlizr/issues/368
-            var duplicatePhaseNames = environment.DeployPhases.Select(p => p.Name).Distinct().Count() > 1;
+            var usedJobIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             //TODO(#182): --phasetype selects a single deploy phase type, the rest are skipped.
             //https://github.com/f2calv/yamlizr/issues/182
             var skipped = environment.DeployPhases.Count(p => p.PhaseType != _phaseType);
@@ -432,7 +448,7 @@ public class YamlPipelineGenerator
                     condition = GenCondition(deploymentInput.Condition),
                     dependsOn = string.IsNullOrWhiteSpace(jobName) ? null : new[] { jobName },
                     displayName = phaseName,
-                    job = duplicatePhaseNames ? $"{ToIdentifier(phaseName, $"Phase_{j + 1}")}_{j}" : ToIdentifier(phaseName, $"Phase_{j + 1}"),
+                    job = ToUniqueIdentifier(phaseName, $"Phase_{j + 1}", usedJobIds),
                     steps = new List<Step>(steps).ToArray(),
                     timeoutInMinutes = deploymentInput.TimeoutInMinutes,
                 };

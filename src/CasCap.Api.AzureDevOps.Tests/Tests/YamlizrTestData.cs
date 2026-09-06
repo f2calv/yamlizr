@@ -178,6 +178,55 @@ public static class YamlizrTestData
         return definition;
     }
 
+    /// <summary>Builds a classic release definition with one environment carrying a deploy phase per supplied name.</summary>
+    /// <remarks>
+    /// More than one deploy phase is required for the generator to emit jobs; the sole stage is
+    /// flattened, so a single phase would be reduced to a bare step list and hide the job identifier.
+    /// </remarks>
+    /// <param name="environmentName">Environment name, emitted as the stage.</param>
+    /// <param name="phaseNames">Deploy phase names, in rank order.</param>
+    public static ReleaseDefinition ReleaseDefinitionWithPhases(string environmentName, params string[] phaseNames)
+    {
+        var definition = new ReleaseDefinition
+        {
+            Id = 7,
+            Name = "sample release",
+            Environments = [],
+        };
+
+        var environment = new ReleaseDefinitionEnvironment
+        {
+            Name = environmentName,
+            Rank = 1,
+            DeployPhases = [],
+            Variables = new Dictionary<string, ConfigurationVariableValue>(),
+            VariableGroups = [],
+        };
+
+        var rank = 1;
+        foreach (var phaseName in phaseNames)
+            environment.DeployPhases.Add(new AgentBasedDeployPhase
+            {
+                Name = phaseName,
+                Rank = rank++,
+                DeploymentInput = new AgentDeploymentInput { Condition = "succeeded()" },
+                WorkflowTasks =
+                {
+                    new WorkflowTask
+                    {
+                        Enabled = true,
+                        Name = "sample step",
+                        TaskId = KnownTaskId,
+                        Version = "1.*",
+                        DefinitionType = "task",
+                    }
+                }
+            });
+
+        definition.Environments.Add(environment);
+        return definition;
+    }
+
     /// <summary>Creates a generator over a release definition with no task groups or variable groups.</summary>
     public static YamlPipelineGenerator Generator(ReleaseDefinition release, Dictionary<Guid, Dictionary<int, TaskObj>> taskMap = null)
         => new(
