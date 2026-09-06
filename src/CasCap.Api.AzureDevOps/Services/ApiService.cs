@@ -28,7 +28,7 @@ public class ApiService : HttpClientBase, IApiService
     }
 
     /// <inheritdoc/>
-    public async Task<List<TaskObj>> GetAllExtensions(string organisationUri)
+    public async Task<List<TaskObj>?> GetAllExtensions(string organisationUri)
     {
         _logger.LogInformation("{ClassName} retrieving all extensions for organisation '{OrganisationUri}'",
             nameof(ApiService), organisationUri);
@@ -65,7 +65,7 @@ public class ApiService : HttpClientBase, IApiService
         return new PipelineValidationResult { IsValid = false, Message = message };
     }
 
-    private static string ReadProperty(string json, string name)
+    private static string? ReadProperty(string json, string name)
     {
         if (string.IsNullOrWhiteSpace(json)) return null;
 

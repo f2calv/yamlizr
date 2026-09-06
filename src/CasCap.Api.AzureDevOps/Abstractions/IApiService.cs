@@ -12,7 +12,7 @@ public interface IApiService
     /// </remarks>
     /// <param name="organisationUri">Absolute organisation Uri, for example <c>https://dev.azure.com/myorg</c>.</param>
     /// <returns>Every installed task, or null when the response carried none.</returns>
-    Task<List<TaskObj>> GetAllExtensions(string organisationUri);
+    Task<List<TaskObj>?> GetAllExtensions(string organisationUri);
 
     /// <summary>Asks Azure DevOps to parse a YAML document without queueing a run.</summary>
     /// <remarks>

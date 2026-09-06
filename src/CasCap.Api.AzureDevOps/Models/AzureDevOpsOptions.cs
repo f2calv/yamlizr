@@ -17,15 +17,15 @@ public record AzureDevOpsOptions
     /// <summary>Personal Access Token, or an access token issued to a pipeline's build service identity.</summary>
     /// <remarks>Never validated by length; a pipeline access token is a different length from a PAT.</remarks>
     [MinLength(1)]
-    public string PAT { get; init; }
+    public string? PAT { get; init; }
 
     /// <summary>Absolute Uri of the Azure DevOps organisation, e.g. <c>https://dev.azure.com/myorg</c>.</summary>
     [Url]
-    public string OrganisationUri { get; init; }
+    public string? OrganisationUri { get; init; }
 
     /// <summary>Name of the Azure DevOps team project to convert.</summary>
     [MinLength(1)]
-    public string Project { get; init; }
+    public string? Project { get; init; }
 
     /// <summary>Identifier of a YAML pipeline used only as a target for validating generated YAML.</summary>
     /// <remarks>
