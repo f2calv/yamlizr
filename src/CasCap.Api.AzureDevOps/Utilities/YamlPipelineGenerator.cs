@@ -337,8 +337,17 @@ public class YamlPipelineGenerator
     {
         if (string.IsNullOrWhiteSpace(name)) return fallback;
 
-        //DELIBERATE REGRESSION, see issue #366. Revert once CI has demonstrated the gate.
-        return name.Sanitize().Replace(" ", "_");
+        var builder = new StringBuilder(name.Length);
+        foreach (var c in name)
+            builder.Append(char.IsAsciiLetterOrDigit(c) || c == '_' ? c : '_');
+
+        // Collapse runs so "Phase three, fan-in" does not become Phase_three__fan_in.
+        var identifier = Regex.Replace(builder.ToString(), "_{2,}", "_").Trim('_');
+
+        if (identifier.Length == 0) return fallback;
+
+        // An identifier may not start with a digit.
+        return char.IsAsciiDigit(identifier[0]) ? $"_{identifier}" : identifier;
     }
 
     StageAzDO[] GenReleaseStages()
