@@ -178,7 +178,7 @@ All generated YAML is written into sub-folders of a project folder, so a run wit
 - `c:/temp/myoutputfolder/<your AzDO project>/GitHubReleases/*.yml` (with `--githubactions`)
 
 Each run finishes with a summary of anything it could not convert, see
-[Known Limitations](#known-limitations).
+[Conversion Coverage](#conversion-coverage).
 
 ## Configuration
 
@@ -282,30 +282,59 @@ This _is not_ a delicate tool to create perfectly constructed YAML pipelines. In
 
 With `--githubactions` the same Azure DevOps Pipeline objects are additionally passed into the [AzurePipelinesToGitHubActionsConverter library](https://github.com/samsmithnz/AzurePipelinesToGitHubActionsConverter) (by [@samsmithnz](https://github.com/samsmithnz)) and exported as GitHub Actions compliant workflows.
 
-## Known Limitations
+## Conversion Coverage
 
-The tool converts as much of a classic definition as it can and reports whatever it cannot. Anything
-listed below is **absent from the generated YAML** and must be re-created by hand. Every run prints a
-summary of the constructs it skipped, naming the definition and the construct, so nothing is dropped
-without a trace. Progress on closing these gaps is tracked in
+Every run finishes with a summary naming each construct it could not convert and the definition it
+came from, so nothing is dropped without a trace. Anything marked ❌ below is **absent from the
+generated YAML** and must be re-created by hand. Progress on closing these gaps is tracked in
 [issue #182](https://github.com/f2calv/yamlizr/issues/182).
 
-| Classic construct | Status |
-| --- | --- |
-| Release artifacts | Not converted; a generated release pipeline has no inputs. |
-| Pre- and post-deployment approvals and gates | Not converted. |
-| Stage inter-dependencies (`dependsOn`) | Not converted; generated stages run concurrently rather than in the classic environment order. |
-| Non-agent build phases (server, deployment group) | Not converted. |
-| Deploy phases other than `--phasetype` | Not converted. |
-| Triggers other than continuous integration (pull request, scheduled, build completion) | Not converted. |
-| Steps referencing an uninstalled extension | Not converted; reported by name and task id. |
-| Stage or job settings on a single-stage or single-job definition | A lone stage or job is flattened into a bare step list, dropping stage-level variables and a non-default job condition. |
-| Combined build plus release multi-stage pipelines | Build and release definitions are emitted as separate files. |
+✅ converted &nbsp;&nbsp; ⚠️ partially converted &nbsp;&nbsp; ❌ not converted
+
+### Build Definitions
+
+| Classic construct | | Notes |
+| --- | :-: | --- |
+| Agent phases | ✅ | Each phase becomes a job. |
+| Job `dependsOn` | ✅ | Mapped from the phase's declared dependencies, including fan-in, so phases meant to run in parallel still do. |
+| Job condition, timeout and cancel timeout | ✅ | |
+| Agent queue | ✅ | Becomes the pipeline `pool`. |
+| Continuous integration trigger | ✅ | Including branch and path include/exclude filters, and batching. |
+| Pull request, scheduled and build completion triggers | ❌ | Reported in the run summary. |
+| Server and deployment group phases | ❌ | Only agent phases are converted. |
+| A definition with exactly one job | ⚠️ | Flattened to a bare step list, dropping a non-default job condition, see [issue #211](https://github.com/f2calv/yamlizr/issues/211). |
+
+### Release Definitions
+
+| Classic construct | | Notes |
+| --- | :-: | --- |
+| Environments | ✅ | Each environment becomes a stage named after it. |
+| Deploy phases matching `--phasetype` | ✅ | Defaults to `AgentBasedDeployment`. |
+| Job `dependsOn` within a stage | ✅ | Sequential, in rank order. |
+| Job condition, timeout and cancel timeout | ✅ | |
+| Stage `dependsOn` | ❌ | Generated stages run concurrently rather than in the classic environment order. |
+| Release artifacts | ❌ | A generated release pipeline therefore has no inputs. |
+| Pre- and post-deployment approvals and gates | ❌ | Detected and reported, but not converted. |
+| Deploy phases other than `--phasetype` | ❌ | Reported per stage. |
+| A definition with exactly one stage | ⚠️ | Flattened, dropping stage-level variables and variable groups, see [issue #211](https://github.com/f2calv/yamlizr/issues/211). |
+
+### Steps, Variables and Task Groups
+
+| Classic construct | | Notes |
+| --- | :-: | --- |
+| Steps for installed tasks | ✅ | With `condition`, `continueOnError`, `timeoutInMinutes` and `env`. |
+| Task groups | ✅ | Emitted as template files, or merged into the calling job with `--inline`. |
+| Task group parameters | ✅ | Become template parameters. |
+| Variables | ✅ | Pipeline, stage and environment scope. |
+| Variable groups | ✅ | Emitted as a `group` reference. |
+| GitHub Actions workflows | ✅ | With `--githubactions`, via [AzurePipelinesToGitHubActionsConverter](https://github.com/samsmithnz/AzurePipelinesToGitHubActionsConverter). |
+| Steps referencing an extension not installed in the organisation | ❌ | Reported by display name and task id. |
+| Steps whose task version cannot be parsed | ❌ | Reported by display name and task id. |
+| Combined build plus release multi-stage pipelines | ❌ | Build and release definitions are emitted as separate files. |
 
 ## Known Issues
 
-- ShellProgressBar gives random formatting problems.
-- Various YAML structures are 'missing', PR's welcome.
+- ShellProgressBar occasionally corrupts its own output; the console writes a blank line after each bar as a workaround.
 
 ## Core Dependencies
 
