@@ -288,10 +288,6 @@ without a trace. Progress on closing these gaps is tracked in
 - [CommandLineUtils](https://github.com/natemcmaster/CommandLineUtils)
 - [ShellProgressBar](https://github.com/Mpdreamz/shellprogressbar)
 
-## Misc Tips
-
-- The [NuGet package](https://www.nuget.org/packages/yamlizr/) includes [SourceLink](https://github.com/dotnet/sourcelink) which enables you to jump inside the library and debug the API yourself. By default Visual Studio does not allow this and will pop up an message "You are debugging a Release build of...", to disable this message go into the Visual Studio debugging options and un-check the 'Just My Code' option (menu path, Tools > Options > Debugging).
-
 ## Feedback/Issues
 
 Please post any issues or feedback [to GitHub issues](https://github.com/f2calv/yamlizr/issues).
