@@ -21,9 +21,9 @@ Tests/
 
 | Suite | Test methods | Expanded cases |
 | --- | --- | --- |
-| Unit | 18 | 27 |
+| Unit | 19 | 28 |
 | Integration | 8 | 8 |
-| **Total** | **26** | **35** |
+| **Total** | **27** | **36** |
 
 ## Trait Categories
 
