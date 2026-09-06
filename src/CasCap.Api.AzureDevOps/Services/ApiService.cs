@@ -1,4 +1,5 @@
 ﻿using CasCap.Abstractions;
+using CasCap.Common.Extensions;
 using CasCap.Common.Services;
 using CasCap.Models;
 using Microsoft.Extensions.Logging;
@@ -23,8 +24,7 @@ public class ApiService : HttpClientBase, IApiService
         Client = new HttpClient();
         Client.DefaultRequestHeaders.Clear();
         Client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-        var bytes = Encoding.ASCII.GetBytes($"{string.Empty}:{PAT}");
-        Client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", Convert.ToBase64String(bytes));
+        Client.SetBasicAuth(string.Empty, PAT);
     }
 
     /// <inheritdoc/>
@@ -33,7 +33,7 @@ public class ApiService : HttpClientBase, IApiService
         _logger.LogInformation("{ClassName} retrieving all extensions for organisation '{OrganisationUri}'",
             nameof(ApiService), organisationUri);
         var res = await Get<Tasks, object>($"{organisationUri}/_apis/distributedtask/tasks/");
-        return res.result is not null && res.result.value is not null ? res.result.value : null;
+        return res.result?.value;
     }
 
     /// <inheritdoc/>
