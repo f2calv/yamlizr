@@ -245,6 +245,33 @@ explicitly;
     SYSTEM_ACCESSTOKEN: $(System.AccessToken)
 ```
 
+The container needs no .NET on the agent. Nothing from the agent reaches it unless you forward it, so
+the predefined variables above are not available inside the container and the organisation and project
+have to be passed as arguments;
+
+```yaml
+- script: |
+    docker run --pull always --rm \
+      --user "`id -u`:`id -g`" \
+      -e CasCap__AzureDevOpsOptions__PAT \
+      -v "$(Build.ArtifactStagingDirectory):/data" \
+      ghcr.io/f2calv/yamlizr generate \
+        -org $(System.CollectionUri) \
+        -proj $(System.TeamProject) \
+        -out /data \
+        --create-directory
+  displayName: yamlizr
+  env:
+    CasCap__AzureDevOpsOptions__PAT: $(System.AccessToken)
+```
+
+Two details worth keeping;
+
+- `-e NAME` with no value forwards the variable from the step environment, keeping the token out of the
+  command line and out of `docker inspect`.
+- The user mapping uses backticks because Azure Pipelines resolves its own `$( )` macros before bash
+  sees the script. Without it the generated files belong to uid 1654 and the agent cannot clean them up.
+
 ## How It Works
 
 > This tool was created when there was no means of exporting a designer/classic build/release definition to YAML. As of November 2020 there is a new [Export to YAML](https://devblogs.microsoft.com/devops/replacing-view-yaml/) feature which allows you to export a _Build_ pipeline to YAML with a single click. This official function covers more edge cases than this CLI for Build pipelines. Where this CLI still has benefits is that it also converts Release definitions to YAML, which the official tool does not. It also allows the conversion of every single Build/Release definition en-masse, so much less clicking! Then you can then cut/copy/paste/manipulate the generated YAML steps as required to fit into a build and/or deployment pipeline unique to your own requirements.
