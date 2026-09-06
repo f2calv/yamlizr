@@ -2,7 +2,7 @@
 
 /// <summary>Response envelope returned by the Azure DevOps task catalogue endpoint.</summary>
 /// <remarks>
-/// Retrieved by <see cref="CasCap.Services.IApiService.GetAllExtensions(string)"/> from
+/// Retrieved by <see cref="CasCap.Abstractions.IApiService.GetAllExtensions(string)"/> from
 /// <c>_apis/distributedtask/tasks</c>. The catalogue is the only way to resolve the task identifier
 /// a classic step carries into the <c>Task@Major</c> form a YAML step needs.
 /// </remarks>
