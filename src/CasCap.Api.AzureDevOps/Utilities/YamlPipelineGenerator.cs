@@ -1,4 +1,4 @@
-﻿using CasCap.Common.Extensions;
+using CasCap.Common.Extensions;
 using CasCap.Models;
 using Microsoft.TeamFoundation.Build.WebApi;
 using Microsoft.TeamFoundation.DistributedTask.WebApi;
@@ -23,8 +23,14 @@ namespace CasCap.Utilities;
 /// </remarks>
 public class YamlPipelineGenerator
 {
-    private readonly BuildDefinition _build;
-    private readonly ReleaseDefinition _release;
+    private readonly BuildDefinition? _build;
+    private readonly ReleaseDefinition? _release;
+
+    //exactly one of the two is supplied, so each path reads its own through an accessor rather than
+    //re-testing a field the surrounding branch has already established
+    private BuildDefinition Build => _build ?? throw new GenericException($"{nameof(YamlPipelineGenerator)} was not given a build definition.");
+    private ReleaseDefinition Release => _release ?? throw new GenericException($"{nameof(YamlPipelineGenerator)} was not given a release definition.");
+
     private readonly Dictionary<Guid, Dictionary<int, TaskObj>> _taskMap;
     private readonly Dictionary<TaskGroupVersion, TaskGroup> _taskGroupMap;
     ConcurrentDictionary<TaskGroupVersion, Template> _taskGroupTemplateMap;//this collection is appended-to as the app iterates over the definitions
@@ -62,8 +68,8 @@ public class YamlPipelineGenerator
     /// <param name="inlineTaskGroups">True to expand task group steps in place instead of emitting a template reference.</param>
     /// <param name="phaseType">The single deploy phase type to convert; other phases are reported and skipped.</param>
     public YamlPipelineGenerator(
-        BuildDefinition build,
-        ReleaseDefinition release,
+        BuildDefinition? build,
+        ReleaseDefinition? release,
         Dictionary<Guid, Dictionary<int, TaskObj>> taskMap,
         Dictionary<TaskGroupVersion, TaskGroup> taskGroupMap,
         ConcurrentDictionary<TaskGroupVersion, Template> taskGroupTemplateMap,
@@ -99,10 +105,10 @@ public class YamlPipelineGenerator
         var steps = new List<Step>();
         if (_build is not null && _release is null)//create build pipeline
         {
-            pipeline.name = _build.BuildNumberFormat;
+            pipeline.name = Build.BuildNumberFormat;
             pipeline.trigger = GenTrigger();
-            if (_build.Queue is not null)
-                pipeline.pool = new Pool { name = _build.Queue.Name };
+            if (Build.Queue is not null)
+                pipeline.pool = new Pool { name = Build.Queue.Name };
             var buildVariables = GenVariables(VariableType.Build);
             pipeline.variables = buildVariables.IsNullOrEmpty() ? null : buildVariables;
             var buildStage = GenBuildStage();
@@ -152,7 +158,7 @@ public class YamlPipelineGenerator
 
     StageAzDO? GenBuildStage()
     {
-        var allPhases = ((DesignerProcess)_build.Process).Phases;
+        var allPhases = ((DesignerProcess)Build.Process).Phases;
         var phases = allPhases.Where(p => p.Target is not null && p.Target.Type == 1).ToList();
         //TODO(#182): only agent phases (Target.Type 1) are converted; server and deployment-group
         //phases are skipped. https://github.com/f2calv/yamlizr/issues/182
@@ -200,8 +206,8 @@ public class YamlPipelineGenerator
         var stageVariables = GenVariables(VariableType.Build);
         return new StageAzDO
         {
-            displayName = _build.Name,
-            stage = ToIdentifier(_build.Name, "Build"),
+            displayName = Build.Name,
+            stage = ToIdentifier(Build.Name, "Build"),
             variables = stageVariables.IsNullOrEmpty() ? null : stageVariables,
             jobs = jobs.ToArray(),
         };
@@ -235,13 +241,13 @@ public class YamlPipelineGenerator
 
     TriggerAzDO? GenTrigger()
     {
-        if (_build.Triggers.IsNullOrEmpty()) return null;
+        if (Build.Triggers.IsNullOrEmpty()) return null;
         //TODO(#182): only continuous integration triggers are converted; pull request, scheduled and
         //build-completion triggers are skipped. https://github.com/f2calv/yamlizr/issues/182
-        var unconverted = _build.Triggers.Where(p => p.TriggerType != DefinitionTriggerType.ContinuousIntegration).ToList();
+        var unconverted = Build.Triggers.Where(p => p.TriggerType != DefinitionTriggerType.ContinuousIntegration).ToList();
         if (!unconverted.IsNullOrEmpty())
             _warnings.Add($"{unconverted.Count} trigger(s) of type {string.Join(", ", unconverted.Select(p => p.TriggerType).Distinct())} are not converted, see https://github.com/f2calv/yamlizr/issues/182");
-        foreach (var t in _build.Triggers.Where(p => p.TriggerType == DefinitionTriggerType.ContinuousIntegration))
+        foreach (var t in Build.Triggers.Where(p => p.TriggerType == DefinitionTriggerType.ContinuousIntegration))
         {
             var trigger = new TriggerAzDO();
             var trig = (ContinuousIntegrationTrigger)t;
@@ -288,10 +294,10 @@ public class YamlPipelineGenerator
         List<Variable> variables;
         if (type == VariableType.Build)
         {
-            variables = new List<Variable>(_build.VariableGroups.Count + _build.Variables.Count);
-            foreach (var vg in _build.VariableGroups)
+            variables = new List<Variable>(Build.VariableGroups.Count + Build.Variables.Count);
+            foreach (var vg in Build.VariableGroups)
                 variables.Add(new Variable { group = vg.Name });
-            foreach (var kvp in _build.Variables)
+            foreach (var kvp in Build.Variables)
                 variables.Add(new Variable { name = kvp.Key, value = kvp.Value.Value });
         }
         else
@@ -308,11 +314,11 @@ public class YamlPipelineGenerator
             else
             {
                 variables = new List<Variable>();
-                if (!_release.VariableGroups.IsNullOrEmpty())
-                    foreach (var id in _release.VariableGroups)
+                if (!Release.VariableGroups.IsNullOrEmpty())
+                    foreach (var id in Release.VariableGroups)
                         if (_variableGroupMap.TryGetValue(id, out var vg))
                             variables.Add(new Variable { group = vg.Name });
-                foreach (var variable in _release.Variables)
+                foreach (var variable in Release.Variables)
                     variables.Add(new Variable { name = variable.Key, value = variable.Value.Value });
             }
         }
@@ -375,16 +381,16 @@ public class YamlPipelineGenerator
 
     StageAzDO[]? GenReleaseStages()
     {
-        if (_release.Environments.IsNullOrEmpty()) return null;
+        if (Release.Environments.IsNullOrEmpty()) return null;
 
         //TODO(#182): release artifacts are not converted. Each artifact should become a resource or a
         //download step; until then a generated release pipeline has no inputs.
         //https://github.com/f2calv/yamlizr/issues/182
-        if (!_release.Artifacts.IsNullOrEmpty())
-            _warnings.Add($"{_release.Artifacts.Count} release artifact(s) are not converted, see https://github.com/f2calv/yamlizr/issues/182");
+        if (!Release.Artifacts.IsNullOrEmpty())
+            _warnings.Add($"{Release.Artifacts.Count} release artifact(s) are not converted, see https://github.com/f2calv/yamlizr/issues/182");
 
         var stages = new List<StageAzDO>();
-        foreach (var environment in _release.Environments)
+        foreach (var environment in Release.Environments)
         {
             var jobs = GenJobs(environment);
             if (jobs.IsNullOrEmpty()) continue;
