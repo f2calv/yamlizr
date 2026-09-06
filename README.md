@@ -302,7 +302,7 @@ generated YAML** and must be re-created by hand. Progress on closing these gaps 
 | Continuous integration trigger | ✅ | Including branch and path include/exclude filters, and batching. |
 | Pull request, scheduled and build completion triggers | ❌ | Reported in the run summary. |
 | Server and deployment group phases | ❌ | Only agent phases are converted. |
-| A definition with exactly one job | ⚠️ | Flattened to a bare step list, dropping a non-default job condition, see [issue #211](https://github.com/f2calv/yamlizr/issues/211). |
+| A definition with exactly one job | ⚠️ | Flattened to a bare step list, dropping a non-default job condition, see [issue #376](https://github.com/f2calv/yamlizr/issues/376). |
 
 ### Release Definitions
 
@@ -316,7 +316,7 @@ generated YAML** and must be re-created by hand. Progress on closing these gaps 
 | Release artifacts | ❌ | A generated release pipeline therefore has no inputs. |
 | Pre- and post-deployment approvals and gates | ❌ | Detected and reported, but not converted, see [issue #374](https://github.com/f2calv/yamlizr/issues/374). A generated release pipeline deploys straight through where the classic definition had a gate. |
 | Deploy phases other than `--phasetype` | ❌ | Reported per stage. |
-| A definition with exactly one stage | ⚠️ | Flattened, dropping stage-level variables and variable groups, see [issue #211](https://github.com/f2calv/yamlizr/issues/211). |
+| A definition with exactly one stage | ⚠️ | Flattened, dropping stage-level variables and variable groups, see [issue #376](https://github.com/f2calv/yamlizr/issues/376). |
 
 ### Steps, Variables and Task Groups
 
