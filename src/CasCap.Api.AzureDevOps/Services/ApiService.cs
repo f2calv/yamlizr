@@ -1,51 +1,82 @@
-﻿using CasCap.Common.Services;
+﻿using CasCap.Abstractions;
+using CasCap.Common.Extensions;
+using CasCap.Common.Services;
 using CasCap.Models;
 using Microsoft.Extensions.Logging;
 using System.Net.Http.Headers;
 using System.Text;
+using System.Text.Json;
 
 namespace CasCap.Services;
 
-public interface IApiService
-{
-    Task<List<TaskObj>> GetAllExtensions(string organisationUri);
-    Task<string> Validate(string organisation, string project, int pipelineId, string pipelineYaml);
-}
-
+/// <inheritdoc cref="IApiService"/>
 public class ApiService : HttpClientBase, IApiService
 {
+    /// <summary>Creates a client authenticated against Azure DevOps.</summary>
+    /// <param name="logger">Logger for diagnostics.</param>
+    /// <param name="PAT">
+    /// Personal Access Token, or an access token issued to a pipeline's build service identity.
+    /// Never validated by length, because the two differ; an invalid token surfaces as a failed call.
+    /// </param>
     public ApiService(ILogger<ApiService> logger, string PAT) : base()
     {
         _logger = logger;
         Client = new HttpClient();
         Client.DefaultRequestHeaders.Clear();
         Client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-        var bytes = Encoding.ASCII.GetBytes($"{string.Empty}:{PAT}");
-        Client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", Convert.ToBase64String(bytes));
+        Client.SetBasicAuth(string.Empty, PAT);
     }
 
+    /// <inheritdoc/>
     public async Task<List<TaskObj>> GetAllExtensions(string organisationUri)
     {
         _logger.LogInformation("{ClassName} retrieving all extensions for organisation '{OrganisationUri}'",
             nameof(ApiService), organisationUri);
         var res = await Get<Tasks, object>($"{organisationUri}/_apis/distributedtask/tasks/");
-        return res.result is not null && res.result.value is not null ? res.result.value : null;
+        return res.result?.value;
     }
 
-    //https://docs.microsoft.com/en-us/rest/api/azure/devops/pipelines/runs/run%20pipeline?view=azure-devops-rest-6.0
-    public async Task<string> Validate(string organisation, string project, int pipelineId, string pipelineYaml)
+    /// <inheritdoc/>
+    public async Task<PipelineValidationResult> Validate(
+        string organisationUri,
+        string project,
+        int pipelineId,
+        string pipelineYaml,
+        CancellationToken cancellationToken = default)
     {
-        _logger.LogInformation("{ClassName} validating YAML for project '{Project}' in organisation '{Organisation}'",
-            nameof(ApiService), project, organisation);
-        var req = new
+        _logger.LogInformation("{ClassName} validating YAML against pipeline {PipelineId} in project '{Project}'",
+            nameof(ApiService), pipelineId, project);
+
+        var uri = $"{organisationUri.TrimEnd('/')}/{Uri.EscapeDataString(project)}/_apis/pipelines/{pipelineId}/preview?api-version=7.1";
+        var payload = JsonSerializer.Serialize(new { previewRun = true, yamlOverride = pipelineYaml });
+
+        using var content = new StringContent(payload, Encoding.UTF8, "application/json");
+        using var response = await Client.PostAsync(uri, content, cancellationToken);
+        var body = await response.Content.ReadAsStringAsync(cancellationToken);
+
+        if (response.IsSuccessStatusCode)
+            return new PipelineValidationResult { IsValid = true, FinalYaml = ReadProperty(body, "finalYaml") };
+
+        //the rejection reason is the whole point of the call, so fall back to the status when absent
+        var message = ReadProperty(body, "message") ?? $"Azure DevOps returned {(int)response.StatusCode}.";
+        _logger.LogWarning("{ClassName} rejected YAML for pipeline {PipelineId}, {Message}",
+            nameof(ApiService), pipelineId, message);
+
+        return new PipelineValidationResult { IsValid = false, Message = message };
+    }
+
+    private static string ReadProperty(string json, string name)
+    {
+        if (string.IsNullOrWhiteSpace(json)) return null;
+
+        try
         {
-            previewRun = true,
-            yamlOverride = $@"
-# your YAML here
-{pipelineYaml}
-"
-        };
-        var res = await PostJsonAsync<string, object>($"https://dev.azure.com/{organisation}/{project}/_apis/pipelines/{pipelineId}/runs?api-version=6.0-preview.1", req);
-        return res.result is not null ? res.result : null;
+            using var document = JsonDocument.Parse(json);
+            return document.RootElement.TryGetProperty(name, out var value) ? value.GetString() : null;
+        }
+        catch (JsonException)
+        {
+            return null;
+        }
     }
 }

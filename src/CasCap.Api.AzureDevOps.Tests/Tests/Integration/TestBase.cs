@@ -1,4 +1,5 @@
-﻿using CasCap.Models;
+﻿using CasCap.Abstractions;
+using CasCap.Models;
 using CasCap.Services;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -31,6 +32,8 @@ public abstract class TestBase : IDisposable
     protected const string NotConfigured =
         "No Azure DevOps token configured, set CasCap:AzureDevOpsOptions:PAT via user secrets or CasCap__AzureDevOpsOptions__PAT.";
 
+    /// <summary>Builds configuration and, when a token is available, the client under test.</summary>
+    /// <param name="output">xUnit sink that test logging is written to.</param>
     protected TestBase(ITestOutputHelper output)
     {
         var configuration = new ConfigurationBuilder()

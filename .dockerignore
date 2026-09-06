@@ -11,6 +11,17 @@
 !src/**/*.cs
 !src/**/appsettings*.json
 
+# Debug builds (Dockerfile.Debug) mirror the local sibling repositories into deps/, because a build
+# context cannot reach outside the repository. Release builds never populate it.
+!deps/**
+
+# Re-excluded after the deps allow-list above, which would otherwise pull generated files such as
+# *.AssemblyInfo.cs and *.nuget.g.props into the context and bust the restore layer cache.
+**/bin
+**/obj
+**/.git
+**/.vs
+
 # The test project is never part of the runtime image. Excluding it keeps test
 # edits from busting the restore layer cache.
 **/*.Tests

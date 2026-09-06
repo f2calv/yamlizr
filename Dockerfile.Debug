@@ -1,0 +1,100 @@
+# syntax=docker/dockerfile:1-labs
+# check=skip=CopyIgnoredFile
+#
+# Debug variant of Dockerfile, used to verify a fix against the local sibling repositories before
+# they are published as packages.
+#
+# In Debug, src/CasCap.Api.AzureDevOps/CasCap.Api.AzureDevOps.csproj swaps its CasCap.Common.*
+# PackageReferences for ProjectReferences at ..\..\..\CasCap.Common\. From /repo/src/<project>/ that
+# resolves to /CasCap.Common, so the sibling repository has to sit at the filesystem root inside the
+# image. build.ps1 and build.sh mirror it into deps/ first, because a build context cannot reach
+# outside the repository.
+#
+# Not published. The image job in .github/workflows/ci.yml always builds Dockerfile.
+#
+# ------------------------------------------------------------------------------
+# Stage 1 of 2: build
+# ------------------------------------------------------------------------------
+FROM --platform=$BUILDPLATFORM mcr.microsoft.com/dotnet/sdk:10.0 AS build
+WORKDIR /repo
+
+ARG PROJECT=src/CasCap.DevOpsYamlizrCli/CasCap.DevOpsYamlizrCli.csproj
+ARG CONFIGURATION=Debug
+ARG TARGET_FRAMEWORK=net10.0
+ARG VERSION=0.0.1
+
+# -- Dependency layer ----------------------------------------------------------
+# Only the manifests restore reads, so editing a .cs file in either repository reuses the cache.
+COPY Directory.Build.props Directory.Packages.props ./
+
+# The /./ pivot drops the deps/ prefix, so deps/CasCap.Common/... lands at /CasCap.Common/...
+COPY --parents deps/./**/*.csproj deps/./**/*.props deps/./**/*.targets /
+COPY --parents src/**/*.csproj ./
+
+RUN --mount=type=cache,target=/root/.nuget/packages,sharing=locked \
+    dotnet restore "$PROJECT" -p:Configuration="$CONFIGURATION"
+
+# -- Compile layer -------------------------------------------------------------
+COPY deps/CasCap.Common /CasCap.Common
+COPY . .
+
+ARG TARGETARCH
+ARG TARGETVARIANT
+RUN --mount=type=cache,target=/root/.nuget/packages,sharing=locked <<EOF
+set -eux
+# https://learn.microsoft.com/dotnet/core/rid-catalog
+case "${TARGETARCH}${TARGETVARIANT}" in
+    amd64) RID=linux-x64   ;;
+    arm64) RID=linux-arm64 ;;
+    armv7) RID=linux-arm   ;;
+    *) echo "unsupported platform: linux/${TARGETARCH}/${TARGETVARIANT}" >&2; exit 1 ;;
+esac
+dotnet publish "$PROJECT" \
+    --configuration "$CONFIGURATION" \
+    --framework "$TARGET_FRAMEWORK" \
+    --runtime "$RID" \
+    --self-contained false \
+    -p:Version="$VERSION" \
+    --output /out
+EOF
+
+# ------------------------------------------------------------------------------
+# Stage 2 of 2: final
+#
+# aspnet, not runtime, for the same reason as the Release image: a FrameworkReference to
+# Microsoft.AspNetCore.App arrives through CasCap.Common.Net.
+# ------------------------------------------------------------------------------
+FROM mcr.microsoft.com/dotnet/aspnet:10.0-noble-chiseled AS final
+WORKDIR /app
+COPY --from=build /out .
+
+# Generated YAML is written here; mount a host directory over it.
+VOLUME /data
+
+# -- Provenance ----------------------------------------------------------------
+ARG GIT_REPOSITORY=n/a
+ENV GIT_REPOSITORY=$GIT_REPOSITORY
+ARG GIT_BRANCH=n/a
+ENV GIT_BRANCH=$GIT_BRANCH
+ARG GIT_COMMIT=n/a
+ENV GIT_COMMIT=$GIT_COMMIT
+ARG GIT_TAG=n/a
+ENV GIT_TAG=$GIT_TAG
+
+ARG GITHUB_WORKFLOW=n/a
+ENV GITHUB_WORKFLOW=$GITHUB_WORKFLOW
+ARG GITHUB_RUN_ID=0
+ENV GITHUB_RUN_ID=$GITHUB_RUN_ID
+ARG GITHUB_RUN_NUMBER=0
+ENV GITHUB_RUN_NUMBER=$GITHUB_RUN_NUMBER
+
+LABEL org.opencontainers.image.title="yamlizr (debug)" \
+    org.opencontainers.image.description="Local debug build against sibling CasCap.Common sources" \
+    org.opencontainers.image.source="https://github.com/f2calv/yamlizr" \
+    org.opencontainers.image.licenses="MIT" \
+    org.opencontainers.image.version="$GIT_TAG" \
+    org.opencontainers.image.revision="$GIT_COMMIT"
+
+USER $APP_UID
+
+ENTRYPOINT ["dotnet", "yamlizr.dll"]

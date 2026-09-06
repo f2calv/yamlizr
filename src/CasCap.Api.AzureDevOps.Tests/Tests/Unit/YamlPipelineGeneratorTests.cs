@@ -115,6 +115,48 @@ public class YamlPipelineGeneratorTests
     }
 
     [Fact]
+    public void GenPipeline_MultipleEnvironments_NamesEachStageAfterItsEnvironment()
+    {
+        var generator = YamlizrTestData.Generator(YamlizrTestData.ReleaseDefinition("Dev", "Test", "Prod"));
+
+        var pipeline = generator.GenPipeline();
+
+        Assert.NotNull(pipeline.stages);
+        Assert.Equal(["Dev", "Test", "Prod"], pipeline.stages.Select(p => p.stage));
+        //the release definition names the document, so repeating it on every stage loses the environment
+        Assert.Equal(["Dev", "Test", "Prod"], pipeline.stages.Select(p => p.displayName));
+    }
+
+    [Fact]
+    public void GenPipeline_EnvironmentWithoutAName_FallsBackToTheStageIdentifier()
+    {
+        var generator = YamlizrTestData.Generator(YamlizrTestData.ReleaseDefinition("Dev", "   "));
+
+        var pipeline = generator.GenPipeline();
+
+        var unnamed = Assert.Single(pipeline.stages, p => p.stage == "Stage_2");
+        Assert.Equal("Stage_2", unnamed.displayName);
+    }
+
+    //a job identifier must match [A-Za-z_][A-Za-z0-9_]*, and Azure DevOps rejects the pipeline otherwise
+    [Theory]
+    [InlineData("Phase three, fan-in")]
+    [InlineData("build & test")]
+    [InlineData("  leading and trailing  ")]
+    [InlineData("1st phase")]
+    public void GenPipeline_PhaseNameNeedingSanitising_ProducesAValidJobIdentifier(string phaseName)
+    {
+        var definition = YamlizrTestData.BuildDefinitionWithPhases(
+            "Azure Pipelines", YamlizrTestData.Step(YamlizrTestData.KnownTaskId), "Phase one", phaseName);
+
+        var pipeline = YamlizrTestData.Generator(definition).GenPipeline();
+
+        Assert.NotNull(pipeline.jobs);
+        //asserts the contract rather than an exact name, which also carries the issue #368 index suffix
+        Assert.All(pipeline.jobs, p => Assert.Matches("^[A-Za-z_][A-Za-z0-9_]*$", p.job));
+    }
+
+    [Fact]
     public void GenPipeline_NeitherBuildNorRelease_IsRejected()
     {
         var generator = new YamlPipelineGenerator(

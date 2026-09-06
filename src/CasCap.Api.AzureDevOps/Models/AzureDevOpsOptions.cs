@@ -26,4 +26,13 @@ public record AzureDevOpsOptions
     /// <summary>Name of the Azure DevOps team project to convert.</summary>
     [MinLength(1)]
     public string Project { get; init; }
+
+    /// <summary>Identifier of a YAML pipeline used only as a target for validating generated YAML.</summary>
+    /// <remarks>
+    /// The pipeline preview endpoint needs an existing, enabled YAML pipeline to parse against, and
+    /// its own YAML is replaced by the document being validated. Null disables validation.
+    /// <para>Created by <c>.scripts/New-FixtureDefinitions.ps1</c>.</para>
+    /// </remarks>
+    [Range(1, int.MaxValue)]
+    public int? ValidationPipelineId { get; init; }
 }

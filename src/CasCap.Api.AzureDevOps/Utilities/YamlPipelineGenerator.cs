@@ -11,6 +11,16 @@ using System.Text.RegularExpressions;
 
 namespace CasCap.Utilities;
 
+/// <summary>Converts one classic Build or Release definition into an Azure Pipelines YAML document.</summary>
+/// <remarks>
+/// An instance handles a single definition, and <see cref="Warnings"/> is only complete once
+/// <see cref="GenPipeline"/> has returned.
+/// <para>
+/// The conversion is deliberately incomplete: several classic constructs have no YAML equivalent.
+/// Anything that cannot be represented is recorded in <see cref="Warnings"/> rather than dropped
+/// silently, so the caller can report it.
+/// </para>
+/// </remarks>
 public class YamlPipelineGenerator
 {
     private readonly BuildDefinition _build;
@@ -38,6 +48,19 @@ public class YamlPipelineGenerator
         Release
     }
 
+    /// <summary>Creates a generator for a single definition.</summary>
+    /// <remarks>Exactly one of <paramref name="build"/> and <paramref name="release"/> must be supplied.</remarks>
+    /// <param name="build">The classic Build definition to convert, or null when converting a release.</param>
+    /// <param name="release">The classic Release definition to convert, or null when converting a build.</param>
+    /// <param name="taskMap">Installed tasks, keyed by task identifier then major version.</param>
+    /// <param name="taskGroupMap">Task groups, keyed by identifier and version.</param>
+    /// <param name="taskGroupTemplateMap">
+    /// Templates generated so far, shared across every definition in the run and appended to as task
+    /// groups are encountered, which is why it is concurrent.
+    /// </param>
+    /// <param name="variableGroupMap">Variable groups, keyed by identifier.</param>
+    /// <param name="inlineTaskGroups">True to expand task group steps in place instead of emitting a template reference.</param>
+    /// <param name="phaseType">The single deploy phase type to convert; other phases are reported and skipped.</param>
     public YamlPipelineGenerator(
         BuildDefinition build,
         ReleaseDefinition release,
@@ -59,6 +82,15 @@ public class YamlPipelineGenerator
         _phaseType = phaseType;
     }
 
+    /// <summary>Converts the definition supplied to the constructor.</summary>
+    /// <remarks>
+    /// The result is flattened to the simplest shape that fits, because the schema rejects a document
+    /// mixing them: several stages become <see cref="Pipeline.stages"/>, a single stage with several
+    /// jobs becomes <see cref="Pipeline.jobs"/>, and a single job becomes <see cref="Pipeline.steps"/>.
+    /// Flattening discards settings that only a stage or a job can carry, which is reported.
+    /// </remarks>
+    /// <returns>The generated pipeline, or null when the definition produced nothing convertible.</returns>
+    /// <exception cref="GenericException">Thrown when neither or both of a build and a release were supplied.</exception>
     public Pipeline GenPipeline()
     {
         var pipeline = new Pipeline();
@@ -71,7 +103,8 @@ public class YamlPipelineGenerator
             pipeline.trigger = GenTrigger();
             if (_build.Queue is not null)
                 pipeline.pool = new Pool { name = _build.Queue.Name };
-            pipeline.variables = GenVariables(VariableType.Build);
+            var buildVariables = GenVariables(VariableType.Build);
+            pipeline.variables = buildVariables.IsNullOrEmpty() ? null : buildVariables;
             var buildStage = GenBuildStage();
             if (buildStage is not null)
                 if (buildStage.jobs.Length == 1)
@@ -88,8 +121,8 @@ public class YamlPipelineGenerator
         }
         else if (_build is null && _release is not null)//create release pipeline
         {
-            pipeline.variables = GenVariables(VariableType.Release);
-            if (pipeline.variables.Count == 0) pipeline.variables = null;
+            var releaseVariables = GenVariables(VariableType.Release);
+            pipeline.variables = releaseVariables.IsNullOrEmpty() ? null : releaseVariables;
             var releaseStages = GenReleaseStages();
             if (releaseStages is not null)
             {
@@ -126,11 +159,12 @@ public class YamlPipelineGenerator
         if (allPhases.Count > phases.Count)
             _warnings.Add($"{allPhases.Count - phases.Count} non-agent build phase(s) are not converted, see https://github.com/f2calv/yamlizr/issues/182");
         if (phases.IsNullOrEmpty()) return null;
-        var jobs = new List<Job>(phases.Count);
-        var jobName = string.Empty;
         //TODO(#368): inverted, this is true when the names DIFFER. Phases that all share one name get
         //no suffix and so produce duplicate job identifiers. https://github.com/f2calv/yamlizr/issues/368
         var duplicatePhaseNames = phases.Select(p => p.Name).Distinct().Count() > 1;
+
+        // Identifiers are assigned up front, because a phase may depend on one declared after it.
+        var converted = new List<(Phase phase, string jobId, List<Step> steps)>(phases.Count);
         var j = 0;
         foreach (var phase in phases)
         {
@@ -140,21 +174,66 @@ public class YamlPipelineGenerator
             if (steps.IsNullOrEmpty()) continue;
             //a classic phase can have no name, which used to throw from Sanitize().Replace()
             var phaseName = string.IsNullOrWhiteSpace(phase.Name) ? $"Phase {j + 1}" : phase.Name;
+            var identifier = ToIdentifier(phaseName, $"Phase_{j + 1}");
+            converted.Add((phase, duplicatePhaseNames ? $"{identifier}_{j}" : identifier, steps));
+            j++;
+        }
+        if (converted.IsNullOrEmpty()) return null;
+
+        var jobIdByRefName = new Dictionary<string, string>(converted.Count, StringComparer.OrdinalIgnoreCase);
+        foreach (var (phase, jobId, _) in converted)
+            if (!string.IsNullOrWhiteSpace(phase.RefName)) jobIdByRefName[phase.RefName] = jobId;
+
+        var jobs = new List<Job>(converted.Count);
+        foreach (var (phase, jobId, steps) in converted)
+        {
             var job = new Job
             {
                 cancelTimeoutInMinutes = phase.JobCancelTimeoutInMinutes,
                 condition = GenCondition(phase.Condition),
-                dependsOn = string.IsNullOrWhiteSpace(jobName) ? null : new[] { jobName },
-                displayName = phaseName,
-                job = duplicatePhaseNames ? $"{phaseName.Sanitize().Replace(" ", "_")}_{j}" : phaseName.Sanitize().Replace(" ", "_"),
+                dependsOn = GenDependsOn(phase, jobIdByRefName),
+                displayName = string.IsNullOrWhiteSpace(phase.Name) ? jobId : phase.Name,
+                job = jobId,
                 steps = steps.ToArray(),
                 timeoutInMinutes = phase.JobTimeoutInMinutes,
             };
             jobs.Add(job);
-            jobName = job.job;
-            j++;
         }
-        return jobs.IsNullOrEmpty() ? null : new StageAzDO { displayName = _build.Name, stage = (_build.Name ?? "Build").Sanitize().Replace(" ", "_"), variables = GenVariables(VariableType.Build), jobs = jobs.ToArray() };
+
+        var stageVariables = GenVariables(VariableType.Build);
+        return new StageAzDO
+        {
+            displayName = _build.Name,
+            stage = ToIdentifier(_build.Name, "Build"),
+            variables = stageVariables.IsNullOrEmpty() ? null : stageVariables,
+            jobs = jobs.ToArray(),
+        };
+    }
+
+    /// <summary>
+    /// Maps a classic phase's declared dependencies onto the identifiers of the generated jobs.
+    /// </summary>
+    /// <remarks>
+    /// A classic phase names its dependencies explicitly by refName, and may name more than one. This
+    /// previously emitted the preceding job in iteration order instead, which serialised phases that
+    /// were meant to run in parallel and silently dropped every dependency of a fan-in but the last.
+    /// </remarks>
+    private string[] GenDependsOn(Phase phase, Dictionary<string, string> jobIdByRefName)
+    {
+        if (phase.Dependencies.IsNullOrEmpty()) return null;
+
+        var dependsOn = new List<string>(phase.Dependencies.Count);
+        foreach (var dependency in phase.Dependencies)
+        {
+            if (jobIdByRefName.TryGetValue(dependency.Scope ?? string.Empty, out var jobId))
+            {
+                if (!dependsOn.Contains(jobId)) dependsOn.Add(jobId);
+            }
+            else
+                _warnings.Add($"phase '{phase.Name}' depends on '{dependency.Scope}', which was not converted, so the dependency is missing from the generated YAML");
+        }
+
+        return dependsOn.Count == 0 ? null : dependsOn.ToArray();
     }
 
     TriggerAzDO GenTrigger()
@@ -245,6 +324,37 @@ public class YamlPipelineGenerator
 
     private static string GenCondition(string condition) => string.IsNullOrWhiteSpace(condition) || condition.Equals("succeeded()", StringComparison.OrdinalIgnoreCase) ? "succeeded()" : condition;
 
+    /// <summary>
+    /// Converts a classic phase or environment name into a YAML job or stage identifier.
+    /// </summary>
+    /// <remarks>
+    /// Azure DevOps accepts almost anything as a classic phase name, but a YAML identifier must match
+    /// <c>[A-Za-z_][A-Za-z0-9_]*</c>. Sanitize() is not enough on its own: it only strips characters
+    /// that are illegal in a file name, so a comma or a full stop survives into the identifier and the
+    /// pipeline is rejected on upload.
+    /// </remarks>
+    internal static string ToIdentifier(string name, string fallback)
+    {
+        if (string.IsNullOrWhiteSpace(name)) return fallback;
+
+        var builder = new StringBuilder(name.Length);
+        foreach (var c in name)
+        {
+            var mapped = char.IsAsciiLetterOrDigit(c) || c == '_' ? c : '_';
+            //collapse runs, and drop leading ones, so "Phase three, fan-in" does not become Phase_three__fan_in
+            if (mapped == '_' && (builder.Length == 0 || builder[^1] == '_')) continue;
+            builder.Append(mapped);
+        }
+
+        while (builder.Length > 0 && builder[^1] == '_') builder.Length--;
+
+        if (builder.Length == 0) return fallback;
+
+        // An identifier may not start with a digit.
+        var identifier = builder.ToString();
+        return char.IsAsciiDigit(identifier[0]) ? $"_{identifier}" : identifier;
+    }
+
     StageAzDO[] GenReleaseStages()
     {
         if (_release.Environments.IsNullOrEmpty()) return null;
@@ -271,11 +381,13 @@ public class YamlPipelineGenerator
             //artifact and environment dependencies, which should become stage dependsOn/condition.
             //https://github.com/f2calv/yamlizr/issues/182
             var variables = GenVariables(VariableType.Release, environment);
+            var stageName = ToIdentifier(environment.Name, $"Stage_{stages.Count + 1}");
             var stage = new StageAzDO
             {
-                displayName = _release.Name,
+                // The release definition names the document, not each stage within it.
+                displayName = string.IsNullOrWhiteSpace(environment.Name) ? stageName : environment.Name,
                 jobs = jobs.ToArray(),
-                stage = (environment.Name ?? $"Stage_{stages.Count + 1}").Sanitize("_"),
+                stage = stageName,
                 variables = variables.IsNullOrEmpty() ? null : variables,
             };
             stages.Add(stage);
@@ -320,7 +432,7 @@ public class YamlPipelineGenerator
                     condition = GenCondition(deploymentInput.Condition),
                     dependsOn = string.IsNullOrWhiteSpace(jobName) ? null : new[] { jobName },
                     displayName = phaseName,
-                    job = duplicatePhaseNames ? $"{phaseName.Sanitize().Replace(" ", "_")}_{j}" : phaseName.Sanitize().Replace(" ", "_"),
+                    job = duplicatePhaseNames ? $"{ToIdentifier(phaseName, $"Phase_{j + 1}")}_{j}" : ToIdentifier(phaseName, $"Phase_{j + 1}"),
                     steps = new List<Step>(steps).ToArray(),
                     timeoutInMinutes = deploymentInput.TimeoutInMinutes,
                 };
@@ -385,18 +497,25 @@ public class YamlPipelineGenerator
                 if (!_taskGroupMap.TryGetValue(key, out var taskGroup))
                     return null;
                 template = new Template { taskGroup = taskGroup };
+                // Declared as a sequence for the schema, but substitution below needs a lookup.
+                Dictionary<string, string> parameterDefaults = null;
                 if (!taskGroup.Inputs.IsNullOrEmpty())
                 {
-                    template.parameters = new Dictionary<string, string>(taskGroup.Inputs.Count);
+                    template.parameters = new List<TemplateParameter>(taskGroup.Inputs.Count);
+                    parameterDefaults = new Dictionary<string, string>(taskGroup.Inputs.Count);
                     foreach (var input in taskGroup.Inputs)
-                        template.parameters.Add(input.Name, string.IsNullOrWhiteSpace(input.DefaultValue) ? null : input.DefaultValue);
+                    {
+                        var defaultValue = string.IsNullOrWhiteSpace(input.DefaultValue) ? null : input.DefaultValue;
+                        template.parameters.Add(new TemplateParameter { name = input.Name, @default = defaultValue });
+                        parameterDefaults[input.Name] = defaultValue;
+                    }
                 }
                 var taskGroupSteps = taskGroup.Tasks.Where(p => p.Enabled).ToList();
                 if (!taskGroupSteps.IsNullOrEmpty())
                 {
                     var steps = new List<Step>(taskGroupSteps.Count);
                     foreach (var taskGroupStep in taskGroupSteps)
-                        steps.AddRange(GenSteps(taskGroupStep, template.parameters));
+                        steps.AddRange(GenSteps(taskGroupStep, parameterDefaults));
                     template.steps = steps.ToArray();
                 }
                 template.steps ??= Array.Empty<Step>();//handle when all tasks within taskgroup are disabled

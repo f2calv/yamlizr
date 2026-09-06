@@ -192,8 +192,7 @@ Sources are read in the following order, each overriding the last;
 2. `appsettings.json` in the current working directory
 3. .NET User Secrets
 4. environment variables
-5. the predefined Azure Pipelines variables `SYSTEM_ACCESSTOKEN`, `SYSTEM_COLLECTIONURI` and
-   `SYSTEM_TEAMPROJECT`
+5. the predefined Azure Pipelines variables, see [Running Inside a Pipeline](#running-inside-a-pipeline)
 
 ```json
 {
@@ -232,8 +231,10 @@ read scopes listed above and pass `$(System.AccessToken)`;
   displayName: yamlizr
 ```
 
-Alternatively supply nothing and let yamlizr fall back to the predefined pipeline variables. Azure
-Pipelines only exposes `SYSTEM_ACCESSTOKEN` to a step when you map it explicitly;
+Alternatively supply nothing and let yamlizr fall back to the predefined pipeline variables
+`SYSTEM_ACCESSTOKEN`, `SYSTEM_COLLECTIONURI` and `SYSTEM_TEAMPROJECT`. The latter two are exposed to
+every step automatically, but `SYSTEM_ACCESSTOKEN` is secret and reaches a step only when you map it
+explicitly;
 
 ```yaml
 - script: |
@@ -243,6 +244,33 @@ Pipelines only exposes `SYSTEM_ACCESSTOKEN` to a step when you map it explicitly
   env:
     SYSTEM_ACCESSTOKEN: $(System.AccessToken)
 ```
+
+The container needs no .NET on the agent. Nothing from the agent reaches it unless you forward it, so
+the predefined variables above are not available inside the container and the organisation and project
+have to be passed as arguments;
+
+```yaml
+- script: |
+    docker run --pull always --rm \
+      --user "`id -u`:`id -g`" \
+      -e CasCap__AzureDevOpsOptions__PAT \
+      -v "$(Build.ArtifactStagingDirectory):/data" \
+      ghcr.io/f2calv/yamlizr generate \
+        -org $(System.CollectionUri) \
+        -proj $(System.TeamProject) \
+        -out /data \
+        --create-directory
+  displayName: yamlizr
+  env:
+    CasCap__AzureDevOpsOptions__PAT: $(System.AccessToken)
+```
+
+Two details worth keeping;
+
+- `-e NAME` with no value forwards the variable from the step environment, keeping the token out of the
+  command line and out of `docker inspect`.
+- The user mapping uses backticks because Azure Pipelines resolves its own `$( )` macros before bash
+  sees the script. Without it the generated files belong to uid 1654 and the agent cannot clean them up.
 
 ## How It Works
 
@@ -287,10 +315,6 @@ without a trace. Progress on closing these gaps is tracked in
 - [YamlDotNet](https://github.com/aaubry/YamlDotNet)
 - [CommandLineUtils](https://github.com/natemcmaster/CommandLineUtils)
 - [ShellProgressBar](https://github.com/Mpdreamz/shellprogressbar)
-
-## Misc Tips
-
-- The [NuGet package](https://www.nuget.org/packages/yamlizr/) includes [SourceLink](https://github.com/dotnet/sourcelink) which enables you to jump inside the library and debug the API yourself. By default Visual Studio does not allow this and will pop up an message "You are debugging a Release build of...", to disable this message go into the Visual Studio debugging options and un-check the 'Just My Code' option (menu path, Tools > Options > Debugging).
 
 ## Feedback/Issues
 

@@ -1,0 +1,16 @@
+{
+  // yamlizr writes converted definitions into these folders under <outputpath>/<project>.
+  // Associating them with the azure-pipelines language makes the Azure Pipelines extension
+  // schema-validate the generated YAML in place, without pushing it to an organisation.
+  "files.associations": {
+    "**/AzureDevOpsBuilds/*.yml": "azure-pipelines",
+    "**/AzureDevOpsReleases/*.yml": "azure-pipelines",
+    "**/AzureDevOpsTaskGroups/*.yml": "azure-pipelines"
+  },
+  "yaml.schemas": {
+    "https://json.schemastore.org/github-workflow.json": [
+      "**/GitHubBuilds/*.yml",
+      "**/GitHubReleases/*.yml"
+    ]
+  }
+}
