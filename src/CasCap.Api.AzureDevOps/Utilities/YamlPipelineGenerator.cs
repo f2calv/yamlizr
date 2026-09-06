@@ -339,14 +339,19 @@ public class YamlPipelineGenerator
 
         var builder = new StringBuilder(name.Length);
         foreach (var c in name)
-            builder.Append(char.IsAsciiLetterOrDigit(c) || c == '_' ? c : '_');
+        {
+            var mapped = char.IsAsciiLetterOrDigit(c) || c == '_' ? c : '_';
+            //collapse runs, and drop leading ones, so "Phase three, fan-in" does not become Phase_three__fan_in
+            if (mapped == '_' && (builder.Length == 0 || builder[^1] == '_')) continue;
+            builder.Append(mapped);
+        }
 
-        // Collapse runs so "Phase three, fan-in" does not become Phase_three__fan_in.
-        var identifier = Regex.Replace(builder.ToString(), "_{2,}", "_").Trim('_');
+        while (builder.Length > 0 && builder[^1] == '_') builder.Length--;
 
-        if (identifier.Length == 0) return fallback;
+        if (builder.Length == 0) return fallback;
 
         // An identifier may not start with a digit.
+        var identifier = builder.ToString();
         return char.IsAsciiDigit(identifier[0]) ? $"_{identifier}" : identifier;
     }
 
