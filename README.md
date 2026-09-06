@@ -192,8 +192,7 @@ Sources are read in the following order, each overriding the last;
 2. `appsettings.json` in the current working directory
 3. .NET User Secrets
 4. environment variables
-5. the predefined Azure Pipelines variables `SYSTEM_ACCESSTOKEN`, `SYSTEM_COLLECTIONURI` and
-   `SYSTEM_TEAMPROJECT`
+5. the predefined Azure Pipelines variables, see [Running Inside a Pipeline](#running-inside-a-pipeline)
 
 ```json
 {
@@ -232,8 +231,10 @@ read scopes listed above and pass `$(System.AccessToken)`;
   displayName: yamlizr
 ```
 
-Alternatively supply nothing and let yamlizr fall back to the predefined pipeline variables. Azure
-Pipelines only exposes `SYSTEM_ACCESSTOKEN` to a step when you map it explicitly;
+Alternatively supply nothing and let yamlizr fall back to the predefined pipeline variables
+`SYSTEM_ACCESSTOKEN`, `SYSTEM_COLLECTIONURI` and `SYSTEM_TEAMPROJECT`. The latter two are exposed to
+every step automatically, but `SYSTEM_ACCESSTOKEN` is secret and reaches a step only when you map it
+explicitly;
 
 ```yaml
 - script: |
