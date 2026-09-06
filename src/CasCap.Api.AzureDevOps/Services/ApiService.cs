@@ -4,6 +4,7 @@ using CasCap.Models;
 using Microsoft.Extensions.Logging;
 using System.Net.Http.Headers;
 using System.Text;
+using System.Text.Json;
 
 namespace CasCap.Services;
 
@@ -36,22 +37,46 @@ public class ApiService : HttpClientBase, IApiService
     }
 
     /// <inheritdoc/>
-    /// <remarks>
-    /// See <see href="https://docs.microsoft.com/en-us/rest/api/azure/devops/pipelines/runs/run%20pipeline?view=azure-devops-rest-6.0" />.
-    /// </remarks>
-    public async Task<string> Validate(string organisation, string project, int pipelineId, string pipelineYaml)
+    public async Task<PipelineValidationResult> Validate(
+        string organisationUri,
+        string project,
+        int pipelineId,
+        string pipelineYaml,
+        CancellationToken cancellationToken = default)
     {
-        _logger.LogInformation("{ClassName} validating YAML for project '{Project}' in organisation '{Organisation}'",
-            nameof(ApiService), project, organisation);
-        var req = new
+        _logger.LogInformation("{ClassName} validating YAML against pipeline {PipelineId} in project '{Project}'",
+            nameof(ApiService), pipelineId, project);
+
+        var uri = $"{organisationUri.TrimEnd('/')}/{Uri.EscapeDataString(project)}/_apis/pipelines/{pipelineId}/preview?api-version=7.1";
+        var payload = JsonSerializer.Serialize(new { previewRun = true, yamlOverride = pipelineYaml });
+
+        using var content = new StringContent(payload, Encoding.UTF8, "application/json");
+        using var response = await Client.PostAsync(uri, content, cancellationToken);
+        var body = await response.Content.ReadAsStringAsync(cancellationToken);
+
+        if (response.IsSuccessStatusCode)
+            return new PipelineValidationResult { IsValid = true, FinalYaml = ReadProperty(body, "finalYaml") };
+
+        //the rejection reason is the whole point of the call, so fall back to the status when absent
+        var message = ReadProperty(body, "message") ?? $"Azure DevOps returned {(int)response.StatusCode}.";
+        _logger.LogWarning("{ClassName} rejected YAML for pipeline {PipelineId}, {Message}",
+            nameof(ApiService), pipelineId, message);
+
+        return new PipelineValidationResult { IsValid = false, Message = message };
+    }
+
+    private static string ReadProperty(string json, string name)
+    {
+        if (string.IsNullOrWhiteSpace(json)) return null;
+
+        try
         {
-            previewRun = true,
-            yamlOverride = $@"
-# your YAML here
-{pipelineYaml}
-"
-        };
-        var res = await PostJsonAsync<string, object>($"https://dev.azure.com/{organisation}/{project}/_apis/pipelines/{pipelineId}/runs?api-version=6.0-preview.1", req);
-        return res.result is not null ? res.result : null;
+            using var document = JsonDocument.Parse(json);
+            return document.RootElement.TryGetProperty(name, out var value) ? value.GetString() : null;
+        }
+        catch (JsonException)
+        {
+            return null;
+        }
     }
 }

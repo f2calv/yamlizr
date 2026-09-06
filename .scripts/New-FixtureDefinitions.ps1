@@ -693,6 +693,51 @@ function Set-FixtureBuildDefinition {
         -Uri "$script:ProjectUri/_apis/build/definitions?api-version=$script:ApiVersion"
 }
 
+function Set-FixtureValidationPipeline {
+    <#
+    .SYNOPSIS
+        Creates or updates the YAML pipeline that generated YAML is validated against.
+    .DESCRIPTION
+        The pipeline preview endpoint parses a submitted document without queueing anything, but it
+        needs an existing YAML pipeline to parse against, and that pipeline must be enabled. A
+        disabled one fails the call with DefinitionDisabledException, which is why this is the one
+        fixture left enabled. It has no triggers, and its own YAML is never read because the
+        submitted document replaces it.
+    #>
+    [CmdletBinding(SupportsShouldProcess)]
+    param([string]$Name)
+
+    $body = @{
+        name                  = $Name
+        path                  = '\'
+        type                  = 'build'
+        quality               = 'definition'
+        queueStatus           = 'enabled'
+        queue                 = @{ id = $script:QueueId }
+        jobAuthorizationScope = 'projectCollection'
+        repository            = $script:RepositoryReference
+        process               = @{ type = 2; yamlFilename = 'azure-pipelines.yml' }
+        triggers              = @()
+    }
+
+    $existing = Get-AdoCollection -Uri "$script:ProjectUri/_apis/build/definitions?name=$([uri]::EscapeDataString($Name))&api-version=$script:ApiVersion" |
+        Select-Object -First 1
+
+    if ($existing) {
+        if (-not $PSCmdlet.ShouldProcess($Name, 'Update validation pipeline')) { return $existing }
+        Write-Host "Updating validation pipeline '$Name'." -ForegroundColor DarkGray
+        $body.id = $existing.id
+        $body.revision = $existing.revision
+        return Invoke-AdoApi -Method Put -Body $body `
+            -Uri "$script:ProjectUri/_apis/build/definitions/$($existing.id)?api-version=$script:ApiVersion"
+    }
+
+    if (-not $PSCmdlet.ShouldProcess($Name, 'Create validation pipeline')) { return $null }
+    Write-Host "Creating validation pipeline '$Name'." -ForegroundColor Cyan
+    return Invoke-AdoApi -Method Post -Body $body `
+        -Uri "$script:ProjectUri/_apis/build/definitions?api-version=$script:ApiVersion"
+}
+
 function Set-FixtureReleaseDefinition {
     <#
     .SYNOPSIS
@@ -1199,6 +1244,7 @@ if ($MyInvocation.InvocationName -ne '.') {
 
         $taskGroups = New-FixtureTaskGroups
         $builds = New-FixtureBuildDefinitions -TaskGroups $taskGroups -VariableGroupId $variableGroupId
+        $validationPipeline = Set-FixtureValidationPipeline -Name "$($script:Prefix)validation"
 
         if ($builds.ContainsKey('Triggers') -and $builds.Triggers) {
             New-FixtureReleaseDefinition -SourceBuildDefinition $builds.Triggers -TaskGroups $taskGroups -VariableGroupId $variableGroupId | Out-Null
@@ -1209,6 +1255,11 @@ if ($MyInvocation.InvocationName -ne '.') {
 
         Write-Host "Fixtures prefixed '$script:Prefix' are up to date in project '$script:ProjectName'." -ForegroundColor Green
         Write-Host "Convert them with: yamlizr --filter $script:Prefix" -ForegroundColor Green
+
+        if ($validationPipeline) {
+            Write-Host "Validate generated YAML against pipeline id $($validationPipeline.id), set CasCap:AzureDevOpsOptions:ValidationPipelineId to it." -ForegroundColor Green
+        }
+
         exit 0
     }
     catch {

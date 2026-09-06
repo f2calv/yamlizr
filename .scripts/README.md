@@ -91,6 +91,7 @@ Names below assume the default prefix.
 | `yamlizr.test.Nested Task Group` | Calls the task group above, covering recursive expansion |
 | `yamlizr.test.common` | A variable group carrying plain, spaced and secret values |
 | `yamlizr.test.release-multi-stage` | Three environments, a build artifact, automated and manual pre-deployment approvals, stage-after-stage conditions, a continuous deployment trigger, stage-scoped variables, a disabled step and an optional gate |
+| `yamlizr.test.validation` | An empty YAML pipeline used only as a target for validating generated YAML. Deliberately the one fixture left enabled |
 
 No value in the fixture is a real credential, and no definition is ever queued.
 
@@ -104,6 +105,22 @@ It also removes a start-up ordering trap: VS Code's `envFile` fails the whole co
 
 ## Validating the generated YAML
 
-Install the recommended workspace extensions from [.vscode/extensions.json](../.vscode/extensions.json). The [Azure Pipelines extension](https://marketplace.visualstudio.com/items?itemName=ms-azure-devops.azure-pipelines) validates converted YAML against the Azure Pipelines schema, so a file yamlizr emits can be opened and checked without pushing it anywhere.
+There are two routes, and they disagree in useful ways.
 
-By default that extension only applies to files matching `azure-pipelines.yml`. Point it at the converted output by adding a `yaml.schemas` association in your workspace settings, or by naming the generated files to match.
+### Against Azure DevOps
+
+The pipeline preview endpoint parses a document and expands its templates without queueing anything, which is the only check that proves Azure DevOps will actually accept the output. `IApiService.Validate` wraps it, and `PipelineValidationTests` exercises it.
+
+It needs an existing YAML pipeline to parse against, which is what `yamlizr.test.validation` is for. That pipeline must be **enabled**; a disabled one fails the call with `DefinitionDisabledException` rather than validating anything. Point the tests at it:
+
+```powershell
+dotnet user-secrets set CasCap:AzureDevOpsOptions:ValidationPipelineId 19 --project src/CasCap.Api.AzureDevOps.Tests
+```
+
+One limitation: a relative `template:` reference resolves against the target pipeline's repository, not the submitted document. Generated YAML that references a task group template therefore only validates when those templates are committed, or when it was generated with `--inline`.
+
+### In the editor
+
+Install the recommended workspace extensions from [.vscode/extensions.json](../.vscode/extensions.json). The [Azure Pipelines extension](https://marketplace.visualstudio.com/items?itemName=ms-azure-devops.azure-pipelines) checks converted YAML against the published schema, and [.vscode/settings.json](../.vscode/settings.json) associates the folders yamlizr writes with it. Note that the extension only diagnoses **open** documents, so a closed file reporting no problems has not been checked.
+
+The editor schema is stricter than the server in places: it rejects `variables: []`, which a preview run accepts.
