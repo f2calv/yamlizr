@@ -5,7 +5,7 @@ namespace CasCap.Models;
 public class Pipeline
 {
     public string name { get; set; }
-    public Dictionary<string, string> parameters { get; set; }
+    public List<TemplateParameter> parameters { get; set; }
     public string container { get; set; }
     public Resources resources { get; set; }
     public TriggerAzDO trigger { get; set; }

@@ -420,18 +420,25 @@ public class YamlPipelineGenerator
                 if (!_taskGroupMap.TryGetValue(key, out var taskGroup))
                     return null;
                 template = new Template { taskGroup = taskGroup };
+                // Declared as a sequence for the schema, but substitution below needs a lookup.
+                Dictionary<string, string> parameterDefaults = null;
                 if (!taskGroup.Inputs.IsNullOrEmpty())
                 {
-                    template.parameters = new Dictionary<string, string>(taskGroup.Inputs.Count);
+                    template.parameters = new List<TemplateParameter>(taskGroup.Inputs.Count);
+                    parameterDefaults = new Dictionary<string, string>(taskGroup.Inputs.Count);
                     foreach (var input in taskGroup.Inputs)
-                        template.parameters.Add(input.Name, string.IsNullOrWhiteSpace(input.DefaultValue) ? null : input.DefaultValue);
+                    {
+                        var defaultValue = string.IsNullOrWhiteSpace(input.DefaultValue) ? null : input.DefaultValue;
+                        template.parameters.Add(new TemplateParameter { name = input.Name, @default = defaultValue });
+                        parameterDefaults[input.Name] = defaultValue;
+                    }
                 }
                 var taskGroupSteps = taskGroup.Tasks.Where(p => p.Enabled).ToList();
                 if (!taskGroupSteps.IsNullOrEmpty())
                 {
                     var steps = new List<Step>(taskGroupSteps.Count);
                     foreach (var taskGroupStep in taskGroupSteps)
-                        steps.AddRange(GenSteps(taskGroupStep, template.parameters));
+                        steps.AddRange(GenSteps(taskGroupStep, parameterDefaults));
                     template.steps = steps.ToArray();
                 }
                 template.steps ??= Array.Empty<Step>();//handle when all tasks within taskgroup are disabled
