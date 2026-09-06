@@ -91,7 +91,7 @@ public class YamlPipelineGenerator
     /// </remarks>
     /// <returns>The generated pipeline, or null when the definition produced nothing convertible.</returns>
     /// <exception cref="GenericException">Thrown when neither or both of a build and a release were supplied.</exception>
-    public Pipeline GenPipeline()
+    public Pipeline? GenPipeline()
     {
         var pipeline = new Pipeline();
         var stages = new List<StageAzDO>();
@@ -106,18 +106,18 @@ public class YamlPipelineGenerator
             var buildVariables = GenVariables(VariableType.Build);
             pipeline.variables = buildVariables.IsNullOrEmpty() ? null : buildVariables;
             var buildStage = GenBuildStage();
-            if (buildStage is not null)
-                if (buildStage.jobs.Length == 1)
+            if (buildStage?.jobs is { Length: > 0 } buildJobs)
+                if (buildJobs.Length == 1)
                 {
                     //flattening the only job to a bare step list discards its job-level settings, but a
                     //default condition is not worth reporting
-                    var job = buildStage.jobs[0];
+                    var job = buildJobs[0];
                     if (job.condition is not null && job.condition != "succeeded()")
                         _warnings.Add($"job '{job.job}' is the only job so its steps were flattened, dropping its condition '{job.condition}', see https://github.com/f2calv/yamlizr/issues/376");
-                    steps.AddRange(job.steps);
+                    steps.AddRange(job.steps ?? []);
                 }
                 else
-                    jobs.AddRange(buildStage.jobs);
+                    jobs.AddRange(buildJobs);
         }
         else if (_build is null && _release is not null)//create release pipeline
         {
@@ -131,12 +131,12 @@ public class YamlPipelineGenerator
                     //flattening the only stage discards its stage-level variables, which for a release
                     //are the environment-scoped variables and variable groups
                     var stage = releaseStages[0];
-                    if (!stage.variables.IsNullOrEmpty())
-                        _warnings.Add($"stage '{stage.stage}' is the only stage so it was flattened, dropping {stage.variables.Count} stage-level variable(s), see https://github.com/f2calv/yamlizr/issues/376");
-                    if (stage.jobs.Length == 1)
-                        steps.AddRange(stage.jobs[0].steps);
+                    if (stage.variables is { Count: > 0 } stageVariables)
+                        _warnings.Add($"stage '{stage.stage}' is the only stage so it was flattened, dropping {stageVariables.Count} stage-level variable(s), see https://github.com/f2calv/yamlizr/issues/376");
+                    if (stage.jobs is { Length: 1 })
+                        steps.AddRange(stage.jobs[0].steps ?? []);
                     else
-                        jobs.AddRange(stage.jobs);
+                        jobs.AddRange(stage.jobs ?? []);
                 }
                 else
                     stages.AddRange(releaseStages);
@@ -150,7 +150,7 @@ public class YamlPipelineGenerator
         return pipeline.stages.IsNullOrEmpty() && pipeline.jobs.IsNullOrEmpty() && pipeline.steps.IsNullOrEmpty() ? null : pipeline;
     }
 
-    StageAzDO GenBuildStage()
+    StageAzDO? GenBuildStage()
     {
         var allPhases = ((DesignerProcess)_build.Process).Phases;
         var phases = allPhases.Where(p => p.Target is not null && p.Target.Type == 1).ToList();
@@ -215,7 +215,7 @@ public class YamlPipelineGenerator
     /// previously emitted the preceding job in iteration order instead, which serialised phases that
     /// were meant to run in parallel and silently dropped every dependency of a fan-in but the last.
     /// </remarks>
-    private string[] GenDependsOn(Phase phase, Dictionary<string, string> jobIdByRefName)
+    private string[]? GenDependsOn(Phase phase, Dictionary<string, string> jobIdByRefName)
     {
         if (phase.Dependencies.IsNullOrEmpty()) return null;
 
@@ -233,7 +233,7 @@ public class YamlPipelineGenerator
         return dependsOn.Count == 0 ? null : dependsOn.ToArray();
     }
 
-    TriggerAzDO GenTrigger()
+    TriggerAzDO? GenTrigger()
     {
         if (_build.Triggers.IsNullOrEmpty()) return null;
         //TODO(#182): only continuous integration triggers are converted; pull request, scheduled and
@@ -283,7 +283,7 @@ public class YamlPipelineGenerator
         return null;
     }
 
-    private List<Variable> GenVariables(VariableType type, ReleaseDefinitionEnvironment environment = null)
+    private List<Variable> GenVariables(VariableType type, ReleaseDefinitionEnvironment? environment = null)
     {
         List<Variable> variables;
         if (type == VariableType.Build)
@@ -319,7 +319,7 @@ public class YamlPipelineGenerator
         return variables;
     }
 
-    private static string GenCondition(string condition) => string.IsNullOrWhiteSpace(condition) || condition.Equals("succeeded()", StringComparison.OrdinalIgnoreCase) ? "succeeded()" : condition;
+    private static string GenCondition(string? condition) => string.IsNullOrWhiteSpace(condition) || condition.Equals("succeeded()", StringComparison.OrdinalIgnoreCase) ? "succeeded()" : condition;
 
     /// <summary>
     /// Converts a classic phase or environment name into a YAML job or stage identifier.
@@ -373,7 +373,7 @@ public class YamlPipelineGenerator
         return candidate;
     }
 
-    StageAzDO[] GenReleaseStages()
+    StageAzDO[]? GenReleaseStages()
     {
         if (_release.Environments.IsNullOrEmpty()) return null;
 
@@ -466,11 +466,11 @@ public class YamlPipelineGenerator
     private List<Step> GenSteps(WorkflowTask task)
         => GenSteps(task.TaskId, task.Name, task.Version, task.Inputs, task.Environment, task.Condition, task.ContinueOnError, task.TimeoutInMinutes);
 
-    private List<Step> GenSteps(TaskGroupStep task, Dictionary<string, string> parameters)
+    private List<Step> GenSteps(TaskGroupStep task, Dictionary<string, string?>? parameters)
         => GenSteps(task.Task.Id, task.DisplayName, task.Task.VersionSpec, task.Inputs, task.Environment, task.Condition, task.ContinueOnError, task.TimeoutInMinutes, parameters);
 
-    private List<Step> GenSteps(Guid Id, string displayName, string semver, IDictionary<string, string> inputs, IDictionary<string, string> env,
-        string condition, bool continueOnError, int timeoutInMinutes, Dictionary<string, string> parameters = null)
+    private List<Step> GenSteps(Guid Id, string displayName, string semver, IDictionary<string, string>? inputs, IDictionary<string, string>? env,
+        string? condition, bool continueOnError, int timeoutInMinutes, Dictionary<string, string?>? parameters = null)
     {
         if (!TryParseMajorVersion(semver, out var version))
         {
@@ -485,8 +485,8 @@ public class YamlPipelineGenerator
                     condition = GenCondition(condition) == "succeeded()" ? null : GenCondition(condition),//todo: add "succeeded()" as default in Sam's lib
                     continueOnError = continueOnError,
                     displayName = displayName,
-                    env = env.IsNullOrEmpty() ? null : new Dictionary<string, string>(env),
-                    inputs = ProcessTaskInputs(new Dictionary<string, string>(inputs)),
+                    env = env is { Count: > 0 } ? new Dictionary<string, string>(env) : null,
+                    inputs = inputs is { Count: > 0 } ? ProcessTaskInputs(new Dictionary<string, string>(inputs)) : null,
                     task = string.IsNullOrWhiteSpace(taskObj.contributionIdentifier) ? $"{taskObj.name}@{version}"
                         : $"{taskObj.contributionIdentifier}.{taskObj.name}@{version}",
                     timeoutInMinutes = timeoutInMinutes,
@@ -501,9 +501,9 @@ public class YamlPipelineGenerator
             _warnings.Add($"step '{displayName}' references task or task group {Id} v{version}, which is not installed in this organisation, and was not converted");
             return [];
         }
-        return _inlineTaskGroups ? new List<Step>(template.steps) : GetSteps(template, inputs);
+        return _inlineTaskGroups ? new List<Step>(template.steps ?? []) : GetSteps(template, inputs);
 
-        Template GetOrCreateTaskGroupTemplate()
+        Template? GetOrCreateTaskGroupTemplate()
         {
             var key = new TaskGroupVersion(Id, version);
             if (_taskGroupTemplateMap.TryGetValue(key, out var template))
@@ -514,11 +514,11 @@ public class YamlPipelineGenerator
                     return null;
                 template = new Template { taskGroup = taskGroup };
                 // Declared as a sequence for the schema, but substitution below needs a lookup.
-                Dictionary<string, string> parameterDefaults = null;
+                Dictionary<string, string?>? parameterDefaults = null;
                 if (!taskGroup.Inputs.IsNullOrEmpty())
                 {
                     template.parameters = new List<TemplateParameter>(taskGroup.Inputs.Count);
-                    parameterDefaults = new Dictionary<string, string>(taskGroup.Inputs.Count);
+                    parameterDefaults = new Dictionary<string, string?>(taskGroup.Inputs.Count);
                     foreach (var input in taskGroup.Inputs)
                     {
                         var defaultValue = string.IsNullOrWhiteSpace(input.DefaultValue) ? null : input.DefaultValue;
@@ -540,7 +540,7 @@ public class YamlPipelineGenerator
             }
         }
 
-        Dictionary<string, string> ProcessTaskInputs(Dictionary<string, string> inputs)
+        Dictionary<string, string>? ProcessTaskInputs(Dictionary<string, string> inputs)
         {
             if (inputs.IsNullOrEmpty()) return null;
 
@@ -550,7 +550,7 @@ public class YamlPipelineGenerator
                 var inputValue = inputs[key];
 
                 //check for existance of the input key in the actual task keys (99.9% of times this is fine, however the task version in the definition could go stale...)
-                if (!taskObj.inputMap.TryGetValue(key, out var sourceInput))
+                if (taskObj.inputMap is null || !taskObj.inputMap.TryGetValue(key, out var sourceInput))
                     continue;
 
                 //strip inputs where the default value matches
@@ -565,7 +565,7 @@ public class YamlPipelineGenerator
                     inputValue = ConvertVarsTo2Params(inputValue);
 
                 //replace task inputs with the primary/top-most task alias (if one exists)
-                newInputs.Add(!sourceInput.aliases.IsNullOrEmpty() ? sourceInput.aliases[0] : key, inputValue);
+                newInputs.Add(sourceInput.aliases is { Count: > 0 } aliases ? aliases[0] : key, inputValue);
             }
 
             return newInputs.IsNullOrEmpty() ? null : newInputs;
@@ -601,14 +601,16 @@ public class YamlPipelineGenerator
         }
     }
 
-    List<Step> GetSteps(Template template, IDictionary<string, string> inputs) => GenSteps(template, new Dictionary<string, string>(inputs));
+    List<Step> GetSteps(Template template, IDictionary<string, string>? inputs) => GenSteps(template, inputs is null ? [] : new Dictionary<string, string>(inputs));
 
     List<Step> GenSteps(Template template, Dictionary<string, string> inputs)
     {
-        var filename = $"{template.taskGroup.Name.Sanitize()}-v{template.taskGroup.Version.Major}.yml";
+        //a template is only ever built with its task group set, and a null one is what issue #177 was
+        var taskGroup = template.taskGroup ?? throw new GenericException($"{nameof(Template)} has no task group, see https://github.com/f2calv/yamlizr/issues/177");
+        var filename = $"{taskGroup.Name.Sanitize()}-v{taskGroup.Version.Major}.yml";
         foreach (var key in inputs.Keys.ToList())
         {
-            var input = template.taskGroup.Inputs.FirstOrDefault(p => p.Name.Equals(key, StringComparison.OrdinalIgnoreCase));
+            var input = taskGroup.Inputs.FirstOrDefault(p => p.Name.Equals(key, StringComparison.OrdinalIgnoreCase));
             if (input is not null && string.IsNullOrWhiteSpace(inputs[key]))
                 inputs[key] = input.DefaultValue;
         }

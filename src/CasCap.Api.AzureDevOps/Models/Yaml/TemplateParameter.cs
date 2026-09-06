@@ -18,5 +18,5 @@ public class TemplateParameter
 
     /// <summary>Value used when a caller supplies none.</summary>
     /// <remarks>Taken from the task group input's default, and null when it declared none.</remarks>
-    public string @default { get; set; }
+    public string? @default { get; set; }
 }
