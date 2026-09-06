@@ -55,6 +55,14 @@ jobs:
       id-token: write #OIDC token for NuGet Trusted Publishing
       contents: read #checkout
       packages: write #push to nuget.pkg.github.com
+    #The action runs the tests before it packs, so a conversion Azure DevOps rejects blocks every
+    #publish. A fork pull request cannot read the token, which leaves the integration tests to skip
+    #themselves rather than fail. The token is never echoed.
+    env:
+      CasCap__AzureDevOpsOptions__PAT: ${{ secrets.AZURE_DEVOPS_PAT }}
+      CasCap__AzureDevOpsOptions__OrganisationUri: ${{ vars.AZURE_DEVOPS_ORGANISATION_URI }}
+      CasCap__AzureDevOpsOptions__Project: ${{ vars.AZURE_DEVOPS_PROJECT }}
+      CasCap__AzureDevOpsOptions__ValidationPipelineId: ${{ vars.AZURE_DEVOPS_VALIDATION_PIPELINE_ID }}
     steps:
       - uses: f2calv/gha-dotnet-nuget@v2
         with:
@@ -66,8 +74,6 @@ jobs:
           push-preview: ${{ inputs.push-preview }}
           version: ${{ needs.versioning.outputs.version }}
           solution-name: yamlizr.Release.slnx
-          #Integration tests need a live Azure DevOps organisation and a token, the rest are credential-free.
-          dotnet-test-args: --filter-not-trait Category=Integration
 
   image:
     uses: f2calv/gha-workflows/.github/workflows/container-image-build.yml@v1
