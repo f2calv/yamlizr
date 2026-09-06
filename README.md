@@ -314,7 +314,7 @@ generated YAML** and must be re-created by hand. Progress on closing these gaps 
 | Job condition, timeout and cancel timeout | ✅ | |
 | Stage `dependsOn` | ❌ | Generated stages run concurrently rather than in the classic environment order. |
 | Release artifacts | ❌ | A generated release pipeline therefore has no inputs. |
-| Pre- and post-deployment approvals and gates | ❌ | Detected and reported, but not converted. |
+| Pre- and post-deployment approvals and gates | ❌ | Detected and reported, but not converted, see [issue #374](https://github.com/f2calv/yamlizr/issues/374). A generated release pipeline deploys straight through where the classic definition had a gate. |
 | Deploy phases other than `--phasetype` | ❌ | Reported per stage. |
 | A definition with exactly one stage | ⚠️ | Flattened, dropping stage-level variables and variable groups, see [issue #211](https://github.com/f2calv/yamlizr/issues/211). |
 
