@@ -92,6 +92,7 @@ Names below assume the default prefix.
 | `yamlizr.test.Nested Task Group` | Calls the task group above, covering recursive expansion |
 | `yamlizr.test.common` | A variable group carrying plain, spaced and secret values |
 | `yamlizr.test.release-multi-stage` | Three environments, a build artifact, automated and manual pre-deployment approvals, stage-after-stage conditions, a continuous deployment trigger, stage-scoped variables, a disabled step and an optional gate |
+| `yamlizr.test.deployment-group` | A deployment group with no registered targets, carrying the deployment group phase on the Prod stage so the phase type yamlizr skips is exercised |
 | `yamlizr.test.validation` | An empty YAML pipeline used only as a target for validating generated YAML. Deliberately the one fixture left enabled |
 
 No value in the fixture is a real credential, and no definition is ever queued.

@@ -627,6 +627,43 @@ function Set-FixtureVariableGroup {
         -Uri "$script:ProjectUri/_apis/distributedtask/variablegroups?api-version=$script:VariableGroupApiVersion"
 }
 
+function Set-FixtureDeploymentGroup {
+    <#
+    .SYNOPSIS
+        Creates or updates a deployment group by name.
+    .DESCRIPTION
+        The group is deliberately left with no registered targets. A classic deployment group phase is
+        a construct yamlizr does not convert, so the fixture only needs the phase to exist, and
+        registering a target would mean running an agent.
+    #>
+    [CmdletBinding(SupportsShouldProcess)]
+    param(
+        [Parameter(Mandatory)][string]$Name,
+        [Parameter(Mandatory)][string]$Description
+    )
+
+    $existing = Get-AdoCollection -Uri "$script:ProjectUri/_apis/distributedtask/deploymentgroups?api-version=$script:PreviewApiVersion" |
+        Where-Object { $_.name -eq $Name } |
+        Select-Object -First 1
+
+    if ($existing) {
+        Write-Host "Deployment group '$Name' already exists." -ForegroundColor DarkGray
+        return $existing
+    }
+
+    if (-not $PSCmdlet.ShouldProcess($Name, 'Create deployment group')) { return $null }
+    Write-Host "Creating deployment group '$Name'." -ForegroundColor DarkGray
+
+    try {
+        return Invoke-AdoApi -Method Post -Body @{ name = $Name; description = $Description } `
+            -Uri "$script:ProjectUri/_apis/distributedtask/deploymentgroups?api-version=$script:PreviewApiVersion"
+    }
+    catch {
+        Write-Warning "Could not create deployment group '$Name', so the deployment group phase is skipped: $($_.Exception.Message)"
+        return $null
+    }
+}
+
 function Set-FixtureTaskGroup {
     <#
     .SYNOPSIS
@@ -1185,6 +1222,7 @@ function New-FixtureReleaseDefinition {
             [bool]$ManualApproval,
             [string]$AfterEnvironment,
             [hashtable]$Variables = @{},
+            [int]$DeploymentGroupId = 0,
             [hashtable]$PreDeploymentGates = @{ id = 0; gatesOptions = $null; gates = @() }
         )
 
@@ -1201,6 +1239,52 @@ function New-FixtureReleaseDefinition {
         }
         else {
             @(@{ rank = 1; isAutomated = $true; isNotificationOn = $false; id = 0 })
+        }
+
+        $deployPhases = @(@{
+                rank            = 1
+                phaseType       = 'agentBasedDeployment'
+                name            = 'Agent job'
+                refName         = $null
+                workflowTasks   = @($Tasks | ForEach-Object { ConvertTo-WorkflowTask -Step $_ })
+                deploymentInput = @{
+                    parallelExecution         = @{ parallelExecutionType = 'none' }
+                    agentSpecification        = $null
+                    skipArtifactsDownload     = $false
+                    artifactsDownloadInput    = @{}
+                    queueId                   = $script:QueueId
+                    demands                   = @()
+                    enableAccessToken         = $false
+                    timeoutInMinutes          = 0
+                    jobCancelTimeoutInMinutes = 1
+                    condition                 = 'succeeded()'
+                    overrideInputs            = @{}
+                }
+            })
+
+        # yamlizr converts only the phase type given by --phasetype, so this second phase is expected
+        # to be skipped and reported. For a deployment group phase queueId carries the group id.
+        if ($DeploymentGroupId -gt 0) {
+            $deployPhases += @{
+                rank            = 2
+                phaseType       = 'machineGroupBasedDeployment'
+                name            = 'Deployment group phase'
+                refName         = $null
+                workflowTasks   = @($Tasks | ForEach-Object { ConvertTo-WorkflowTask -Step $_ })
+                deploymentInput = @{
+                    parallelExecution         = @{ parallelExecutionType = 'none' }
+                    skipArtifactsDownload     = $false
+                    artifactsDownloadInput    = @{}
+                    queueId                   = $DeploymentGroupId
+                    demands                   = @()
+                    enableAccessToken         = $false
+                    timeoutInMinutes          = 0
+                    jobCancelTimeoutInMinutes = 1
+                    condition                 = 'succeeded()'
+                    overrideInputs            = @{}
+                    tags                      = @()
+                }
+            }
         }
 
         # @() matters on every one of these. A single-element array collapses to a bare object when
@@ -1231,26 +1315,7 @@ function New-FixtureReleaseDefinition {
             preDeploymentGates  = $PreDeploymentGates
             postDeploymentGates = @{ id = 0; gatesOptions = $null; gates = @() }
             deployStep          = @{ id = 0 }
-            deployPhases        = @(@{
-                    rank            = 1
-                    phaseType       = 'agentBasedDeployment'
-                    name            = 'Agent job'
-                    refName         = $null
-                    workflowTasks   = @($Tasks | ForEach-Object { ConvertTo-WorkflowTask -Step $_ })
-                    deploymentInput = @{
-                        parallelExecution            = @{ parallelExecutionType = 'none' }
-                        agentSpecification           = $null
-                        skipArtifactsDownload        = $false
-                        artifactsDownloadInput       = @{}
-                        queueId                      = $script:QueueId
-                        demands                      = @()
-                        enableAccessToken            = $false
-                        timeoutInMinutes             = 0
-                        jobCancelTimeoutInMinutes    = 1
-                        condition                    = 'succeeded()'
-                        overrideInputs               = @{}
-                    }
-                })
+            deployPhases        = @($deployPhases)
         }
     }
 
@@ -1274,6 +1339,10 @@ function New-FixtureReleaseDefinition {
         New-TaskStep -TaskName 'PowerShell' -DisplayName 'Production script' -Inputs @{ targetType = 'inline'; script = $script:MultiLinePowerShell }
     )
 
+    $deploymentGroup = Set-FixtureDeploymentGroup -Name "$($script:Prefix)deployment-group" `
+        -Description 'Fixture deployment group with no registered targets, used only to carry a deployment group phase.'
+    $deploymentGroupId = if ($deploymentGroup) { [int]$deploymentGroup.id } else { 0 }
+
     $environments = @(
         New-Environment -Name 'Dev' -Rank 1 -Tasks $devTasks -ManualApproval $false -Variables @{
             'fixture.stage' = @{ value = 'dev' }
@@ -1281,7 +1350,7 @@ function New-FixtureReleaseDefinition {
         New-Environment -Name 'Test' -Rank 2 -Tasks $testTasks -ManualApproval $true -AfterEnvironment 'Dev' -Variables @{
             'fixture.stage' = @{ value = 'test' }
         }
-        New-Environment -Name 'Prod' -Rank 3 -Tasks $prodTasks -ManualApproval $true -AfterEnvironment 'Test' -PreDeploymentGates $gates -Variables @{
+        New-Environment -Name 'Prod' -Rank 3 -Tasks $prodTasks -ManualApproval $true -AfterEnvironment 'Test' -PreDeploymentGates $gates -DeploymentGroupId $deploymentGroupId -Variables @{
             'fixture.stage' = @{ value = 'prod' }
         }
     )
