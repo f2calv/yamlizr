@@ -29,7 +29,7 @@ public static class YamlizrTestData
 
     /// <summary>Builds a classic designer build definition whose single agent phase carries the supplied name.</summary>
     /// <remarks>A null name reproduces the classic definitions reported in issue #177.</remarks>
-    public static BuildDefinition BuildDefinition(string phaseName, params BuildDefinitionStep[] steps)
+    public static BuildDefinition BuildDefinition(string? phaseName, params BuildDefinitionStep[] steps)
     {
         var definition = new BuildDefinition
         {
@@ -54,7 +54,7 @@ public static class YamlizrTestData
     }
 
     /// <summary>Builds a single enabled step referencing the supplied task id and version spec.</summary>
-    public static BuildDefinitionStep Step(Guid taskId, string versionSpec = "1.*", string displayName = "sample step", IDictionary<string, string> inputs = null)
+    public static BuildDefinitionStep Step(Guid taskId, string? versionSpec = "1.*", string displayName = "sample step", IDictionary<string, string>? inputs = null)
         => new()
         {
             Enabled = true,
@@ -71,7 +71,7 @@ public static class YamlizrTestData
     /// <param name="queueName">Agent queue name, emitted as the pipeline pool.</param>
     /// <param name="step">The step every phase carries.</param>
     /// <param name="phaseNames">Phase names, in order.</param>
-    public static BuildDefinition BuildDefinitionWithPhases(string queueName, BuildDefinitionStep step, params string[] phaseNames)
+    public static BuildDefinition BuildDefinitionWithPhases(string queueName, BuildDefinitionStep step, params string?[] phaseNames)
     {
         var process = new DesignerProcess();
 
@@ -113,12 +113,12 @@ public static class YamlizrTestData
             version = new CasCap.Models.TaskVersion { major = major },
             inputs = [.. inputNames.Select(p => new TaskInput { name = p })],
         };
-        task.inputMap = task.inputs.ToDictionary(k => k.name, v => v);
+        task.inputMap = task.inputs.ToDictionary(k => k.name!, v => v);
         return new Dictionary<Guid, Dictionary<int, TaskObj>> { [KnownTaskId] = new() { [major] = task } };
     }
 
     /// <summary>Creates a generator over a build definition with no task groups or variable groups.</summary>
-    public static YamlPipelineGenerator Generator(BuildDefinition build, Dictionary<Guid, Dictionary<int, TaskObj>> taskMap = null)
+    public static YamlPipelineGenerator Generator(BuildDefinition build, Dictionary<Guid, Dictionary<int, TaskObj>>? taskMap = null)
         => new(
             build,
             null,
@@ -227,7 +227,7 @@ public static class YamlizrTestData
     }
 
     /// <summary>Creates a generator over a release definition with no task groups or variable groups.</summary>
-    public static YamlPipelineGenerator Generator(ReleaseDefinition release, Dictionary<Guid, Dictionary<int, TaskObj>> taskMap = null)
+    public static YamlPipelineGenerator Generator(ReleaseDefinition release, Dictionary<Guid, Dictionary<int, TaskObj>>? taskMap = null)
         => new(
             null,
             release,

@@ -11,12 +11,12 @@ namespace CasCap.Models;
 public class TemplateParameter
 {
     /// <summary>Name callers supply a value under, and the name the template body references.</summary>
-    public string name { get; set; }
+    public string? name { get; set; }
 
     /// <summary>Classic task group inputs carry no usable type, so every parameter is a string.</summary>
-    public string type { get; set; } = "string";
+    public string? type { get; set; } = "string";
 
     /// <summary>Value used when a caller supplies none.</summary>
     /// <remarks>Taken from the task group input's default, and null when it declared none.</remarks>
-    public string @default { get; set; }
+    public string? @default { get; set; }
 }

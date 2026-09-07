@@ -13,9 +13,9 @@ public record PipelineValidationResult
     public bool IsValid { get; init; }
 
     /// <summary>The document with every template expanded, populated only when <see cref="IsValid"/> is true.</summary>
-    public string FinalYaml { get; init; }
+    public string? FinalYaml { get; init; }
 
     /// <summary>Why the document was rejected, populated only when <see cref="IsValid"/> is false.</summary>
     /// <remarks>Carries the file, line and column when Azure DevOps reports them.</remarks>
-    public string Message { get; init; }
+    public string? Message { get; init; }
 }

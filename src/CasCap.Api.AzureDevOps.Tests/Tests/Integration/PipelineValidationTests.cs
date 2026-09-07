@@ -39,6 +39,7 @@ public class PipelineValidationTests : TestBase
             """);
 
         Assert.True(result.IsValid, result.Message);
+        Assert.NotNull(result.FinalYaml);
         Assert.NotEmpty(result.FinalYaml);
     }
 
@@ -147,7 +148,10 @@ public class PipelineValidationTests : TestBase
             inputs: new Dictionary<string, string> { ["script"] = "echo hello" });
 
         var definition = YamlizrTestData.BuildDefinitionWithPhases("Azure Pipelines", step, phaseNames);
-        var yaml = YamlizrTestData.Generator(definition, taskMap).GenPipeline().ToString();
+        var pipeline = YamlizrTestData.Generator(definition, taskMap).GenPipeline();
+        Assert.NotNull(pipeline);
+
+        var yaml = pipeline.ToString();
 
         var result = await Validate(yaml);
 
@@ -155,5 +159,5 @@ public class PipelineValidationTests : TestBase
     }
 
     private Task<PipelineValidationResult> Validate(string yaml)
-        => _apiSvc.Validate(Options.OrganisationUri, Options.Project, Options.ValidationPipelineId.Value, yaml, TestContext.Current.CancellationToken);
+        => ApiSvc.Validate(OrganisationUri, ProjectName, ValidationPipelineId, yaml, TestContext.Current.CancellationToken);
 }

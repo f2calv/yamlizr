@@ -116,3 +116,7 @@ release that drops them.
 These warnings are deliberately **not** added to `NoWarn`. Suppressing a critical advisory hides the
 risk without reducing it, and the warning is the only signal that an upstream fix has landed. Re-check
 on every dependency bump.
+
+The build sets `TreatWarningsAsErrors`, so the `NU190x` codes are listed in `WarningsNotAsErrors`
+instead. That keeps them visible on every build without letting a newly published advisory fail a
+build whose code has not changed.

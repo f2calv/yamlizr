@@ -1,4 +1,4 @@
-﻿namespace CasCap.Models;
+namespace CasCap.Models;
 
 /// <summary>Response envelope returned by the Azure DevOps task catalogue endpoint.</summary>
 /// <remarks>
@@ -12,5 +12,5 @@ public class Tasks
     public int count { get; set; }
 
     /// <summary>Every task installed in the organisation, both in-box and extension supplied.</summary>
-    public List<TaskObj> value { get; set; }
+    public List<TaskObj>? value { get; set; }
 }

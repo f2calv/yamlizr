@@ -1,3 +1,4 @@
+using AzurePipelinesToGitHubActionsConverter.Core.AzurePipelines;
 using CasCap.Common.Exceptions;
 using CasCap.Models;
 using CasCap.Utilities;
@@ -20,6 +21,7 @@ public class YamlPipelineGeneratorTests
         var pipeline = generator.GenPipeline();
 
         Assert.NotNull(pipeline);
+        Assert.NotNull(pipeline.steps);
         var step = Assert.Single(pipeline.steps);
         Assert.Equal("SampleTask@1", step.task);
         Assert.Equal("sample step", step.displayName);
@@ -52,6 +54,8 @@ public class YamlPipelineGeneratorTests
 
         var pipeline = generator.GenPipeline();
 
+        Assert.NotNull(pipeline);
+        Assert.NotNull(pipeline.steps);
         var step = Assert.Single(pipeline.steps);
         Assert.Equal("kept", step.displayName);
         Assert.Single(generator.Warnings);
@@ -61,7 +65,7 @@ public class YamlPipelineGeneratorTests
     [InlineData(null)]
     [InlineData("")]
     [InlineData("not-a-version")]
-    public void GenPipeline_UnusableVersionSpec_WarnsInsteadOfThrowing(string versionSpec)
+    public void GenPipeline_UnusableVersionSpec_WarnsInsteadOfThrowing(string? versionSpec)
     {
         var generator = YamlizrTestData.Generator(
             YamlizrTestData.BuildDefinition(YamlizrTestData.Step(YamlizrTestData.KnownTaskId, versionSpec)));
@@ -83,6 +87,8 @@ public class YamlPipelineGeneratorTests
 
         var pipeline = generator.GenPipeline();
 
+        Assert.NotNull(pipeline);
+        Assert.NotNull(pipeline.steps);
         Assert.Equal(expected, Assert.Single(pipeline.steps).task);
     }
 
@@ -102,7 +108,7 @@ public class YamlPipelineGeneratorTests
     [InlineData(null)]
     [InlineData("")]
     [InlineData("   ")]
-    public void GenPipeline_PhaseWithoutAName_IsGivenAGeneratedName(string phaseName)
+    public void GenPipeline_PhaseWithoutAName_IsGivenAGeneratedName(string? phaseName)
     {
         var generator = YamlizrTestData.Generator(
             YamlizrTestData.BuildDefinition(phaseName, YamlizrTestData.Step(YamlizrTestData.KnownTaskId)));
@@ -111,6 +117,7 @@ public class YamlPipelineGeneratorTests
 
         //a single job is flattened to steps, so the generated name is only observable as no throw
         Assert.NotNull(pipeline);
+        Assert.NotNull(pipeline.steps);
         Assert.Single(pipeline.steps);
     }
 
@@ -121,6 +128,7 @@ public class YamlPipelineGeneratorTests
 
         var pipeline = generator.GenPipeline();
 
+        Assert.NotNull(pipeline);
         Assert.NotNull(pipeline.stages);
         Assert.Equal(["Dev", "Test", "Prod"], pipeline.stages.Select(p => p.stage));
         //the release definition names the document, so repeating it on every stage loses the environment
@@ -134,6 +142,8 @@ public class YamlPipelineGeneratorTests
 
         var pipeline = generator.GenPipeline();
 
+        Assert.NotNull(pipeline);
+        Assert.NotNull(pipeline.stages);
         var unnamed = Assert.Single(pipeline.stages, p => p.stage == "Stage_2");
         Assert.Equal("Stage_2", unnamed.displayName);
     }
@@ -144,58 +154,63 @@ public class YamlPipelineGeneratorTests
     [InlineData("build & test")]
     [InlineData("  leading and trailing  ")]
     [InlineData("1st phase")]
-    public void GenPipeline_PhaseNameNeedingSanitising_ProducesAValidJobIdentifier(string phaseName)
-    {
-        var pipeline = GenerateWithPhases("Phase one", phaseName);
+    public void GenPipeline_PhaseNameNeedingSanitising_ProducesAValidJobIdentifier(string phaseName)    {
+        var jobs = GenerateJobsWithPhases("Phase one", phaseName);
 
-        Assert.NotNull(pipeline.jobs);
         //asserts the contract rather than exact names, which the sanitising cases below already cover
-        Assert.All(pipeline.jobs, p => Assert.Matches("^[A-Za-z_][A-Za-z0-9_]*$", p.job));
+        Assert.All(jobs, p => Assert.Matches("^[A-Za-z_][A-Za-z0-9_]*$", p.job));
     }
 
     //https://github.com/f2calv/yamlizr/issues/368
     [Fact]
     public void GenPipeline_DistinctPhaseNames_AreNotSuffixed()
     {
-        var pipeline = GenerateWithPhases("Alpha", "Beta");
+        var jobs = GenerateJobsWithPhases("Alpha", "Beta");
 
-        Assert.Equal(["Alpha", "Beta"], pipeline.jobs.Select(p => p.job));
+        Assert.Equal(["Alpha", "Beta"], jobs.Select(p => p.job));
     }
 
     [Fact]
     public void GenPipeline_PhasesSharingOneName_ProduceUniqueJobIdentifiers()
     {
         //a classic definition names every phase "Agent job" until someone renames them
-        var pipeline = GenerateWithPhases("Agent job", "Agent job", "Agent job");
+        var jobs = GenerateJobsWithPhases("Agent job", "Agent job", "Agent job");
 
-        Assert.Equal(["Agent_job", "Agent_job_1", "Agent_job_2"], pipeline.jobs.Select(p => p.job));
+        Assert.Equal(["Agent_job", "Agent_job_1", "Agent_job_2"], jobs.Select(p => p.job));
         //dependsOn has to name the identifier actually emitted, not the shared phase name
-        Assert.Null(pipeline.jobs[0].dependsOn);
-        Assert.Equal(["Agent_job"], pipeline.jobs[1].dependsOn);
-        Assert.Equal(["Agent_job_1"], pipeline.jobs[2].dependsOn);
+        Assert.Null(jobs[0].dependsOn);
+        Assert.Equal(["Agent_job"], jobs[1].dependsOn);
+        Assert.Equal(["Agent_job_1"], jobs[2].dependsOn);
     }
 
     [Fact]
     public void GenPipeline_PhaseNamesCollidingOnlyAfterSanitising_ProduceUniqueJobIdentifiers()
     {
-        var pipeline = GenerateWithPhases("Build (x86)", "Build [x86]");
+        var jobs = GenerateJobsWithPhases("Build (x86)", "Build [x86]");
 
-        Assert.Equal(["Build_x86", "Build_x86_1"], pipeline.jobs.Select(p => p.job));
+        Assert.Equal(["Build_x86", "Build_x86_1"], jobs.Select(p => p.job));
     }
 
     [Fact]
     public void GenPipeline_UnnamedPhases_AreGivenUniqueGeneratedNames()
     {
-        var pipeline = GenerateWithPhases("   ", null);
+        var jobs = GenerateJobsWithPhases("   ", null);
 
-        Assert.Equal(["Phase_1", "Phase_2"], pipeline.jobs.Select(p => p.job));
+        Assert.Equal(["Phase_1", "Phase_2"], jobs.Select(p => p.job));
     }
 
-    private static Pipeline GenerateWithPhases(params string[] phaseNames)
-        => YamlizrTestData.Generator(
+    private static Job[] GenerateJobsWithPhases(params string?[] phaseNames)
+    {
+        var pipeline = YamlizrTestData.Generator(
             YamlizrTestData.BuildDefinitionWithPhases(
                 "Azure Pipelines", YamlizrTestData.Step(YamlizrTestData.KnownTaskId), phaseNames))
             .GenPipeline();
+
+        //every caller assumes jobs were produced, so prove it once here
+        Assert.NotNull(pipeline);
+        Assert.NotNull(pipeline.jobs);
+        return pipeline.jobs;
+    }
 
     [Fact]
     public void GenPipeline_DeployPhasesSharingOneName_ProduceUniqueJobIdentifiers()
@@ -204,6 +219,8 @@ public class YamlPipelineGeneratorTests
 
         var pipeline = YamlizrTestData.Generator(definition).GenPipeline();
 
+        Assert.NotNull(pipeline);
+        Assert.NotNull(pipeline.jobs);
         Assert.Equal(["Agent_job", "Agent_job_1"], pipeline.jobs.Select(p => p.job));
         Assert.Equal(["Agent_job"], pipeline.jobs[1].dependsOn);
     }
@@ -218,6 +235,7 @@ public class YamlPipelineGeneratorTests
         var pipeline = generator.GenPipeline();
 
         //only the agent phase survives, so the sole remaining job is flattened to steps
+        Assert.NotNull(pipeline);
         Assert.NotNull(pipeline.steps);
         Assert.Contains(generator.Warnings, p =>
             p.Contains("deploy phase(s) that are not") && p.Contains("AgentBasedDeployment"));

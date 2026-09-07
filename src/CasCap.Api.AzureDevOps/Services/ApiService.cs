@@ -28,11 +28,11 @@ public class ApiService : HttpClientBase, IApiService
     }
 
     /// <inheritdoc/>
-    public async Task<List<TaskObj>> GetAllExtensions(string organisationUri)
+    public async Task<List<TaskObj>?> GetAllExtensions(string organisationUri, CancellationToken cancellationToken = default)
     {
         _logger.LogInformation("{ClassName} retrieving all extensions for organisation '{OrganisationUri}'",
             nameof(ApiService), organisationUri);
-        var res = await Get<Tasks, object>($"{organisationUri}/_apis/distributedtask/tasks/");
+        var res = await Get<Tasks, object>($"{organisationUri}/_apis/distributedtask/tasks/", cancellationToken: cancellationToken);
         return res.result?.value;
     }
 
@@ -65,7 +65,7 @@ public class ApiService : HttpClientBase, IApiService
         return new PipelineValidationResult { IsValid = false, Message = message };
     }
 
-    private static string ReadProperty(string json, string name)
+    private static string? ReadProperty(string json, string name)
     {
         if (string.IsNullOrWhiteSpace(json)) return null;
 
