@@ -15,7 +15,7 @@ public class ApiServiceTests : TestBase
         Assert.SkipWhen(string.IsNullOrWhiteSpace(Options.OrganisationUri),
             "No organisation configured, set CasCap:AzureDevOpsOptions:OrganisationUri.");
 
-        var extensions = await _apiSvc.GetAllExtensions(Options.OrganisationUri.TrimEnd('/'));
+        var extensions = await ApiSvc.GetAllExtensions(Options.OrganisationUri.TrimEnd('/'));
 
         Assert.NotNull(extensions);
         Assert.NotEmpty(extensions);

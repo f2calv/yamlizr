@@ -50,26 +50,26 @@ public class FixtureConversionTests : TestBase
         Assert.SkipUnless(CanConvert, NotConfiguredForConversion);
 
         var cancellationToken = TestContext.Current.CancellationToken;
-        var organisationUri = Options.OrganisationUri.TrimEnd('/');
+        var organisationUri = OrganisationUri;
 
-        using var connection = new VssConnection(new Uri(organisationUri), new VssBasicCredential(string.Empty, Options.PAT));
+        using var connection = new VssConnection(new Uri(organisationUri), new VssBasicCredential(string.Empty, Token));
         using var buildClient = await connection.GetClientAsync<BuildHttpClient>(cancellationToken);
         using var releaseClient = await connection.GetClientAsync<ReleaseHttpClient>(cancellationToken);
         using var taskAgentClient = await connection.GetClientAsync<TaskAgentHttpClient>(cancellationToken);
 
         var taskMap = await GetTaskMap(organisationUri);
         var taskGroupMap = await GetTaskGroupMap(taskAgentClient, cancellationToken);
-        var variableGroupMap = (await taskAgentClient.GetVariableGroupsAsync(Options.Project, cancellationToken: cancellationToken))
+        var variableGroupMap = (await taskAgentClient.GetVariableGroupsAsync(ProjectName, cancellationToken: cancellationToken))
             .ToDictionary(k => k.Id, v => v);
 
         var converted = 0;
         var failures = new List<string>();
 
-        foreach (var reference in await buildClient.GetDefinitionsAsync(Options.Project, cancellationToken: cancellationToken))
+        foreach (var reference in await buildClient.GetDefinitionsAsync(ProjectName, cancellationToken: cancellationToken))
         {
             if (!reference.Name.StartsWith(FixturePrefix, StringComparison.OrdinalIgnoreCase)) continue;
 
-            var definition = await buildClient.GetDefinitionAsync(Options.Project, reference.Id, cancellationToken: cancellationToken);
+            var definition = await buildClient.GetDefinitionAsync(ProjectName, reference.Id, cancellationToken: cancellationToken);
 
             //the validation pipeline itself is YAML, and only a classic definition converts
             if (definition.Process is not DesignerProcess) continue;
@@ -81,11 +81,11 @@ public class FixtureConversionTests : TestBase
             await Validate(definition.Name, yaml, failures, cancellationToken);
         }
 
-        foreach (var reference in await releaseClient.GetReleaseDefinitionsAsync(Options.Project, cancellationToken: cancellationToken))
+        foreach (var reference in await releaseClient.GetReleaseDefinitionsAsync(ProjectName, cancellationToken: cancellationToken))
         {
             if (!reference.Name.StartsWith(FixturePrefix, StringComparison.OrdinalIgnoreCase)) continue;
 
-            var definition = await releaseClient.GetReleaseDefinitionAsync(Options.Project, reference.Id, cancellationToken: cancellationToken);
+            var definition = await releaseClient.GetReleaseDefinitionAsync(ProjectName, reference.Id, cancellationToken: cancellationToken);
 
             var yaml = Convert(null, definition, taskMap, taskGroupMap, variableGroupMap);
             if (yaml is null) continue;
@@ -98,9 +98,9 @@ public class FixtureConversionTests : TestBase
         Assert.True(failures.Count == 0, string.Join(Environment.NewLine + Environment.NewLine, failures));
     }
 
-    private static string Convert(
-        BuildDefinition build,
-        ReleaseDefinition release,
+    private static string? Convert(
+        BuildDefinition? build,
+        ReleaseDefinition? release,
         Dictionary<Guid, Dictionary<int, TaskObj>> taskMap,
         Dictionary<TaskGroupVersion, TaskGroup> taskGroupMap,
         Dictionary<int, VariableGroup> variableGroupMap)
@@ -120,23 +120,26 @@ public class FixtureConversionTests : TestBase
 
     private async Task Validate(string name, string yaml, List<string> failures, CancellationToken cancellationToken)
     {
-        var result = await _apiSvc.Validate(
-            Options.OrganisationUri, Options.Project, Options.ValidationPipelineId.Value, yaml, cancellationToken);
+        var result = await ApiSvc.Validate(
+            OrganisationUri, ProjectName, ValidationPipelineId, yaml, cancellationToken);
 
         if (!result.IsValid) failures.Add($"'{name}' was rejected: {result.Message}{Environment.NewLine}{yaml}");
     }
 
     private async Task<Dictionary<Guid, Dictionary<int, TaskObj>>> GetTaskMap(string organisationUri)
     {
-        var extensions = await _apiSvc.GetAllExtensions(organisationUri);
+        var extensions = await ApiSvc.GetAllExtensions(organisationUri);
+        Assert.NotNull(extensions);
+
         foreach (var extension in extensions)
-            extension.inputMap = extension.inputs.ToDictionary(k => k.name, v => v);
+            //an entry with no name cannot be matched to a step input, so it is not indexed
+            extension.inputMap = extension.inputs?.Where(p => p.name is not null).ToDictionary(k => k.name!, v => v);
 
         var taskMap = new Dictionary<Guid, Dictionary<int, TaskObj>>();
         foreach (var id in extensions.Select(p => p.id).Distinct())
         {
             //a duplicated id means an incorrectly installed extension, which the tool also tolerates
-            var byMajorVersion = extensions.Where(p => p.id == id).ToDictionary(k => k.version.major, v => v);
+            var byMajorVersion = extensions.Where(p => p.id == id && p.version is not null).ToDictionary(k => k.version!.major, v => v);
             taskMap.TryAdd(id, byMajorVersion);
         }
 
