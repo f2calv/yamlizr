@@ -30,16 +30,13 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <!-- IDE1006 - suppress roslyn naming convention messages -->
+    <!-- IDE1006 - the YAML models name properties to match the serialised schema, not PascalCase. -->
     <!-- IDE0079 - Remove unnecessary suppression -->
     <!-- IDE0042 - Variable declaration can be deconstructed -->
-    <!-- CS0162 - Unreachable code detected. -->
-    <!-- CS1574 - XML comment has cref attribute that could not be resolved. -->
-    <!-- S125 - Remove this commented out code. -->
     <!-- NETSDK1233 - Targeting .NET 10.0 or higher in Visual Studio 2022 XX.XX is not supported. -->
     <!-- Note: NU190x NuGet audit warnings are deliberately NOT suppressed - see the known
          transitive advisories section of .github/copilot-instructions.md. -->
-    <NoWarn>IDE1006;IDE0079;IDE0042;CS0162;CS1574;S125;NETSDK1233</NoWarn>
+    <NoWarn>IDE1006;IDE0079;IDE0042;NETSDK1233</NoWarn>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <!-- NU190x report advisories in transitive Azure DevOps client dependencies. They stay visible
          as warnings rather than being suppressed or made fatal, because the warning is the only
