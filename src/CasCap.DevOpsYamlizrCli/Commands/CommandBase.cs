@@ -69,9 +69,6 @@ public abstract class CommandBase
     protected TaskAgentHttpClient TaskAgentClient => _taskAgentClient ?? throw NotConnected();
     private TaskAgentHttpClient? _taskAgentClient;
 
-    /// <summary>Credential built from the supplied access token.</summary>
-    private VssBasicCredential? _credentials;
-
     /// <summary>Connection every client above is created from.</summary>
     protected VssConnection Connection => _connection ?? throw NotConnected();
     private VssConnection? _connection;
@@ -159,13 +156,13 @@ public abstract class CommandBase
         _console.Write($"Connecting to Azure DevOps REST API, {organisationUri} ...");
         try
         {
-            _credentials = new VssBasicCredential(string.Empty, accessToken);
-            _connection = new VssConnection(organisationUri, _credentials);
+            var credentials = new VssBasicCredential(string.Empty, accessToken);
+            _connection = new VssConnection(organisationUri, credentials);
             await Connection.ConnectAsync(cancellationToken);
-            _projectClient = Connection.GetClient<ProjectHttpClient>();
-            _buildClient = Connection.GetClient<BuildHttpClient>();
-            _releaseClient = Connection.GetClient<ReleaseHttpClient>();
-            _taskAgentClient = Connection.GetClient<TaskAgentHttpClient>();
+            _projectClient = await Connection.GetClientAsync<ProjectHttpClient>(cancellationToken);
+            _buildClient = await Connection.GetClientAsync<BuildHttpClient>(cancellationToken);
+            _releaseClient = await Connection.GetClientAsync<ReleaseHttpClient>(cancellationToken);
+            _taskAgentClient = await Connection.GetClientAsync<TaskAgentHttpClient>(cancellationToken);
             _apiSvc = new ApiService(_loggerFactory.CreateLogger<ApiService>(), accessToken);
         }
         catch (Exception ex)
