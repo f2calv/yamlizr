@@ -15,7 +15,19 @@ public record AzureDevOpsOptions
     public const string ConfigurationSectionName = $"{nameof(CasCap)}:{nameof(AzureDevOpsOptions)}";
 
     /// <summary>Personal Access Token, or an access token issued to a pipeline's build service identity.</summary>
-    /// <remarks>Never validated by length; a pipeline access token is a different length from a PAT.</remarks>
+    /// <remarks>
+    /// Never validated by length; a pipeline access token is a different length from a PAT.
+    /// <para>
+    /// Null is a normal state, so this is not <c>required</c>. Configuration is only one of three
+    /// sources: a <c>--token</c> command line option wins over it, and <c>SYSTEM_ACCESSTOKEN</c> is
+    /// used when neither is supplied, which is how a run inside an Azure Pipeline authenticates
+    /// without a token being configured at all. The integration tests rely on the same thing, and
+    /// skip rather than fail when no token is present.
+    /// </para>
+    /// <para>
+    /// The resolved token is what must be non-empty, and the command checks that before connecting.
+    /// </para>
+    /// </remarks>
     [MinLength(1)]
     public string? PAT { get; init; }
 
