@@ -11,8 +11,9 @@ public interface IApiService
     /// what resolves it to the <c>Name@Major</c> reference a YAML step needs.
     /// </remarks>
     /// <param name="organisationUri">Absolute organisation Uri, for example <c>https://dev.azure.com/myorg</c>.</param>
+    /// <param name="cancellationToken">Token to cancel the call.</param>
     /// <returns>Every installed task, or null when the response carried none.</returns>
-    Task<List<TaskObj>?> GetAllExtensions(string organisationUri);
+    Task<List<TaskObj>?> GetAllExtensions(string organisationUri, CancellationToken cancellationToken = default);
 
     /// <summary>Asks Azure DevOps to parse a YAML document without queueing a run.</summary>
     /// <remarks>

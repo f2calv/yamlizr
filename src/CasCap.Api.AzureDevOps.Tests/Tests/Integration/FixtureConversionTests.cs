@@ -57,7 +57,7 @@ public class FixtureConversionTests : TestBase
         using var releaseClient = await connection.GetClientAsync<ReleaseHttpClient>(cancellationToken);
         using var taskAgentClient = await connection.GetClientAsync<TaskAgentHttpClient>(cancellationToken);
 
-        var taskMap = await GetTaskMap(organisationUri);
+        var taskMap = await GetTaskMap(organisationUri, cancellationToken);
         var taskGroupMap = await GetTaskGroupMap(taskAgentClient, cancellationToken);
         var variableGroupMap = (await taskAgentClient.GetVariableGroupsAsync(ProjectName, cancellationToken: cancellationToken))
             .ToDictionary(k => k.Id, v => v);
@@ -126,9 +126,10 @@ public class FixtureConversionTests : TestBase
         if (!result.IsValid) failures.Add($"'{name}' was rejected: {result.Message}{Environment.NewLine}{yaml}");
     }
 
-    private async Task<Dictionary<Guid, Dictionary<int, TaskObj>>> GetTaskMap(string organisationUri)
+    private async Task<Dictionary<Guid, Dictionary<int, TaskObj>>> GetTaskMap(
+        string organisationUri, CancellationToken cancellationToken)
     {
-        var extensions = await ApiSvc.GetAllExtensions(organisationUri);
+        var extensions = await ApiSvc.GetAllExtensions(organisationUri, cancellationToken);
         Assert.NotNull(extensions);
 
         foreach (var extension in extensions)
@@ -149,7 +150,7 @@ public class FixtureConversionTests : TestBase
     private async Task<Dictionary<TaskGroupVersion, TaskGroup>> GetTaskGroupMap(
         TaskAgentHttpClient taskAgentClient, CancellationToken cancellationToken)
     {
-        var taskGroups = await taskAgentClient.GetTaskGroupsAsync(Options.Project, cancellationToken: cancellationToken);
+        var taskGroups = await taskAgentClient.GetTaskGroupsAsync(ProjectName, cancellationToken: cancellationToken);
 
         var map = new Dictionary<TaskGroupVersion, TaskGroup>();
         foreach (var taskGroup in taskGroups)
