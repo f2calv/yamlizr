@@ -41,7 +41,7 @@ class GenerateCommand : CommandBase
     [Option("-out|--outputpath", Description = "Absolute path to YAML output folder [default: Current Directory]")]
     public string? outputPath { get; set; }
 
-    [Option("--filter", Description = "Build/Release definition wildcard filter.")]
+    [Option("--filter", Description = "Build/Release definition name filter, a case-insensitive 'contains' match rather than a wildcard pattern.")]
     public string? filter { get; }
 
     [Option("--phasetype", Description = "Filter deployment phases [default: AgentBasedDeployment]")]

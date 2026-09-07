@@ -131,7 +131,7 @@ Required values, each of which may instead come from [configuration](#configurat
 Optional arguments;
 
 - `-out|--outputpath` path to the YAML output folder, defaults to the current directory.
-- `--filter <some string here>` filter build/release definitions (if you want to use a more granular approach).
+- `--filter <some string here>` only convert definitions whose name contains this text. It is a case-insensitive `contains` match, not a wildcard pattern, so pass `yamlizr.test.` rather than `yamlizr.test.*`.
 - `--phasetype <phase type here>` filter deployment jobs by Deploy Phase Type the default is `AgentBasedDeployment` DeployPhaseTypes(tested), other (un-tested) options are `RunOnServer`, `MachineGroupBasedDeployment` & `DeploymentGates`.
 
 Optional switches;
