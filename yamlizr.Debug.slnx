@@ -14,11 +14,4 @@
     <Project Path="src/CasCap.Api.AzureDevOps/CasCap.Api.AzureDevOps.csproj" />
     <Project Path="src/CasCap.DevOpsYamlizrCli/CasCap.DevOpsYamlizrCli.csproj" />
   </Folder>
-  <Project Path="../CasCap.Common/src/CasCap.Common.Abstractions/CasCap.Common.Abstractions.csproj" />
-  <Project Path="../CasCap.Common/src/CasCap.Common.Configuration/CasCap.Common.Configuration.csproj" />
-  <Project Path="../CasCap.Common/src/CasCap.Common.Extensions.Diagnostics.HealthChecks/CasCap.Common.Extensions.Diagnostics.HealthChecks.csproj" />
-  <Project Path="../CasCap.Common/src/CasCap.Common.Logging/CasCap.Common.Logging.csproj" />
-  <Project Path="../CasCap.Common/src/CasCap.Common.Services/CasCap.Common.Services.csproj" />
-  <Project Path="../SmartHaus/src/CasCap.Api.SignalCli.AspNetCore/CasCap.Api.SignalCli.AspNetCore.csproj" />
-  <Project Path="../SmartHaus/src/CasCap.Api.SignalCli/CasCap.Api.SignalCli.csproj" />
 </Solution>
