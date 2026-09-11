@@ -4,23 +4,23 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageVersion Include="AzurePipelinesToGitHubActionsConverter.Core" Version="1.4.6" />
-    <PackageVersion Include="CasCap.Common.Extensions" Version="4.12.7" />
-    <PackageVersion Include="CasCap.Common.Net" Version="4.12.7" />
-    <PackageVersion Include="CasCap.Common.Testing" Version="4.12.7" />
+    <PackageVersion Include="CasCap.Common.Extensions" Version="4.12.8" />
+    <PackageVersion Include="CasCap.Common.Net" Version="4.12.8" />
+    <PackageVersion Include="CasCap.Common.Testing" Version="4.12.8" />
     <PackageVersion Include="Figgle.Fonts" Version="0.6.6" />
     <PackageVersion Include="McMaster.Extensions.CommandLineUtils" Version="5.1.0" />
     <PackageVersion Include="McMaster.Extensions.Hosting.CommandLine" Version="5.1.0" />
-    <PackageVersion Include="Microsoft.Extensions.Configuration" Version="10.0.11" />
-    <PackageVersion Include="Microsoft.Extensions.Configuration.EnvironmentVariables" Version="10.0.11" />
-    <PackageVersion Include="Microsoft.Extensions.Configuration.Json" Version="10.0.11" />
-    <PackageVersion Include="Microsoft.Extensions.Configuration.UserSecrets" Version="10.0.11" />
-    <PackageVersion Include="Microsoft.Extensions.Hosting" Version="10.0.11" />
+    <PackageVersion Include="Microsoft.Extensions.Configuration" Version="10.0.12" />
+    <PackageVersion Include="Microsoft.Extensions.Configuration.EnvironmentVariables" Version="10.0.12" />
+    <PackageVersion Include="Microsoft.Extensions.Configuration.Json" Version="10.0.12" />
+    <PackageVersion Include="Microsoft.Extensions.Configuration.UserSecrets" Version="10.0.12" />
+    <PackageVersion Include="Microsoft.Extensions.Hosting" Version="10.0.12" />
     <PackageVersion Include="Microsoft.TeamFoundation.DistributedTask.WebApi" Version="20.256.2" />
     <PackageVersion Include="Microsoft.TeamFoundationServer.Client" Version="20.256.2" />
     <PackageVersion Include="Microsoft.VisualStudio.Services.Client" Version="20.256.2" />
     <PackageVersion Include="Microsoft.VisualStudio.Services.Release.Client" Version="20.256.2" />
-    <PackageVersion Include="Microsoft.Testing.Extensions.CodeCoverage" Version="18.11.0" />
-    <PackageVersion Include="System.Configuration.ConfigurationManager" Version="10.0.11" />
+    <PackageVersion Include="Microsoft.Testing.Extensions.CodeCoverage" Version="18.11.2" />
+    <PackageVersion Include="System.Configuration.ConfigurationManager" Version="10.0.12" />
     <PackageVersion Include="Newtonsoft.Json" Version="13.0.4" />
     <PackageVersion Include="ShellProgressBar" Version="5.2.0" />
     <PackageVersion Include="YamlDotNet" Version="18.1.0" />
