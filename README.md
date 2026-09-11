@@ -343,3 +343,7 @@ generated YAML** and must be re-created by hand. Progress on closing these gaps 
 ## Feedback/Issues
 
 Please post any issues or feedback [to GitHub issues](https://github.com/f2calv/yamlizr/issues).
+
+## License
+
+This project is released under [The Unlicense](LICENSE). See the [LICENSE](LICENSE) file for details.
