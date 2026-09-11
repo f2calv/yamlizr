@@ -16,6 +16,7 @@ Detailed conventions live in scoped instruction files under `.github/instruction
 | `csharp.instructions.md` | `**/*.cs` | C# / .NET style, XML docs, logging, performance, Web API |
 | `csharp.testing.instructions.md` | `**/*Tests/**/*.cs` | xUnit test structure, naming, theories, assertions |
 | `dotnet.instructions.md` | `**/*.csproj`, `*.slnx`, `Directory.*.props` | Central build/package config, solution format, SDK selection |
+| `docker.instructions.md` | `**/Dockerfile*`, `.dockerignore` | Multi-arch builds, stage structure, caching, provenance, hardening |
 | `github-actions.instructions.md` | workflows / `action.yml` | GitHub Actions naming, YAML, security, GitVersion |
 | `bash.instructions.md` | `**/*.sh` | Bash scripting structure, error handling, logging, testability |
 | `powershell.instructions.md` | `**/*.ps1`, `*.psm1`, `*.psd1` | PowerShell structure, strict mode, error handling, secret safety |

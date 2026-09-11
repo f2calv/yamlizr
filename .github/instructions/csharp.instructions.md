@@ -47,6 +47,28 @@ applyTo: '**/*.cs'
 - **Validation attributes on configuration properties**: Properties bound from `appsettings.json` / env vars must carry appropriate `System.ComponentModel.DataAnnotations` attributes (e.g. `[Url]` on URIs, `[Range(1, 65535)]` on TCP ports, `[MinLength(1)]` on secrets/identifiers, `[Range(1, int.MaxValue)]` on millisecond timings, `[Range(0.0, 1.0)]` on ratios, `[Phone]` on phone numbers). Inline same-family attributes on one line (`[Required, Range(1, 65535)]`); keep different families on separate lines (`[Required, Url]` vs. `[JsonPropertyName]`). Nested complex-object properties carry `[ValidateObjectMembers]` for recursive validation.
 - **Validate at boundaries**: Validate configuration and external input where it enters the system, and fail with actionable messages that contain no secrets or personal data.
 
+## Application Wiring
+
+- **Hosted entry points are wiring-only**: In production hosted applications, keep `Program.cs` focused on configuration binding, dependency injection, logging, middleware or hosted-service registration, and starting the host. Extract business logic and complex initialization into dedicated types, one type per file. Linear console samples may demonstrate an end-to-end workflow in `Program.cs` when extraction would obscure the example.
+- **Centralize application environment access**: Bind application-owned settings through `Microsoft.Extensions.Configuration`; do not scatter `Environment.GetEnvironmentVariable` calls through services. Centralized boundary reads of standardized platform, CI and build-provenance variables are permitted.
+- **Validate options at startup**: Use data annotations, `IValidateOptions<T>` or explicit validators with `ValidateOnStart()` so invalid configuration fails before request handling or background work begins.
+- **Defaults are deliberate**: Give optional settings explicit safe defaults. Keep required credentials and identifiers required rather than supplying plausible-looking fallback values.
+
+## Error Handling
+
+- **Catch only when handling, translating or enriching**: Do not catch an exception merely to log and rethrow it unchanged, and never swallow failures into a default value.
+- **Preserve the cause**: Wrap failures with operation context and retain the original exception as `InnerException`; use domain-specific exception types when callers need to distinguish conditions.
+- **Keep context non-sensitive**: Include the failed operation and safe identifiers, but never credentials, tokens, connection strings, full local paths or personally identifying values.
+- **Exceptions are not normal control flow**: Use result types, `Try*` methods or nullable returns for expected absence and validation outcomes where those forms make the contract clearer.
+- **Let cancellation propagate**: Do not convert `OperationCanceledException` into an error when the supplied `CancellationToken` requested cancellation.
+
+## Background Work and Shutdown
+
+- **Propagate the host token**: Pass `BackgroundService.ExecuteAsync`'s `stoppingToken` through every delay, I/O operation and nested worker call so SIGTERM stops containers promptly.
+- **Use cancellable waits**: Call `Task.Delay(delay, timeProvider, stoppingToken)` or another cancellation-aware primitive; never poll a shutdown flag around an uncancellable sleep.
+- **Own background tasks**: Avoid fire-and-forget `Task` calls. Retain and await tasks whose failures or completion belong to the service lifecycle.
+- **Dispose during shutdown**: Release owned timers, streams, registrations and service scopes deterministically before the host exits.
+
 ## Suppressed Warnings
 
 Configured in `Directory.Build.props`: `IDE1006`, `IDE0079`, `IDE0042`, `CS0162`, `CS1574`, `S125`, `NETSDK1233`, `NU1901`, `NU1902`, `NU1903`
@@ -67,6 +89,7 @@ Configured in `Directory.Build.props`: `IDE1006`, `IDE0079`, `IDE0042`, `CS0162`
 ## Logging
 
 - **`{ClassName}` first**: Every structured log message must include `{ClassName}` as the first template parameter, using `nameof(EnclosingClass)` as the argument (e.g. `_logger.LogInformation("{ClassName} something happened", nameof(MyService));`).
+- **Message templates are constant**: Never use string interpolation or concatenation to construct a log message. Put every varying value in a named template parameter so events group consistently.
 - **Template parameters**: Use PascalCase for all template parameters and never enclose them in quotes (e.g. `{DesiredValue}`, `{RecordCount}`, `{ValueBefore}` not `'{DesiredValue}'`, `'{RecordCount}'`, `'{ValueBefore}'`). The logger handles value formatting automatically.
 - **No `.Value` suffix bleed**: When logging a value accessed via `options.Value.PropertyName` (primary constructor `IOptions<T>` pattern), the template parameter name must **not** inherit the `.Value` segment and must **not** use a `Val` suffix either. Properties are already well-named — use the property name directly as the template parameter (e.g. `{ServiceFamily}` for `config.Value.ServiceFamily`).
 - **No magic strings in log messages**: When a log message references an enum value, class name, or other identifiable symbol, pass it via `nameof()` as a template argument rather than embedding it as a literal string in the message template.
@@ -88,6 +111,8 @@ Configured in `Directory.Build.props`: `IDE1006`, `IDE0079`, `IDE0042`, `CS0162`
 - **Bounded queues and explicit backpressure**: Prefer them over unbounded in-memory work collections.
 
 ## Performance
+
+- **Measure before optimising**: Use BenchmarkDotNet, `dotnet-counters`, `dotnet-trace` or a representative load test before adding performance complexity. In demonstration code, clarity wins unless measurements identify a meaningful hot path.
 
 ### ValueTask vs Task
 

@@ -68,7 +68,7 @@ EOF
 # ------------------------------------------------------------------------------
 FROM mcr.microsoft.com/dotnet/aspnet:10.0-noble-chiseled AS final
 WORKDIR /app
-COPY --from=build /out .
+COPY --link --from=build /out .
 
 # Generated YAML is written here; mount a host directory over it.
 VOLUME /data

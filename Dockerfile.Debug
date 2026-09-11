@@ -1,5 +1,9 @@
-# syntax=docker/dockerfile:1-labs
+# syntax=docker/dockerfile:1
 # check=skip=CopyIgnoredFile
+#
+# CopyIgnoredFile is skipped deliberately: .dockerignore re-excludes bin/ and obj/ beneath the
+# deps/** allow-list this file relies on, so the COPY instructions below legitimately step over
+# ignored files.
 #
 # Debug variant of Dockerfile, used to verify a fix against the local sibling repositories before
 # they are published as packages.
@@ -66,7 +70,7 @@ EOF
 # ------------------------------------------------------------------------------
 FROM mcr.microsoft.com/dotnet/aspnet:10.0-noble-chiseled AS final
 WORKDIR /app
-COPY --from=build /out .
+COPY --link --from=build /out .
 
 # Generated YAML is written here; mount a host directory over it.
 VOLUME /data
