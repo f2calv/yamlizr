@@ -3,7 +3,7 @@
 {
     "name": "C# (.NET)",
     // Or use a Dockerfile or Docker Compose file. More info: https://containers.dev/guide/dockerfile
-    "image": "mcr.microsoft.com/devcontainers/dotnet:latest",
+    "image": "mcr.microsoft.com/devcontainers/dotnet:1-10.0-bookworm",
     // Features to add to the dev container. More info: https://containers.dev/features.
     "features": {
         "ghcr.io/devcontainers-extra/features/pre-commit:2": {},
@@ -17,8 +17,7 @@
     //		}
     // }
     // Use 'postCreateCommand' to run commands after the container is created.
-    "postCreateCommand": "sh ./.devcontainer/postCreateCommand.sh",
-    "postStartCommand": "sh ./.devcontainer/postStartCommand.sh",
+    "postStartCommand": "bash ./.devcontainer/postStartCommand.sh",
     // Configure tool-specific properties.
     "customizations": {
         // Configure properties specific to VS Code.
