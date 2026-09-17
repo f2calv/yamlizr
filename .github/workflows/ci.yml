@@ -17,16 +17,9 @@ on:
         description: Push a pre-release package?
         default: false
   push:
-    branches-ignore:
-      - "preview/**"
-    paths-ignore:
-      - .github/copilot-instructions.md
-      - .github/instructions/**
-      - LICENSE
-      - README.md
+    branches: [main]
   pull_request:
     branches: [main]
-    types: [opened, synchronize, reopened]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
