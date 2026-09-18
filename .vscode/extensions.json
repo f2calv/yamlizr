@@ -5,12 +5,11 @@
     "ms-dotnettools.csdevkit",
     "editorconfig.editorconfig",
     "ms-vscode.powershell",
-    "ms-azuretools.vscode-docker",
+    "ms-azuretools.vscode-containers",
     "ms-vscode-remote.vscode-remote-extensionpack",
     "mutantdino.resourcemonitor",
     "usernamehw.errorlens",
     "davidanson.vscode-markdownlint",
-    "github.vscode-github-actions",
-    "ms-dotnettools.csharp"
+    "github.vscode-github-actions"
   ]
 }
