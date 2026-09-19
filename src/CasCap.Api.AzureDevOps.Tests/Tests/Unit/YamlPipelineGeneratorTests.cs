@@ -154,7 +154,8 @@ public class YamlPipelineGeneratorTests
     [InlineData("build & test")]
     [InlineData("  leading and trailing  ")]
     [InlineData("1st phase")]
-    public void GenPipeline_PhaseNameNeedingSanitising_ProducesAValidJobIdentifier(string phaseName)    {
+    public void GenPipeline_PhaseNameNeedingSanitising_ProducesAValidJobIdentifier(string phaseName)
+    {
         var jobs = GenerateJobsWithPhases("Phase one", phaseName);
 
         //asserts the contract rather than exact names, which the sanitising cases below already cover
