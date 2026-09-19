@@ -30,3 +30,9 @@ updates:
     #OutputType Exe and four package swaps. Minors and patches flow normally.
     - dependency-name: xunit.*
       update-types: ["version-update:semver-major"]
+
+  - package-ecosystem: pre-commit
+    directory: /
+    schedule:
+      interval: weekly
+      time: "04:00"

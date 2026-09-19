@@ -25,9 +25,13 @@
             "command": "dotnet",
             "type": "process",
             "args": [
-                "test",
+                "run",
+                "--project",
                 "${workspaceFolder}/src/CasCap.Api.AzureDevOps.Tests/CasCap.Api.AzureDevOps.Tests.csproj",
-                "--filter-not-trait",
+                "--framework",
+                "net10.0",
+                "--",
+                "-trait-",
                 "Category=Integration"
             ],
             "group": {

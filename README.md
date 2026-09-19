@@ -332,6 +332,14 @@ generated YAML** and must be re-created by hand. Progress on closing these gaps 
 | Steps whose task version cannot be parsed | ❌ | Reported by display name and task id. |
 | Combined build plus release multi-stage pipelines | ❌ | Build and release definitions are emitted as separate files. |
 
+## Project Structure
+
+| Project | Purpose |
+| --- | --- |
+| `CasCap.Api.AzureDevOps` | Library: Azure DevOps REST access, pipeline models, and the YAML generator |
+| `CasCap.DevOpsYamlizrCli` | The `yamlizr` global tool: command surface, console presentation, orchestration |
+| `CasCap.Api.AzureDevOps.Tests` | xUnit v3 tests running on `Microsoft.Testing.Platform` |
+
 ## Core Dependencies
 
 - [Azure DevOps .NET Client Libraries](https://docs.microsoft.com/en-us/azure/devops/integrate/concepts/dotnet-client-libraries?view=azure-devops)
@@ -343,3 +351,7 @@ generated YAML** and must be re-created by hand. Progress on closing these gaps 
 ## Feedback/Issues
 
 Please post any issues or feedback [to GitHub issues](https://github.com/f2calv/yamlizr/issues).
+
+## License
+
+This project is released under [The Unlicense](LICENSE). See the [LICENSE](LICENSE) file for details.

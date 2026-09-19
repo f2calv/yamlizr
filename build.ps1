@@ -92,10 +92,6 @@ $ALL_PLATFORMS = 'linux/amd64,linux/arm64,linux/arm/v7'
 # Mirrored into deps/ for a Debug build, so a fix can be verified before those repos are published.
 $DEP_REPOS = @('CasCap.Common')
 
-$GIT_REPOSITORY = $REPO_ROOT | Split-Path -Leaf
-$GIT_BRANCH = "$(git -C $REPO_ROOT branch --show-current)".Trim()
-$GIT_COMMIT = "$(git -C $REPO_ROOT rev-parse HEAD)".Trim()
-
 $GITHUB_WORKFLOW = 'local'
 $GITHUB_RUN_ID = 0
 $GITHUB_RUN_NUMBER = 0
@@ -135,14 +131,19 @@ function Resolve-Version {
     #>
     [CmdletBinding()]
     [OutputType([string])]
-    param([bool]$Required)
+    param(
+        [string]$RequestedVersion = $Version,
+        [bool]$Required = $Push,
+        [scriptblock]$GitVersionResolver = {
+            if (-not (Install-GitVersion)) { return $null }
+            return "$(dotnet-gitversion $REPO_ROOT /showvariable SemVer)".Trim()
+        }
+    )
 
-    if ($Version) { return $Version }
+    if (-not [string]::IsNullOrWhiteSpace($RequestedVersion)) { return $RequestedVersion }
 
-    if (Install-GitVersion) {
-        $resolved = "$(dotnet-gitversion $REPO_ROOT /showvariable SemVer)".Trim()
-        if (-not [string]::IsNullOrWhiteSpace($resolved)) { return $resolved }
-    }
+    $resolved = & $GitVersionResolver
+    if (-not [string]::IsNullOrWhiteSpace($resolved)) { return $resolved.Trim() }
 
     if ($Required) {
         throw 'Could not resolve a version from GitVersion, which a push build requires. Pass -Version.'
@@ -160,13 +161,17 @@ function Resolve-Platforms {
     #>
     [CmdletBinding()]
     [OutputType([string])]
-    param()
+    param(
+        [string]$RequestedPlatforms = $Platforms,
+        [bool]$IsPush = $Push,
+        [string]$Architecture = [Runtime.InteropServices.RuntimeInformation]::OSArchitecture.ToString()
+    )
 
-    if ($Platforms) { return $Platforms }
-    if ($Push) { return $ALL_PLATFORMS }
+    if (-not [string]::IsNullOrWhiteSpace($RequestedPlatforms)) { return $RequestedPlatforms }
+    if ($IsPush) { return $ALL_PLATFORMS }
 
     # --load accepts one platform only, and emulating another is far slower.
-    switch ([Runtime.InteropServices.RuntimeInformation]::OSArchitecture.ToString()) {
+    switch ($Architecture) {
         'Arm64' { return 'linux/arm64' }
         'Arm' { return 'linux/arm/v7' }
         default { return 'linux/amd64' }
@@ -288,9 +293,9 @@ function Invoke-Build {
     [CmdletBinding(SupportsShouldProcess)]
     param()
 
-    $versionValue = Resolve-Version -Required:$Push
+    $versionValue = Resolve-Version -RequestedVersion $Version -Required:$Push
     $tagValue = if ($Tag) { $Tag.ToLower() } elseif ($Push) { $versionValue.ToLower() } else { 'latest-dev' }
-    $platformValue = Resolve-Platforms
+    $platformValue = Resolve-Platforms -RequestedPlatforms $Platforms -IsPush:$Push
     $image = "$REGISTRY/$($ImageName.ToLower()):$tagValue"
     $dockerfile = if ($Configuration -eq 'Debug') { 'Dockerfile.Debug' } else { 'Dockerfile' }
 
@@ -299,6 +304,10 @@ function Invoke-Build {
     }
 
     if ($Push -and -not $PSCmdlet.ShouldProcess($image, 'Publish container image to ghcr.io')) { return }
+
+    $gitRepository = $REPO_ROOT | Split-Path -Leaf
+    $gitBranch = "$(git -C $REPO_ROOT branch --show-current)".Trim()
+    $gitCommit = "$(git -C $REPO_ROOT rev-parse HEAD)".Trim()
 
     Write-Host "Image     : $image" -ForegroundColor Cyan
     Write-Host "Version   : $versionValue" -ForegroundColor Cyan
@@ -317,9 +326,9 @@ function Invoke-Build {
         --file (Join-Path $REPO_ROOT $dockerfile) `
         --build-arg VERSION=$versionValue `
         --build-arg CONFIGURATION=$Configuration `
-        --build-arg GIT_REPOSITORY=$GIT_REPOSITORY `
-        --build-arg GIT_BRANCH=$GIT_BRANCH `
-        --build-arg GIT_COMMIT=$GIT_COMMIT `
+        --build-arg GIT_REPOSITORY=$gitRepository `
+        --build-arg GIT_BRANCH=$gitBranch `
+        --build-arg GIT_COMMIT=$gitCommit `
         --build-arg GIT_TAG=$tagValue `
         --build-arg GITHUB_WORKFLOW=$GITHUB_WORKFLOW `
         --build-arg GITHUB_RUN_ID=$GITHUB_RUN_ID `
