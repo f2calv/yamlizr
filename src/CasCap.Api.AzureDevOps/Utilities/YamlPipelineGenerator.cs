@@ -247,46 +247,44 @@ public class YamlPipelineGenerator
         var unconverted = Build.Triggers.Where(p => p.TriggerType != DefinitionTriggerType.ContinuousIntegration).ToList();
         if (!unconverted.IsNullOrEmpty())
             _warnings.Add($"{unconverted.Count} trigger(s) of type {string.Join(", ", unconverted.Select(p => p.TriggerType).Distinct())} are not converted, see https://github.com/f2calv/yamlizr/issues/182");
-        foreach (var t in Build.Triggers.Where(p => p.TriggerType == DefinitionTriggerType.ContinuousIntegration))
+        var trig = Build.Triggers.OfType<ContinuousIntegrationTrigger>().FirstOrDefault();
+        if (trig is null) return null;
+
+        var trigger = new TriggerAzDO();
+        if (!trig.BranchFilters.IsNullOrEmpty())
         {
-            var trigger = new TriggerAzDO();
-            var trig = (ContinuousIntegrationTrigger)t;
-            if (!trig.BranchFilters.IsNullOrEmpty())
+            trigger.branches = new IncludeExclude();
+            var include = new List<string>(trig.BranchFilters.Count);
+            var exclude = new List<string>(trig.BranchFilters.Count);
+            foreach (var branch in trig.BranchFilters)
             {
-                trigger.branches = new IncludeExclude();
-                var include = new List<string>(trig.BranchFilters.Count);
-                var exclude = new List<string>(trig.BranchFilters.Count);
-                foreach (var branch in trig.BranchFilters)
-                {
-                    var b = branch.Substring(1).Replace("refs/heads/", string.Empty);
-                    if (branch.StartsWith("+")) include.Add(b); else exclude.Add(b);
-                }
-                if (!include.IsNullOrEmpty()) trigger.branches.include = include.ToArray();
-                if (!exclude.IsNullOrEmpty()) trigger.branches.exclude = exclude.ToArray();
+                var b = branch.Substring(1).Replace("refs/heads/", string.Empty);
+                if (branch.StartsWith("+")) include.Add(b); else exclude.Add(b);
             }
-            if (!trig.PathFilters.IsNullOrEmpty())
-            {
-                trigger.paths = new IncludeExclude();
-                var include = new List<string>(trig.PathFilters.Count);
-                var exclude = new List<string>(trig.PathFilters.Count);
-                foreach (var path in trig.PathFilters)
-                {
-                    var _path = path;
-                    if (_path.Length == 2 && path[1] == '/') continue;
-                    if (_path.StartsWith("+/")) _path = "+" + _path.Substring(2);
-                    if (_path.StartsWith("-/")) _path = "-" + _path.Substring(2);
-                    if (_path.StartsWith("+"))
-                        include.Add(_path.Substring(1));
-                    else
-                        exclude.Add(_path.Substring(1));
-                }
-                if (!include.IsNullOrEmpty()) trigger.paths.include = include.ToArray();
-                if (!exclude.IsNullOrEmpty()) trigger.paths.exclude = exclude.ToArray();
-            }
-            trigger.batch = trig.BatchChanges;
-            return trigger;
+            if (!include.IsNullOrEmpty()) trigger.branches.include = include.ToArray();
+            if (!exclude.IsNullOrEmpty()) trigger.branches.exclude = exclude.ToArray();
         }
-        return null;
+        if (!trig.PathFilters.IsNullOrEmpty())
+        {
+            trigger.paths = new IncludeExclude();
+            var include = new List<string>(trig.PathFilters.Count);
+            var exclude = new List<string>(trig.PathFilters.Count);
+            foreach (var path in trig.PathFilters)
+            {
+                var _path = path;
+                if (_path.Length == 2 && path[1] == '/') continue;
+                if (_path.StartsWith("+/")) _path = "+" + _path.Substring(2);
+                if (_path.StartsWith("-/")) _path = "-" + _path.Substring(2);
+                if (_path.StartsWith("+"))
+                    include.Add(_path.Substring(1));
+                else
+                    exclude.Add(_path.Substring(1));
+            }
+            if (!include.IsNullOrEmpty()) trigger.paths.include = include.ToArray();
+            if (!exclude.IsNullOrEmpty()) trigger.paths.exclude = exclude.ToArray();
+        }
+        trigger.batch = trig.BatchChanges;
+        return trigger;
     }
 
     private List<Variable> GenVariables(VariableType type, ReleaseDefinitionEnvironment? environment = null)
