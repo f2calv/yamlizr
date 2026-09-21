@@ -3,7 +3,7 @@
 [cascap.yamlizr-badge]: https://img.shields.io/nuget/v/yamlizr?color=blue
 [cascap.yamlizr-url]: https://nuget.org/packages/yamlizr
 
-![CI](https://github.com/f2calv/yamlizr/actions/workflows/ci.yml/badge.svg) [![Coverage Status](https://coveralls.io/repos/github/f2calv/yamlizr/badge.svg?branch=main)](https://coveralls.io/github/f2calv/yamlizr?branch=main) [![SonarCloud Coverage](https://sonarcloud.io/api/project_badges/measure?project=f2calv_yamlizr&metric=code_smells)](https://sonarcloud.io/component_measures/metric/code_smells/list?id=f2calv_yamlizr) [![Nuget][cascap.yamlizr-badge]][cascap.yamlizr-url]
+![CI](https://github.com/f2calv/yamlizr/actions/workflows/ci.yml/badge.svg) [![Coverage Status](https://coveralls.io/repos/github/f2calv/yamlizr/badge.svg?branch=main)](https://coveralls.io/github/f2calv/yamlizr?branch=main) [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=f2calv_yamlizr&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=f2calv_yamlizr) [![Nuget][cascap.yamlizr-badge]][cascap.yamlizr-url]
 
 **yamlizr** converts Azure DevOps Classic Designer Build/Release Definitions, and any Task Groups they reference, en-masse into their [YAML Pipeline](https://docs.microsoft.com/en-us/azure/devops/pipelines/yaml-schema?view=azure-devops&tabs=schema%2Cparameter-schema) or [GitHub Actions](https://github.com/features/actions) equivalent. It runs as a container, or as a [.NET Global Tool](https://docs.microsoft.com/en-us/dotnet/core/tools/global-tools).
 
