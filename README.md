@@ -340,6 +340,9 @@ generated YAML** and must be re-created by hand. Progress on closing these gaps 
 | `CasCap.DevOpsYamlizrCli` | The `yamlizr` global tool: command surface, console presentation, orchestration |
 | `CasCap.Api.AzureDevOps.Tests` | xUnit v3 tests running on `Microsoft.Testing.Platform` |
 
+The credential-free tests also run inside the container build with
+`docker buildx build --target test .`; see the [test project README](src/CasCap.Api.AzureDevOps.Tests/README.md).
+
 ## Core Dependencies
 
 - [Azure DevOps .NET Client Libraries](https://docs.microsoft.com/en-us/azure/devops/integrate/concepts/dotnet-client-libraries?view=azure-devops)

@@ -6,6 +6,7 @@
 
 !Directory.Build.props
 !Directory.Packages.props
+!global.json
 !icon.png
 !src/**/*.csproj
 !src/**/*.cs
@@ -22,6 +23,5 @@
 **/.git
 **/.vs
 
-# The test project is never part of the runtime image. Excluding it keeps test
-# edits from busting the restore layer cache.
-**/*.Tests
+# The test project stays in the context for the optional `test` stage. The build stages exclude it
+# with COPY --exclude, so a test edit never busts the publish layer cache.

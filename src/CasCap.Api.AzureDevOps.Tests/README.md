@@ -78,6 +78,19 @@ dotnet user-secrets set CasCap:AzureDevOpsOptions:ValidationPipelineId "19"
 dotnet test --filter-trait Category=Integration
 ```
 
+### Inside the Container Build
+
+The Release `Dockerfile` has an optional `test` stage that runs the credential-free tests in the .NET
+SDK image, with no local SDK needed. Neither the default build nor CI runs it:
+
+```bash
+docker buildx build --target test --progress=plain .
+```
+
+It runs on the build machine's native platform, for `net10.0` only because the SDK image ships only
+the .NET 10 runtime, with `Category=Integration` filtered out and networking disabled. A failing test
+fails the build.
+
 The token needs only read access, plus Build (read and execute) for the preview endpoint. It never
 writes to the organisation.
 

@@ -29,7 +29,8 @@ RUN --mount=type=cache,target=/root/.nuget/packages,sharing=locked \
     dotnet restore "$PROJECT" -p:Configuration="$CONFIGURATION"
 
 # -- Compile layer -------------------------------------------------------------
-COPY . .
+# The test project is excluded so a test edit never invalidates the publish layer.
+COPY --exclude=src/*.Tests . .
 
 # buildx injects TARGETARCH/TARGETVARIANT automatically:
 #   linux/amd64 -> amd64, linux/arm64 -> arm64, linux/arm/v7 -> arm + v7
@@ -53,6 +54,45 @@ dotnet publish "$PROJECT" \
     -p:Version="$VERSION" \
     --output /out
 EOF
+
+# ------------------------------------------------------------------------------
+# Optional stage: test
+#
+# Local development only. `final` does not depend on this stage, so BuildKit skips
+# it unless it is requested explicitly:
+#
+#   docker buildx build --target test --progress=plain .
+#
+# Pinned to $BUILDPLATFORM because test assemblies are architecture-neutral, so
+# the tests run natively without emulation. Only credential-free tests run:
+# Category=Integration is filtered out, and the network is disabled so a test
+# that reaches an external service fails instead of silently depending on it.
+# global.json selects Microsoft.Testing.Platform, which `dotnet test --project`
+# and the trait filters require.
+# ------------------------------------------------------------------------------
+FROM --platform=$BUILDPLATFORM mcr.microsoft.com/dotnet/sdk:10.0 AS test
+WORKDIR /src
+
+ARG TEST_PROJECT=src/CasCap.Api.AzureDevOps.Tests/CasCap.Api.AzureDevOps.Tests.csproj
+ARG CONFIGURATION=Release
+ARG TARGET_FRAMEWORK=net10.0
+
+# -- Dependency layer ----------------------------------------------------------
+COPY Directory.Build.props Directory.Packages.props global.json ./
+COPY --parents src/**/*.csproj ./
+RUN --mount=type=cache,target=/root/.nuget/packages,sharing=locked \
+    dotnet restore "$TEST_PROJECT" -p:Configuration="$CONFIGURATION"
+
+# -- Test layer ----------------------------------------------------------------
+# The SDK image ships only the .NET 10 runtime, so the multi-targeted test
+# project runs for net10.0 here; run the other target frameworks on the host.
+COPY . .
+RUN --network=none --mount=type=cache,target=/root/.nuget/packages,sharing=locked \
+    dotnet test --project "$TEST_PROJECT" \
+        --configuration "$CONFIGURATION" \
+        --framework "$TARGET_FRAMEWORK" \
+        --no-restore \
+        --filter-not-trait "Category=Integration"
 
 # ------------------------------------------------------------------------------
 # Stage 2 of 2: final
