@@ -3,11 +3,16 @@
 # Multi-architecture image, built from a single Dockerfile. Structure follows
 # https://github.com/f2calv/multi-arch-container-dotnet
 #
+# A command-line tool: run with `docker run --rm`, arguments passed straight to
+# yamlizr, generated YAML written to the /data volume.
+#
+# Shape: tool
+#
 # ------------------------------------------------------------------------------
 # Stage 1 of 2: build
 #
 # Pinned to $BUILDPLATFORM and CROSS-COMPILES to $TARGETPLATFORM; emulating the
-# target under QEMU instead is typically 10-50x slower.
+# target under QEMU instead is often an order of magnitude slower.
 # ------------------------------------------------------------------------------
 FROM --platform=$BUILDPLATFORM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /src
@@ -21,12 +26,14 @@ ARG VERSION=0.0.1
 # Copy only what restore reads, so editing a .cs file reuses the cached restore.
 # Restore is platform-agnostic, so it precedes TARGETARCH and is shared by every
 # architecture. Configuration is passed because the CasCap.Common references are
-# packages in Release and sibling projects in Debug.
+# packages in Release and sibling projects in Debug. Every runtime identifier is
+# restored here so each platform's publish runs offline with --no-restore.
 COPY Directory.Build.props Directory.Packages.props ./
 COPY src/CasCap.Api.AzureDevOps/CasCap.Api.AzureDevOps.csproj src/CasCap.Api.AzureDevOps/
 COPY src/CasCap.DevOpsYamlizrCli/CasCap.DevOpsYamlizrCli.csproj src/CasCap.DevOpsYamlizrCli/
 RUN --mount=type=cache,target=/root/.nuget/packages,sharing=locked \
-    dotnet restore "$PROJECT" -p:Configuration="$CONFIGURATION"
+    dotnet restore "$PROJECT" -p:Configuration="$CONFIGURATION" \
+        "-p:RuntimeIdentifiers=\"linux-x64;linux-arm64;linux-arm\""
 
 # -- Compile layer -------------------------------------------------------------
 # The test project is excluded so a test edit never invalidates the publish layer.
@@ -34,10 +41,12 @@ COPY --exclude=src/*.Tests . .
 
 # buildx injects TARGETARCH/TARGETVARIANT automatically:
 #   linux/amd64 -> amd64, linux/arm64 -> arm64, linux/arm/v7 -> arm + v7
-# Concatenating the two gives a single flat token to switch on.
+# Concatenating the two gives a single flat token to switch on. The publish only
+# reads packages the restore already wrote, so the platform legs share the cache
+# and need no network.
 ARG TARGETARCH
 ARG TARGETVARIANT
-RUN --mount=type=cache,target=/root/.nuget/packages,sharing=locked <<EOF
+RUN --network=none --mount=type=cache,target=/root/.nuget/packages,sharing=shared <<EOF
 set -eux
 # https://learn.microsoft.com/dotnet/core/rid-catalog
 case "${TARGETARCH}${TARGETVARIANT}" in
@@ -52,7 +61,11 @@ dotnet publish "$PROJECT" \
     --runtime "$RID" \
     --self-contained false \
     -p:Version="$VERSION" \
+    --no-restore \
     --output /out
+# The chiselled runtime has no shell to create the volume directory, so it is
+# created here and copied across owned by the runtime user.
+install -d /state/data
 EOF
 
 # ------------------------------------------------------------------------------
@@ -110,7 +123,10 @@ FROM mcr.microsoft.com/dotnet/aspnet:10.0-noble-chiseled AS final
 WORKDIR /app
 COPY --link --from=build /out .
 
-# Generated YAML is written here; mount a host directory over it.
+# Generated YAML is written here; mount a host directory over it. The directory is
+# owned by the runtime user, otherwise an anonymous volume is created root-owned
+# and the non-root process cannot write to it.
+COPY --link --from=build --chown=$APP_UID:$APP_UID /state/data /data
 VOLUME /data
 
 # -- Provenance ----------------------------------------------------------------

@@ -1,10 +1,4 @@
 # syntax=docker/dockerfile:1
-# check=skip=CopyIgnoredFile
-#
-# CopyIgnoredFile is skipped deliberately: .dockerignore re-excludes bin/ and obj/ beneath the
-# deps/** allow-list this file relies on, so the COPY instructions below legitimately step over
-# ignored files.
-#
 # Debug variant of Dockerfile, used to verify a fix against the local sibling repositories before
 # they are published as packages.
 #
