@@ -1,10 +1,4 @@
 # syntax=docker/dockerfile:1
-# check=skip=CopyIgnoredFile
-#
-# CopyIgnoredFile is skipped deliberately: .dockerignore re-excludes bin/ and obj/ beneath the
-# deps/** allow-list this file relies on, so the COPY instructions below legitimately step over
-# ignored files.
-#
 # Debug variant of Dockerfile, used to verify a fix against the local sibling repositories before
 # they are published as packages.
 #
@@ -33,14 +27,15 @@ COPY Directory.Build.props Directory.Packages.props ./
 
 # The /./ pivot drops the deps/ prefix, so deps/CasCap.Common/... lands at /CasCap.Common/...
 COPY --parents deps/./**/*.csproj deps/./**/*.props deps/./**/*.targets /
-COPY --parents src/**/*.csproj ./
+COPY --parents --exclude=src/*.Tests src/**/*.csproj ./
 
 RUN --mount=type=cache,target=/root/.nuget/packages,sharing=locked \
     dotnet restore "$PROJECT" -p:Configuration="$CONFIGURATION"
 
 # -- Compile layer -------------------------------------------------------------
 COPY deps/CasCap.Common /CasCap.Common
-COPY . .
+# The test project stays in the context for the Release Dockerfile's optional test stage only.
+COPY --exclude=src/*.Tests . .
 
 ARG TARGETARCH
 ARG TARGETVARIANT

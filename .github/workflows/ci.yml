@@ -43,7 +43,7 @@ jobs:
       tag-and-release: false
 
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: [versioning]
     #Note: a permissions block is subtractive - every scope not listed resets to none.
     #The composite action cannot request these itself, so they must be declared here.
