@@ -340,6 +340,10 @@ generated YAML** and must be re-created by hand. Progress on closing these gaps 
 | `CasCap.DevOpsYamlizrCli` | The `yamlizr` global tool: command surface, console presentation, orchestration |
 | `CasCap.Api.AzureDevOps.Tests` | xUnit v3 tests running on `Microsoft.Testing.Platform` |
 
+Within the CLI project, `Program.cs` owns the attributed root command and help/version behavior,
+while `AppHost.cs` owns configuration layering, console logging, dependency injection, command
+dispatch, and parsing-error exit codes.
+
 The credential-free tests also run inside the container build with
 `docker buildx build --target test .`; see the [test project README](src/CasCap.Api.AzureDevOps.Tests/README.md).
 
