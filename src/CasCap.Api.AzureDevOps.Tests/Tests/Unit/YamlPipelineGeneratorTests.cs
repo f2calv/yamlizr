@@ -248,10 +248,10 @@ public class YamlPipelineGeneratorTests
         var generator = new YamlPipelineGenerator(
             null,
             null,
-            new Dictionary<Guid, Dictionary<int, TaskObj>>(),
-            new Dictionary<TaskGroupVersion, TaskGroup>(),
+            [],
+            [],
             new ConcurrentDictionary<TaskGroupVersion, Template>(),
-            new Dictionary<int, VariableGroup>(),
+            [],
             inlineTaskGroups: false,
             DeployPhaseTypes.AgentBasedDeployment);
 

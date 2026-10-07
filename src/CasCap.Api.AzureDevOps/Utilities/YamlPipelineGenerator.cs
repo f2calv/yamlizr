@@ -21,22 +21,30 @@ namespace CasCap.Utilities;
 /// silently, so the caller can report it.
 /// </para>
 /// </remarks>
-public class YamlPipelineGenerator
+public class YamlPipelineGenerator(
+    BuildDefinition? build,
+    ReleaseDefinition? release,
+    Dictionary<Guid, Dictionary<int, TaskObj>> taskMap,
+    Dictionary<TaskGroupVersion, TaskGroup> taskGroupMap,
+    ConcurrentDictionary<TaskGroupVersion, Template> taskGroupTemplateMap,
+    Dictionary<int, Microsoft.TeamFoundation.DistributedTask.WebApi.VariableGroup> variableGroupMap,
+    bool inlineTaskGroups,
+    DeployPhaseTypes phaseType)
 {
-    private readonly BuildDefinition? _build;
-    private readonly ReleaseDefinition? _release;
+    private readonly BuildDefinition? _build = build;
+    private readonly ReleaseDefinition? _release = release;
 
     //exactly one of the two is supplied, so each path reads its own through an accessor rather than
     //re-testing a field the surrounding branch has already established
     private BuildDefinition Build => _build ?? throw new GenericException($"{nameof(YamlPipelineGenerator)} was not given a build definition.");
     private ReleaseDefinition Release => _release ?? throw new GenericException($"{nameof(YamlPipelineGenerator)} was not given a release definition.");
 
-    private readonly Dictionary<Guid, Dictionary<int, TaskObj>> _taskMap;
-    private readonly Dictionary<TaskGroupVersion, TaskGroup> _taskGroupMap;
-    ConcurrentDictionary<TaskGroupVersion, Template> _taskGroupTemplateMap;//this collection is appended-to as the app iterates over the definitions
-    private readonly Dictionary<int, Microsoft.TeamFoundation.DistributedTask.WebApi.VariableGroup> _variableGroupMap;
-    private readonly bool _inlineTaskGroups;
-    private readonly DeployPhaseTypes _phaseType;
+    private readonly Dictionary<Guid, Dictionary<int, TaskObj>> _taskMap = taskMap;
+    private readonly Dictionary<TaskGroupVersion, TaskGroup> _taskGroupMap = taskGroupMap;
+    private ConcurrentDictionary<TaskGroupVersion, Template> _taskGroupTemplateMap = taskGroupTemplateMap;//this collection is appended-to as the app iterates over the definitions
+    private readonly Dictionary<int, Microsoft.TeamFoundation.DistributedTask.WebApi.VariableGroup> _variableGroupMap = variableGroupMap;
+    private readonly bool _inlineTaskGroups = inlineTaskGroups;
+    private readonly DeployPhaseTypes _phaseType = phaseType;
 
     private readonly string _templatesFolder = "AzureDevOpsTaskGroups";
 
@@ -48,44 +56,10 @@ public class YamlPipelineGenerator
     /// <remarks>The caller is expected to surface these in its run summary.</remarks>
     public IReadOnlyList<string> Warnings => _warnings;
 
-    enum VariableType
+    private enum VariableType
     {
         Build,
         Release
-    }
-
-    /// <summary>Creates a generator for a single definition.</summary>
-    /// <remarks>Exactly one of <paramref name="build"/> and <paramref name="release"/> must be supplied.</remarks>
-    /// <param name="build">The classic Build definition to convert, or null when converting a release.</param>
-    /// <param name="release">The classic Release definition to convert, or null when converting a build.</param>
-    /// <param name="taskMap">Installed tasks, keyed by task identifier then major version.</param>
-    /// <param name="taskGroupMap">Task groups, keyed by identifier and version.</param>
-    /// <param name="taskGroupTemplateMap">
-    /// Templates generated so far, shared across every definition in the run and appended to as task
-    /// groups are encountered, which is why it is concurrent.
-    /// </param>
-    /// <param name="variableGroupMap">Variable groups, keyed by identifier.</param>
-    /// <param name="inlineTaskGroups">True to expand task group steps in place instead of emitting a template reference.</param>
-    /// <param name="phaseType">The single deploy phase type to convert; other phases are reported and skipped.</param>
-    public YamlPipelineGenerator(
-        BuildDefinition? build,
-        ReleaseDefinition? release,
-        Dictionary<Guid, Dictionary<int, TaskObj>> taskMap,
-        Dictionary<TaskGroupVersion, TaskGroup> taskGroupMap,
-        ConcurrentDictionary<TaskGroupVersion, Template> taskGroupTemplateMap,
-        Dictionary<int, Microsoft.TeamFoundation.DistributedTask.WebApi.VariableGroup> variableGroupMap,
-        bool inlineTaskGroups,
-        DeployPhaseTypes phaseType
-        )
-    {
-        _build = build;
-        _release = release;
-        _taskMap = taskMap;
-        _taskGroupMap = taskGroupMap;
-        _taskGroupTemplateMap = taskGroupTemplateMap;
-        _variableGroupMap = variableGroupMap;
-        _inlineTaskGroups = inlineTaskGroups;
-        _phaseType = phaseType;
     }
 
     /// <summary>Converts the definition supplied to the constructor.</summary>
@@ -118,7 +92,7 @@ public class YamlPipelineGenerator
                     //flattening the only job to a bare step list discards its job-level settings, but a
                     //default condition is not worth reporting
                     var job = buildJobs[0];
-                    if (job.condition is not null && job.condition != "succeeded()")
+                    if (job.condition is not null and not "succeeded()")
                         _warnings.Add($"job '{job.job}' is the only job so its steps were flattened, dropping its condition '{job.condition}', see https://github.com/f2calv/yamlizr/issues/376");
                     steps.AddRange(job.steps ?? []);
                 }
@@ -150,13 +124,13 @@ public class YamlPipelineGenerator
         }
         else
             throw new GenericException($"{nameof(YamlPipelineGenerator)} expects only either a build OR a release!");
-        if (stages.Count > 1) pipeline.stages = stages.ToArray();
-        else if (jobs.Count > 1) pipeline.jobs = jobs.ToArray();
-        else pipeline.steps = steps.ToArray();
+        if (stages.Count > 1) pipeline.stages = [.. stages];
+        else if (jobs.Count > 1) pipeline.jobs = [.. jobs];
+        else pipeline.steps = [.. steps];
         return pipeline.stages.IsNullOrEmpty() && pipeline.jobs.IsNullOrEmpty() && pipeline.steps.IsNullOrEmpty() ? null : pipeline;
     }
 
-    StageAzDO? GenBuildStage()
+    private StageAzDO? GenBuildStage()
     {
         var allPhases = ((DesignerProcess)Build.Process).Phases;
         var phases = allPhases.Where(p => p.Target is not null && p.Target.Type == 1).ToList();
@@ -197,7 +171,7 @@ public class YamlPipelineGenerator
                 dependsOn = GenDependsOn(phase, jobIdByRefName),
                 displayName = string.IsNullOrWhiteSpace(phase.Name) ? jobId : phase.Name,
                 job = jobId,
-                steps = steps.ToArray(),
+                steps = [.. steps],
                 timeoutInMinutes = phase.JobTimeoutInMinutes,
             };
             jobs.Add(job);
@@ -209,7 +183,7 @@ public class YamlPipelineGenerator
             displayName = Build.Name,
             stage = ToIdentifier(Build.Name, "Build"),
             variables = stageVariables.IsNullOrEmpty() ? null : stageVariables,
-            jobs = jobs.ToArray(),
+            jobs = [.. jobs],
         };
     }
 
@@ -236,10 +210,10 @@ public class YamlPipelineGenerator
                 _warnings.Add($"phase '{phase.Name}' depends on '{dependency.Scope}', which was not converted, so the dependency is missing from the generated YAML");
         }
 
-        return dependsOn.Count == 0 ? null : dependsOn.ToArray();
+        return dependsOn.Count == 0 ? null : [.. dependsOn];
     }
 
-    TriggerAzDO? GenTrigger()
+    private TriggerAzDO? GenTrigger()
     {
         if (Build.Triggers.IsNullOrEmpty()) return null;
         //TODO(#182): only continuous integration triggers are converted; pull request, scheduled and
@@ -261,8 +235,8 @@ public class YamlPipelineGenerator
                 var b = branch.Substring(1).Replace("refs/heads/", string.Empty);
                 if (branch.StartsWith("+")) include.Add(b); else exclude.Add(b);
             }
-            if (!include.IsNullOrEmpty()) trigger.branches.include = include.ToArray();
-            if (!exclude.IsNullOrEmpty()) trigger.branches.exclude = exclude.ToArray();
+            if (!include.IsNullOrEmpty()) trigger.branches.include = [.. include];
+            if (!exclude.IsNullOrEmpty()) trigger.branches.exclude = [.. exclude];
         }
         if (!trig.PathFilters.IsNullOrEmpty())
         {
@@ -280,8 +254,8 @@ public class YamlPipelineGenerator
                 else
                     exclude.Add(_path.Substring(1));
             }
-            if (!include.IsNullOrEmpty()) trigger.paths.include = include.ToArray();
-            if (!exclude.IsNullOrEmpty()) trigger.paths.exclude = exclude.ToArray();
+            if (!include.IsNullOrEmpty()) trigger.paths.include = [.. include];
+            if (!exclude.IsNullOrEmpty()) trigger.paths.exclude = [.. exclude];
         }
         trigger.batch = trig.BatchChanges;
         return trigger;
@@ -311,7 +285,7 @@ public class YamlPipelineGenerator
             }
             else
             {
-                variables = new List<Variable>();
+                variables = [];
                 if (!Release.VariableGroups.IsNullOrEmpty())
                     foreach (var id in Release.VariableGroups)
                         if (_variableGroupMap.TryGetValue(id, out var vg))
@@ -377,7 +351,7 @@ public class YamlPipelineGenerator
         return candidate;
     }
 
-    StageAzDO[]? GenReleaseStages()
+    private StageAzDO[]? GenReleaseStages()
     {
         if (Release.Environments.IsNullOrEmpty()) return null;
 
@@ -408,7 +382,7 @@ public class YamlPipelineGenerator
             {
                 // The release definition names the document, not each stage within it.
                 displayName = string.IsNullOrWhiteSpace(environment.Name) ? stageName : environment.Name,
-                jobs = jobs.ToArray(),
+                jobs = [.. jobs],
                 stage = stageName,
                 variables = variables.IsNullOrEmpty() ? null : variables,
             };
@@ -416,7 +390,7 @@ public class YamlPipelineGenerator
         }
         if (stages.Count > 1)
             _warnings.Add($"{stages.Count} stages were generated without dependsOn, so they will run concurrently rather than in the classic environment order, see https://github.com/f2calv/yamlizr/issues/182");
-        return stages.IsNullOrEmpty() ? null : stages.ToArray();
+        return stages.IsNullOrEmpty() ? null : [.. stages];
 
         static bool HasApprovals(ReleaseDefinitionEnvironment environment)
             //classic environments always carry an automated approval, only a real gate is worth reporting
@@ -450,10 +424,10 @@ public class YamlPipelineGenerator
                 {
                     cancelTimeoutInMinutes = deploymentInput.JobCancelTimeoutInMinutes,
                     condition = GenCondition(deploymentInput.Condition),
-                    dependsOn = string.IsNullOrWhiteSpace(jobName) ? null : new[] { jobName },
+                    dependsOn = string.IsNullOrWhiteSpace(jobName) ? null : [jobName],
                     displayName = phaseName,
                     job = ToUniqueIdentifier(phaseName, $"Phase_{j + 1}", usedJobIds),
-                    steps = new List<Step>(steps).ToArray(),
+                    steps = [.. steps],
                     timeoutInMinutes = deploymentInput.TimeoutInMinutes,
                 };
                 jobs.Add(job);
@@ -482,8 +456,8 @@ public class YamlPipelineGenerator
             return [];
         }
         if (_taskMap.TryGetValue(Id, out var taskObjs) && taskObjs.TryGetValue(version, out var taskObj))
-            return new List<Step>
-            {
+            return
+            [
                 new Step
                 {
                     condition = GenCondition(condition) == "succeeded()" ? null : GenCondition(condition),//todo: add "succeeded()" as default in Sam's lib
@@ -495,7 +469,7 @@ public class YamlPipelineGenerator
                         : $"{taskObj.contributionIdentifier}.{taskObj.name}@{version}",
                     timeoutInMinutes = timeoutInMinutes,
                 }
-            };
+            ];
         var template = GetOrCreateTaskGroupTemplate();
         if (template is null)
         {
@@ -505,7 +479,8 @@ public class YamlPipelineGenerator
             _warnings.Add($"step '{displayName}' references task or task group {Id} v{version}, which is not installed in this organisation, and was not converted");
             return [];
         }
-        return _inlineTaskGroups ? new List<Step>(template.steps ?? []) : GetSteps(template, inputs);
+        var inlinedSteps = template.steps ?? [];
+        return _inlineTaskGroups ? [.. inlinedSteps] : GetSteps(template, inputs);
 
         Template? GetOrCreateTaskGroupTemplate()
         {
@@ -536,9 +511,9 @@ public class YamlPipelineGenerator
                     var steps = new List<Step>(taskGroupSteps.Count);
                     foreach (var taskGroupStep in taskGroupSteps)
                         steps.AddRange(GenSteps(taskGroupStep, parameterDefaults));
-                    template.steps = steps.ToArray();
+                    template.steps = [.. steps];
                 }
-                template.steps ??= Array.Empty<Step>();//handle when all tasks within taskgroup are disabled
+                template.steps ??= [];//handle when all tasks within taskgroup are disabled
                 _taskGroupTemplateMap.TryAdd(key, template);
                 return template;
             }
@@ -605,9 +580,9 @@ public class YamlPipelineGenerator
         }
     }
 
-    List<Step> GetSteps(Template template, IDictionary<string, string>? inputs) => GenSteps(template, inputs is null ? [] : new Dictionary<string, string>(inputs));
+    private List<Step> GetSteps(Template template, IDictionary<string, string>? inputs) => GenSteps(template, inputs is null ? [] : new Dictionary<string, string>(inputs));
 
-    List<Step> GenSteps(Template template, Dictionary<string, string> inputs)
+    private List<Step> GenSteps(Template template, Dictionary<string, string> inputs)
     {
         //a template is only ever built with its task group set, and a null one is what issue #177 was
         var taskGroup = template.taskGroup ?? throw new GenericException($"{nameof(Template)} has no task group, see https://github.com/f2calv/yamlizr/issues/177");
@@ -618,17 +593,18 @@ public class YamlPipelineGenerator
             if (input is not null && string.IsNullOrWhiteSpace(inputs[key]))
                 inputs[key] = input.DefaultValue;
         }
-        return new List<Step> { new Step { template = $"../{_templatesFolder}/{filename}", parameters = inputs.IsNullOrEmpty() ? null : inputs } };
+        return [new Step { template = $"../{_templatesFolder}/{filename}", parameters = inputs.IsNullOrEmpty() ? null : inputs }];
     }
 
     /// <summary>Reads the major version from a classic task version spec such as <c>2.*</c>.</summary>
-    static bool TryParseMajorVersion(string semver, out int major)
+    private static bool TryParseMajorVersion(string semver, out int major)
     {
         major = 0;
         if (string.IsNullOrWhiteSpace(semver)) return false;
         if (!SemVersion.TryParse(semver.Replace(".*", ".0"), SemVersionStyles.OptionalPatch, out var version)) return false;
-        if (version.Major < int.MinValue || version.Major > int.MaxValue) return false;
-        major = (int)version.Major;
+        if (!long.TryParse(version.Major.ToString(), out var majorLong)) return false;
+        if (majorLong is < 0 or > int.MaxValue) return false;
+        major = (int)majorLong;
         return true;
     }
 }

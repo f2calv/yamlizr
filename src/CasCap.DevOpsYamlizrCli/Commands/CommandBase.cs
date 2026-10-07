@@ -31,7 +31,7 @@ public abstract class CommandBase
 
     /// <summary>Azure DevOps REST calls the official client libraries do not cover.</summary>
     protected IApiService ApiSvc => _apiSvc ?? throw NotConnected();
-    private IApiService? _apiSvc;
+    private IApiService? _apiSvc { get; set; }
 
     /// <summary>Initialises the shared dependencies.</summary>
     /// <param name="logger">Logger for diagnostics.</param>
@@ -55,23 +55,23 @@ public abstract class CommandBase
 
     /// <summary>Client for team project metadata.</summary>
     protected ProjectHttpClient ProjectClient => _projectClient ?? throw NotConnected();
-    private ProjectHttpClient? _projectClient;
+    private ProjectHttpClient? _projectClient { get; set; }
 
     /// <summary>Client for classic Build definitions.</summary>
     protected BuildHttpClient BuildClient => _buildClient ?? throw NotConnected();
-    private BuildHttpClient? _buildClient;
+    private BuildHttpClient? _buildClient { get; set; }
 
     /// <summary>Client for classic Release definitions.</summary>
     protected ReleaseHttpClient ReleaseClient => _releaseClient ?? throw NotConnected();
-    private ReleaseHttpClient? _releaseClient;
+    private ReleaseHttpClient? _releaseClient { get; set; }
 
     /// <summary>Client for task groups and variable groups.</summary>
     protected TaskAgentHttpClient TaskAgentClient => _taskAgentClient ?? throw NotConnected();
-    private TaskAgentHttpClient? _taskAgentClient;
+    private TaskAgentHttpClient? _taskAgentClient { get; set; }
 
     /// <summary>Connection every client above is created from.</summary>
     protected VssConnection Connection => _connection ?? throw NotConnected();
-    private VssConnection? _connection;
+    private VssConnection? _connection { get; set; }
 
     /// <summary>The team project being converted.</summary>
     protected TeamProject Project => _project ?? throw NotConnected();

@@ -12,20 +12,13 @@ using System.Collections.Concurrent;
 namespace CasCap.Commands;
 
 [Command(Description = "Generate Azure DevOps YAML pipelines from classic definitions.")]
-class GenerateCommand : CommandBase
+internal class GenerateCommand(
+    ILogger<GenerateCommand> logger,
+    IOptions<AzureDevOpsOptions> azureDevOpsOptions,
+    ILoggerFactory loggerFactory,
+    IConsole console) : CommandBase(logger, loggerFactory, console)
 {
-    private readonly IOptions<AzureDevOpsOptions> _azureDevOpsOptions;
-
-    public GenerateCommand(
-        ILogger<GenerateCommand> logger,
-        IOptions<AzureDevOpsOptions> azureDevOpsOptions,
-        ILoggerFactory loggerFactory,
-        IConsole console
-        )
-        : base(logger, loggerFactory, console)
-    {
-        _azureDevOpsOptions = azureDevOpsOptions;
-    }
+    private readonly IOptions<AzureDevOpsOptions> _azureDevOpsOptions = azureDevOpsOptions;
 
     //every option below is absent unless the user passes it, and each is one candidate among the
     //command line, configuration and the predefined pipeline variables
@@ -139,7 +132,7 @@ class GenerateCommand : CommandBase
         buildDefinitionReferences = await BuildClient.GetDefinitionsAsync(Project.Id);
         pbar.Tick($"{buildDefinitionReferences.Count} build definition reference(s) retrieved.");
         pbar.Dispose();
-        buildDefinitions = new ConcurrentBag<BuildDefinition>();
+        buildDefinitions = [];
 
         pbar = new ProgressBar(1, $"Loading release definitions...", pbarOptions);
         releaseDefinitions = await ReleaseClient.GetReleaseDefinitionsAsync(Project.Id);
@@ -197,7 +190,7 @@ class GenerateCommand : CommandBase
             if (!string.IsNullOrWhiteSpace(filter))
             {
                 _console.Write($"{buildDefinitionReferences.Count} build definition reference(s).");
-                buildDefinitionReferences = buildDefinitionReferences.Where(p => p.Name.IndexOf(filter, StringComparison.OrdinalIgnoreCase) > -1).ToList();
+                buildDefinitionReferences = [.. buildDefinitionReferences.Where(p => p.Name.IndexOf(filter, StringComparison.OrdinalIgnoreCase) > -1)];
                 _console.Write($" Filter set to '{filter}', {buildDefinitionReferences.Count} build definition(s) match filter.");
                 _console.WriteLine();
             }
@@ -238,10 +231,7 @@ class GenerateCommand : CommandBase
 
             var processedDefinitionCount = 0;
             if (parallelism)
-                Parallel.ForEach(buildDefinitions, new ParallelOptions { MaxDegreeOfParallelism = Environment.ProcessorCount }, (buildDefinition) =>
-                {
-                    ProcessDefinition(buildDefinition);
-                });
+                Parallel.ForEach(buildDefinitions, new ParallelOptions { MaxDegreeOfParallelism = Environment.ProcessorCount }, buildDefinition => ProcessDefinition(buildDefinition));
             else
                 foreach (var buildDefinition in buildDefinitions)
                     ProcessDefinition(buildDefinition);
@@ -285,7 +275,7 @@ class GenerateCommand : CommandBase
             if (!string.IsNullOrWhiteSpace(filter))
             {
                 _console.Write($"{releaseDefinitions.Count} release definition(s).");
-                releaseDefinitions = releaseDefinitions.Where(p => p.Name.IndexOf(filter, StringComparison.OrdinalIgnoreCase) > -1).ToList();
+                releaseDefinitions = [.. releaseDefinitions.Where(p => p.Name.IndexOf(filter, StringComparison.OrdinalIgnoreCase) > -1)];
                 _console.WriteLine($" Filter set to '{filter}', {releaseDefinitions.Count} release definition(s) match filter.");
             }
 
@@ -486,6 +476,6 @@ class GenerateCommand : CommandBase
         return 0;
     }
 
-    static string? FirstNonEmpty(params string?[] values)
+    private static string? FirstNonEmpty(params string?[] values)
         => Array.Find(values, p => !string.IsNullOrWhiteSpace(p));
 }

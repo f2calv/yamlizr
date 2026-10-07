@@ -6,20 +6,11 @@
 /// the same task group, and each version produces its own template file, so the identifier alone is
 /// not enough to key one.
 /// </remarks>
-public readonly struct TaskGroupVersion
+public readonly struct TaskGroupVersion(Guid taskGroupId, int version)
 {
-    /// <summary>Creates a key for a specific version of a task group.</summary>
-    /// <param name="_taskGroupId">Identifier of the task group.</param>
-    /// <param name="_version">Major version the referencing step pinned.</param>
-    public TaskGroupVersion(Guid _taskGroupId, int _version)
-    {
-        taskGroupId = _taskGroupId;
-        version = _version;
-    }
-
     /// <summary>Identifier of the task group.</summary>
-    public Guid taskGroupId { get; }
+    public Guid taskGroupId { get; } = taskGroupId;
 
     /// <summary>Major version the referencing step pinned.</summary>
-    public int version { get; }
+    public int version { get; } = version;
 }

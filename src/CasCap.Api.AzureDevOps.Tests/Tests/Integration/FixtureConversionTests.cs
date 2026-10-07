@@ -27,12 +27,8 @@ namespace CasCap.Api.AzureDevOps.Tests.Integration;
 /// </para>
 /// </remarks>
 [Trait("Category", "Integration")]
-public class FixtureConversionTests : TestBase
+public class FixtureConversionTests(ITestOutputHelper output) : TestBase(output)
 {
-    /// <summary>Initialises the shared Azure DevOps connection.</summary>
-    /// <param name="output">xUnit sink that test logging is written to.</param>
-    public FixtureConversionTests(ITestOutputHelper output) : base(output) { }
-
     /// <summary>Name prefix every object created by <c>.scripts/New-FixtureDefinitions.ps1</c> carries.</summary>
     private const string FixturePrefix = "yamlizr.test.";
 
@@ -110,7 +106,7 @@ public class FixtureConversionTests : TestBase
             release,
             taskMap,
             taskGroupMap,
-            new ConcurrentDictionary<TaskGroupVersion, Template>(),
+            [],
             variableGroupMap,
             inlineTaskGroups: true,
             DeployPhaseTypes.AgentBasedDeployment);

@@ -123,9 +123,9 @@ public static class YamlizrTestData
             build,
             null,
             taskMap ?? TaskMap(),
-            new Dictionary<TaskGroupVersion, TaskGroup>(),
+            [],
             new ConcurrentDictionary<TaskGroupVersion, Template>(),
-            new Dictionary<int, VariableGroup>(),
+            [],
             inlineTaskGroups: false,
             DeployPhaseTypes.AgentBasedDeployment);
 
@@ -232,9 +232,9 @@ public static class YamlizrTestData
             null,
             release,
             taskMap ?? TaskMap(),
-            new Dictionary<TaskGroupVersion, TaskGroup>(),
+            [],
             new ConcurrentDictionary<TaskGroupVersion, Template>(),
-            new Dictionary<int, VariableGroup>(),
+            [],
             inlineTaskGroups: false,
             DeployPhaseTypes.AgentBasedDeployment);
 }

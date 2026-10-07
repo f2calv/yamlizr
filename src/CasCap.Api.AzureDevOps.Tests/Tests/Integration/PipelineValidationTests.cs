@@ -11,12 +11,8 @@ namespace CasCap.Api.AzureDevOps.Tests.Integration;
 /// is the only claim that matters for generated output. See issue #366.
 /// </remarks>
 [Trait("Category", "Integration")]
-public class PipelineValidationTests : TestBase
+public class PipelineValidationTests(ITestOutputHelper output) : TestBase(output)
 {
-    /// <summary>Initialises the shared Azure DevOps connection.</summary>
-    /// <param name="output">xUnit sink that test logging is written to.</param>
-    public PipelineValidationTests(ITestOutputHelper output) : base(output) { }
-
     private const string NoValidationPipeline =
         "No validation pipeline configured, set CasCap:AzureDevOpsOptions:ValidationPipelineId to the id of yamlizr.test.validation.";
 
