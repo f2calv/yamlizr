@@ -21,8 +21,8 @@ public class YamlPipelineGeneratorTests
         var pipeline = generator.GenPipeline();
 
         Assert.NotNull(pipeline);
-        Assert.NotNull(pipeline.steps);
-        var step = Assert.Single(pipeline.steps);
+        Assert.NotNull(pipeline.Steps);
+        var step = Assert.Single(pipeline.Steps);
         Assert.Equal("SampleTask@1", step.task);
         Assert.Equal("sample step", step.displayName);
         Assert.Empty(generator.Warnings);
@@ -55,8 +55,8 @@ public class YamlPipelineGeneratorTests
         var pipeline = generator.GenPipeline();
 
         Assert.NotNull(pipeline);
-        Assert.NotNull(pipeline.steps);
-        var step = Assert.Single(pipeline.steps);
+        Assert.NotNull(pipeline.Steps);
+        var step = Assert.Single(pipeline.Steps);
         Assert.Equal("kept", step.displayName);
         Assert.Single(generator.Warnings);
     }
@@ -88,8 +88,8 @@ public class YamlPipelineGeneratorTests
         var pipeline = generator.GenPipeline();
 
         Assert.NotNull(pipeline);
-        Assert.NotNull(pipeline.steps);
-        Assert.Equal(expected, Assert.Single(pipeline.steps).task);
+        Assert.NotNull(pipeline.Steps);
+        Assert.Equal(expected, Assert.Single(pipeline.Steps).task);
     }
 
     [Fact]
@@ -117,8 +117,8 @@ public class YamlPipelineGeneratorTests
 
         //a single job is flattened to steps, so the generated name is only observable as no throw
         Assert.NotNull(pipeline);
-        Assert.NotNull(pipeline.steps);
-        Assert.Single(pipeline.steps);
+        Assert.NotNull(pipeline.Steps);
+        Assert.Single(pipeline.Steps);
     }
 
     [Fact]
@@ -129,10 +129,10 @@ public class YamlPipelineGeneratorTests
         var pipeline = generator.GenPipeline();
 
         Assert.NotNull(pipeline);
-        Assert.NotNull(pipeline.stages);
-        Assert.Equal(["Dev", "Test", "Prod"], pipeline.stages.Select(p => p.stage));
+        Assert.NotNull(pipeline.Stages);
+        Assert.Equal(["Dev", "Test", "Prod"], pipeline.Stages.Select(p => p.Stage));
         //the release definition names the document, so repeating it on every stage loses the environment
-        Assert.Equal(["Dev", "Test", "Prod"], pipeline.stages.Select(p => p.displayName));
+        Assert.Equal(["Dev", "Test", "Prod"], pipeline.Stages.Select(p => p.DisplayName));
     }
 
     [Fact]
@@ -143,9 +143,9 @@ public class YamlPipelineGeneratorTests
         var pipeline = generator.GenPipeline();
 
         Assert.NotNull(pipeline);
-        Assert.NotNull(pipeline.stages);
-        var unnamed = Assert.Single(pipeline.stages, p => p.stage == "Stage_2");
-        Assert.Equal("Stage_2", unnamed.displayName);
+        Assert.NotNull(pipeline.Stages);
+        var unnamed = Assert.Single(pipeline.Stages, p => p.Stage == "Stage_2");
+        Assert.Equal("Stage_2", unnamed.DisplayName);
     }
 
     //a job identifier must match [A-Za-z_][A-Za-z0-9_]*, and Azure DevOps rejects the pipeline otherwise
@@ -209,8 +209,8 @@ public class YamlPipelineGeneratorTests
 
         //every caller assumes jobs were produced, so prove it once here
         Assert.NotNull(pipeline);
-        Assert.NotNull(pipeline.jobs);
-        return pipeline.jobs;
+        Assert.NotNull(pipeline.Jobs);
+        return pipeline.Jobs;
     }
 
     [Fact]
@@ -221,9 +221,9 @@ public class YamlPipelineGeneratorTests
         var pipeline = YamlizrTestData.Generator(definition).GenPipeline();
 
         Assert.NotNull(pipeline);
-        Assert.NotNull(pipeline.jobs);
-        Assert.Equal(["Agent_job", "Agent_job_1"], pipeline.jobs.Select(p => p.job));
-        Assert.Equal(["Agent_job"], pipeline.jobs[1].dependsOn);
+        Assert.NotNull(pipeline.Jobs);
+        Assert.Equal(["Agent_job", "Agent_job_1"], pipeline.Jobs.Select(p => p.job));
+        Assert.Equal(["Agent_job"], pipeline.Jobs[1].dependsOn);
     }
 
     //the README claims a deploy phase of another type is reported, and nothing asserted the warning
@@ -237,7 +237,7 @@ public class YamlPipelineGeneratorTests
 
         //only the agent phase survives, so the sole remaining job is flattened to steps
         Assert.NotNull(pipeline);
-        Assert.NotNull(pipeline.steps);
+        Assert.NotNull(pipeline.Steps);
         Assert.Contains(generator.Warnings, p =>
             p.Contains("deploy phase(s) that are not") && p.Contains("AgentBasedDeployment"));
     }

@@ -21,9 +21,9 @@ public class ApiServiceTests(ITestOutputHelper output) : TestBase(output)
         //every installed task must be identifiable, the generator maps steps by id plus major version
         Assert.All(extensions, extension =>
         {
-            Assert.NotEqual(Guid.Empty, extension.id);
-            Assert.False(string.IsNullOrWhiteSpace(extension.name));
-            Assert.NotNull(extension.version);
+            Assert.NotEqual(Guid.Empty, extension.Id);
+            Assert.False(string.IsNullOrWhiteSpace(extension.Name));
+            Assert.NotNull(extension.Version);
         });
     }
 }

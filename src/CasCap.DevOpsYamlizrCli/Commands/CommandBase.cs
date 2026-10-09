@@ -95,7 +95,7 @@ public abstract class CommandBase
     protected ProgressBar pbar;
 
     /// <summary>Appearance of <see cref="pbar"/>.</summary>
-    protected ProgressBarOptions pbarOptions { get; set; } = new ProgressBarOptions
+    protected ProgressBarOptions ProgressBarOptions { get; set; } = new ProgressBarOptions
     {
         ProgressCharacter = '─',
         ForegroundColor = ConsoleColor.Yellow,
@@ -110,7 +110,7 @@ public abstract class CommandBase
     protected ChildProgressBar childPBar;
 
     /// <summary>Appearance of <see cref="childPBar"/>.</summary>
-    protected ProgressBarOptions childPbarOptions { get; set; } = new ProgressBarOptions
+    protected ProgressBarOptions ChildProgressBarOptions { get; set; } = new ProgressBarOptions
     {
         ProgressCharacter = '─',
         ForegroundColor = ConsoleColor.Yellow,

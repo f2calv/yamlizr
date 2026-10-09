@@ -9,7 +9,8 @@ Tests/
 |-- YamlizrTestData.cs        # Offline builders for Azure DevOps definitions
 |-- Unit/                     # Self-contained, no external services
 |   |-- YamlPipelineGeneratorTests.cs
-|   `-- PipelineSerializationTests.cs
+|   |-- PipelineSerializationTests.cs
+|   `-- TaskCatalogSerializationTests.cs
 `-- Integration/              # Requires a live Azure DevOps organisation
     |-- TestBase.cs                 # Shared configuration, logging and service setup
     |-- ApiServiceTests.cs          # Task catalogue retrieval
@@ -21,16 +22,16 @@ Tests/
 
 | Suite | Test methods | Expanded cases |
 | --- | --- | --- |
-| Unit | 19 | 28 |
+| Unit | 21 | 30 |
 | Integration | 8 | 8 |
-| **Total** | **27** | **36** |
+| **Total** | **29** | **38** |
 
 ## Trait Categories
 
 | Trait | Applied to | Runs in CI |
 | --- | --- | --- |
 | `Category=Generation` | `YamlPipelineGeneratorTests` | Yes |
-| `Category=Serialization` | `PipelineSerializationTests` | Yes |
+| `Category=Serialization` | `PipelineSerializationTests`, `TaskCatalogSerializationTests` | Yes |
 | `Category=Integration` | `ApiServiceTests`, `PipelineValidationTests`, `FixtureConversionTests` | Yes, when the repository secret is present |
 
 ## Skipped Tests

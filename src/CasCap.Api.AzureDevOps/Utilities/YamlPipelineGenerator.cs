@@ -65,8 +65,8 @@ public class YamlPipelineGenerator(
     /// <summary>Converts the definition supplied to the constructor.</summary>
     /// <remarks>
     /// The result is flattened to the simplest shape that fits, because the schema rejects a document
-    /// mixing them: several stages become <see cref="Pipeline.stages"/>, a single stage with several
-    /// jobs becomes <see cref="Pipeline.jobs"/>, and a single job becomes <see cref="Pipeline.steps"/>.
+    /// mixing them: several stages become <see cref="Pipeline.Stages"/>, a single stage with several
+    /// jobs becomes <see cref="Pipeline.Jobs"/>, and a single job becomes <see cref="Pipeline.Steps"/>.
     /// Flattening discards settings that only a stage or a job can carry, which is reported.
     /// </remarks>
     /// <returns>The generated pipeline, or null when the definition produced nothing convertible.</returns>
@@ -79,14 +79,14 @@ public class YamlPipelineGenerator(
         var steps = new List<Step>();
         if (_build is not null && _release is null)//create build pipeline
         {
-            pipeline.name = Build.BuildNumberFormat;
-            pipeline.trigger = GenTrigger();
+            pipeline.Name = Build.BuildNumberFormat;
+            pipeline.Trigger = GenTrigger();
             if (Build.Queue is not null)
-                pipeline.pool = new Pool { name = Build.Queue.Name };
+                pipeline.Pool = new Pool { name = Build.Queue.Name };
             var buildVariables = GenVariables(VariableType.Build);
-            pipeline.variables = buildVariables.IsNullOrEmpty() ? null : buildVariables;
+            pipeline.Variables = buildVariables.IsNullOrEmpty() ? null : buildVariables;
             var buildStage = GenBuildStage();
-            if (buildStage?.jobs is { Length: > 0 } buildJobs)
+            if (buildStage?.Jobs is { Length: > 0 } buildJobs)
                 if (buildJobs.Length == 1)
                 {
                     //flattening the only job to a bare step list discards its job-level settings, but a
@@ -102,7 +102,7 @@ public class YamlPipelineGenerator(
         else if (_build is null && _release is not null)//create release pipeline
         {
             var releaseVariables = GenVariables(VariableType.Release);
-            pipeline.variables = releaseVariables.IsNullOrEmpty() ? null : releaseVariables;
+            pipeline.Variables = releaseVariables.IsNullOrEmpty() ? null : releaseVariables;
             var releaseStages = GenReleaseStages();
             if (releaseStages is not null)
             {
@@ -111,12 +111,12 @@ public class YamlPipelineGenerator(
                     //flattening the only stage discards its stage-level variables, which for a release
                     //are the environment-scoped variables and variable groups
                     var stage = releaseStages[0];
-                    if (stage.variables is { Count: > 0 } stageVariables)
-                        _warnings.Add($"stage '{stage.stage}' is the only stage so it was flattened, dropping {stageVariables.Count} stage-level variable(s), see https://github.com/f2calv/yamlizr/issues/376");
-                    if (stage.jobs is { Length: 1 })
-                        steps.AddRange(stage.jobs[0].steps ?? []);
+                    if (stage.Variables is { Count: > 0 } stageVariables)
+                        _warnings.Add($"stage '{stage.Stage}' is the only stage so it was flattened, dropping {stageVariables.Count} stage-level variable(s), see https://github.com/f2calv/yamlizr/issues/376");
+                    if (stage.Jobs is { Length: 1 })
+                        steps.AddRange(stage.Jobs[0].steps ?? []);
                     else
-                        jobs.AddRange(stage.jobs ?? []);
+                        jobs.AddRange(stage.Jobs ?? []);
                 }
                 else
                     stages.AddRange(releaseStages);
@@ -124,10 +124,10 @@ public class YamlPipelineGenerator(
         }
         else
             throw new GenericException($"{nameof(YamlPipelineGenerator)} expects only either a build OR a release!");
-        if (stages.Count > 1) pipeline.stages = [.. stages];
-        else if (jobs.Count > 1) pipeline.jobs = [.. jobs];
-        else pipeline.steps = [.. steps];
-        return pipeline.stages.IsNullOrEmpty() && pipeline.jobs.IsNullOrEmpty() && pipeline.steps.IsNullOrEmpty() ? null : pipeline;
+        if (stages.Count > 1) pipeline.Stages = [.. stages];
+        else if (jobs.Count > 1) pipeline.Jobs = [.. jobs];
+        else pipeline.Steps = [.. steps];
+        return pipeline.Stages.IsNullOrEmpty() && pipeline.Jobs.IsNullOrEmpty() && pipeline.Steps.IsNullOrEmpty() ? null : pipeline;
     }
 
     private StageAzDO? GenBuildStage()
@@ -180,10 +180,10 @@ public class YamlPipelineGenerator(
         var stageVariables = GenVariables(VariableType.Build);
         return new StageAzDO
         {
-            displayName = Build.Name,
-            stage = ToIdentifier(Build.Name, "Build"),
-            variables = stageVariables.IsNullOrEmpty() ? null : stageVariables,
-            jobs = [.. jobs],
+            DisplayName = Build.Name,
+            Stage = ToIdentifier(Build.Name, "Build"),
+            Variables = stageVariables.IsNullOrEmpty() ? null : stageVariables,
+            Jobs = [.. jobs],
         };
     }
 
@@ -381,10 +381,10 @@ public class YamlPipelineGenerator(
             var stage = new StageAzDO
             {
                 // The release definition names the document, not each stage within it.
-                displayName = string.IsNullOrWhiteSpace(environment.Name) ? stageName : environment.Name,
-                jobs = [.. jobs],
-                stage = stageName,
-                variables = variables.IsNullOrEmpty() ? null : variables,
+                DisplayName = string.IsNullOrWhiteSpace(environment.Name) ? stageName : environment.Name,
+                Jobs = [.. jobs],
+                Stage = stageName,
+                Variables = variables.IsNullOrEmpty() ? null : variables,
             };
             stages.Add(stage);
         }
@@ -465,8 +465,8 @@ public class YamlPipelineGenerator(
                     displayName = displayName,
                     env = env is { Count: > 0 } ? new Dictionary<string, string>(env) : null,
                     inputs = inputs is { Count: > 0 } ? ProcessTaskInputs(new Dictionary<string, string>(inputs)) : null,
-                    task = string.IsNullOrWhiteSpace(taskObj.contributionIdentifier) ? $"{taskObj.name}@{version}"
-                        : $"{taskObj.contributionIdentifier}.{taskObj.name}@{version}",
+                    task = string.IsNullOrWhiteSpace(taskObj.ContributionIdentifier) ? $"{taskObj.Name}@{version}"
+                        : $"{taskObj.ContributionIdentifier}.{taskObj.Name}@{version}",
                     timeoutInMinutes = timeoutInMinutes,
                 }
             ];
@@ -479,7 +479,7 @@ public class YamlPipelineGenerator(
             _warnings.Add($"step '{displayName}' references task or task group {Id} v{version}, which is not installed in this organisation, and was not converted");
             return [];
         }
-        var inlinedSteps = template.steps ?? [];
+        var inlinedSteps = template.Steps ?? [];
         return _inlineTaskGroups ? [.. inlinedSteps] : GetSteps(template, inputs);
 
         Template? GetOrCreateTaskGroupTemplate()
@@ -491,17 +491,17 @@ public class YamlPipelineGenerator(
             {
                 if (!_taskGroupMap.TryGetValue(key, out var taskGroup))
                     return null;
-                template = new Template { taskGroup = taskGroup };
+                template = new Template { TaskGroup = taskGroup };
                 // Declared as a sequence for the schema, but substitution below needs a lookup.
                 Dictionary<string, string?>? parameterDefaults = null;
                 if (!taskGroup.Inputs.IsNullOrEmpty())
                 {
-                    template.parameters = new List<TemplateParameter>(taskGroup.Inputs.Count);
+                    template.Parameters = new List<TemplateParameter>(taskGroup.Inputs.Count);
                     parameterDefaults = new Dictionary<string, string?>(taskGroup.Inputs.Count);
                     foreach (var input in taskGroup.Inputs)
                     {
                         var defaultValue = string.IsNullOrWhiteSpace(input.DefaultValue) ? null : input.DefaultValue;
-                        template.parameters.Add(new TemplateParameter { name = input.Name, @default = defaultValue });
+                        template.Parameters.Add(new TemplateParameter { Name = input.Name, @default = defaultValue });
                         parameterDefaults[input.Name] = defaultValue;
                     }
                 }
@@ -511,9 +511,9 @@ public class YamlPipelineGenerator(
                     var steps = new List<Step>(taskGroupSteps.Count);
                     foreach (var taskGroupStep in taskGroupSteps)
                         steps.AddRange(GenSteps(taskGroupStep, parameterDefaults));
-                    template.steps = [.. steps];
+                    template.Steps = [.. steps];
                 }
-                template.steps ??= [];//handle when all tasks within taskgroup are disabled
+                template.Steps ??= [];//handle when all tasks within taskgroup are disabled
                 _taskGroupTemplateMap.TryAdd(key, template);
                 return template;
             }
@@ -529,11 +529,11 @@ public class YamlPipelineGenerator(
                 var inputValue = inputs[key];
 
                 //check for existance of the input key in the actual task keys (99.9% of times this is fine, however the task version in the definition could go stale...)
-                if (taskObj.inputMap is null || !taskObj.inputMap.TryGetValue(key, out var sourceInput))
+                if (taskObj.InputMap is null || !taskObj.InputMap.TryGetValue(key, out var sourceInput))
                     continue;
 
                 //strip inputs where the default value matches
-                if (inputValue == sourceInput.defaultValue)
+                if (inputValue == sourceInput.DefaultValue)
                     continue;
 
                 //strip leading/trailing whitespace from multi-line strings
@@ -544,7 +544,7 @@ public class YamlPipelineGenerator(
                     inputValue = ConvertVarsTo2Params(inputValue);
 
                 //replace task inputs with the primary/top-most task alias (if one exists)
-                newInputs.Add(sourceInput.aliases is { Count: > 0 } aliases ? aliases[0] : key, inputValue);
+                newInputs.Add(sourceInput.Aliases is { Count: > 0 } aliases ? aliases[0] : key, inputValue);
             }
 
             return newInputs.IsNullOrEmpty() ? null : newInputs;
@@ -585,7 +585,7 @@ public class YamlPipelineGenerator(
     private List<Step> GenSteps(Template template, Dictionary<string, string> inputs)
     {
         //a template is only ever built with its task group set, and a null one is what issue #177 was
-        var taskGroup = template.taskGroup ?? throw new GenericException($"{nameof(Template)} has no task group, see https://github.com/f2calv/yamlizr/issues/177");
+        var taskGroup = template.TaskGroup ?? throw new GenericException($"{nameof(Template)} has no task group, see https://github.com/f2calv/yamlizr/issues/177");
         var filename = $"{taskGroup.Name.Sanitize()}-v{taskGroup.Version.Major}.yml";
         foreach (var key in inputs.Keys.ToList())
         {

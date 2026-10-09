@@ -9,11 +9,14 @@
 public class TaskVersion
 {
     /// <summary>Major version, the only component a classic version spec pins.</summary>
-    public int major { get; set; }
+    [JsonPropertyName("major")]
+    public int Major { get; set; }
 
     /// <summary>Minor version of the installed task.</summary>
-    public int minor { get; set; }
+    [JsonPropertyName("minor")]
+    public int Minor { get; set; }
 
     /// <summary>Patch version of the installed task.</summary>
-    public int patch { get; set; }
+    [JsonPropertyName("patch")]
+    public int Patch { get; set; }
 }

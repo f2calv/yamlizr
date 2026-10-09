@@ -10,21 +10,21 @@ using System.Text.Json;
 namespace CasCap.Services;
 
 /// <inheritdoc cref="IApiService"/>
-public partial class ApiService : HttpClientBase, IApiService
+/// <param name="logger">Logger for diagnostics.</param>
+/// <param name="PAT">
+/// Personal Access Token, or an access token issued to a pipeline's build service identity.
+/// Never validated by length, because the two differ; an invalid token surfaces as a failed call.
+/// </param>
+public partial class ApiService(ILogger<ApiService> logger, string PAT)
+    : HttpClientBase(logger, CreateClient(PAT)), IApiService
 {
-    /// <summary>Creates a client authenticated against Azure DevOps.</summary>
-    /// <param name="logger">Logger for diagnostics.</param>
-    /// <param name="PAT">
-    /// Personal Access Token, or an access token issued to a pipeline's build service identity.
-    /// Never validated by length, because the two differ; an invalid token surfaces as a failed call.
-    /// </param>
-    public ApiService(ILogger<ApiService> logger, string PAT) : base()
+    private static HttpClient CreateClient(string PAT)
     {
-        _logger = logger;
-        Client = new HttpClient();
-        Client.DefaultRequestHeaders.Clear();
-        Client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-        Client.SetBasicAuth(string.Empty, PAT);
+        var client = new HttpClient();
+        client.DefaultRequestHeaders.Clear();
+        client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+        client.SetBasicAuth(string.Empty, PAT);
+        return client;
     }
 
     /// <inheritdoc/>
@@ -32,7 +32,7 @@ public partial class ApiService : HttpClientBase, IApiService
     {
         LogRetrievingExtensions(_logger, nameof(ApiService), organisationUri);
         var (result, _, _, _) = await Get<Tasks, object>($"{organisationUri}/_apis/distributedtask/tasks/", cancellationToken: cancellationToken);
-        return result?.value;
+        return result?.Value;
     }
 
     /// <inheritdoc/>

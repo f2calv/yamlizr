@@ -8,35 +8,45 @@
 public class TaskInput
 {
     /// <summary>True when the task refuses to run without a value for this input.</summary>
-    public bool required { get; set; }
+    [JsonPropertyName("required")]
+    public bool Required { get; set; }
 
     /// <summary>Permitted values, keyed by value, for an input rendered as a pick list.</summary>
-    public Dictionary<string, string>? options { get; set; }
+    [JsonPropertyName("options")]
+    public Dictionary<string, string>? Options { get; set; }
 
     /// <summary>Alternative names accepted for this input, which a classic definition may have used.</summary>
-    public List<string>? aliases { get; set; }
+    [JsonPropertyName("aliases")]
+    public List<string>? Aliases { get; set; }
 
     /// <summary>Value used when a step supplies none.</summary>
-    public string? defaultValue { get; set; }
+    [JsonPropertyName("defaultValue")]
+    public string? DefaultValue { get; set; }
 
     /// <summary>Name of the group this input is displayed under in the classic editor.</summary>
-    public string? groupName { get; set; }
+    [JsonPropertyName("groupName")]
+    public string? GroupName { get; set; }
 
     /// <summary>Help text shown beside the input, in Markdown.</summary>
-    public string? helpMarkDown { get; set; }
+    [JsonPropertyName("helpMarkDown")]
+    public string? HelpMarkDown { get; set; }
 
     /// <summary>Label shown beside the input in the classic editor.</summary>
-    public string? label { get; set; }
+    [JsonPropertyName("label")]
+    public string? Label { get; set; }
 
     /// <summary>Name the step uses to supply a value, and the key emitted under <c>inputs</c>.</summary>
-    public string? name { get; set; }
+    [JsonPropertyName("name")]
+    public string? Name { get; set; }
 
     /// <summary>Input type, for example <c>string</c>, <c>boolean</c>, <c>picklist</c> or <c>filePath</c>.</summary>
-    public string? type { get; set; }
+    [JsonPropertyName("type")]
+    public string? Type { get; set; }
 
     /// <summary>Expression controlling whether the classic editor shows this input.</summary>
-    public string? visibleRule { get; set; }
+    [JsonPropertyName("visibleRule")]
+    public string? VisibleRule { get; set; }
 
     /// <inheritdoc/>
-    public override string ToString() => $"{name}";
+    public override string ToString() => $"{Name}";
 }

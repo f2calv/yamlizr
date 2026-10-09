@@ -9,8 +9,8 @@
 public readonly struct TaskGroupVersion(Guid taskGroupId, int version)
 {
     /// <summary>Identifier of the task group.</summary>
-    public Guid taskGroupId { get; } = taskGroupId;
+    public Guid TaskGroupId { get; } = taskGroupId;
 
     /// <summary>Major version the referencing step pinned.</summary>
-    public int version { get; } = version;
+    public int Version { get; } = version;
 }
