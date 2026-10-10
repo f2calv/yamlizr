@@ -15,12 +15,21 @@
 # target under QEMU instead is often an order of magnitude slower.
 # ------------------------------------------------------------------------------
 FROM --platform=$BUILDPLATFORM mcr.microsoft.com/dotnet/sdk:10.0 AS build
-WORKDIR /src
+WORKDIR /repo
 
+COPY ["Directory.Build.props", "Directory.Packages.props", "global.json", "./"]
+
+ARG WORKLOAD=yamlizr
 ARG PROJECT=src/CasCap.DevOpsYamlizrCli/CasCap.DevOpsYamlizrCli.csproj
 ARG CONFIGURATION=Release
 ARG TARGET_FRAMEWORK=net10.0
-ARG VERSION=0.0.1
+ARG VERSION=0.0.0-local
+ARG GIT_REPOSITORY=n/a
+ARG GIT_BRANCH=n/a
+ARG GIT_COMMIT=n/a
+ARG GITHUB_WORKFLOW=n/a
+ARG GITHUB_RUN_ID=0
+ARG GITHUB_RUN_NUMBER=0
 
 # -- Dependency layer ----------------------------------------------------------
 # Copy only what restore reads, so editing a .cs file reuses the cached restore.
@@ -28,12 +37,11 @@ ARG VERSION=0.0.1
 # architecture. Configuration is passed because the CasCap.Common references are
 # packages in Release and sibling projects in Debug. Every runtime identifier is
 # restored here so each platform's publish runs offline with --no-restore.
-COPY Directory.Build.props Directory.Packages.props ./
-COPY src/CasCap.Api.AzureDevOps/CasCap.Api.AzureDevOps.csproj src/CasCap.Api.AzureDevOps/
-COPY src/CasCap.DevOpsYamlizrCli/CasCap.DevOpsYamlizrCli.csproj src/CasCap.DevOpsYamlizrCli/
+COPY --parents src/**/*.csproj ./
 RUN --mount=type=cache,target=/root/.nuget/packages,sharing=locked \
-    dotnet restore "$PROJECT" -p:Configuration="$CONFIGURATION" \
-        "-p:RuntimeIdentifiers=\"linux-x64;linux-arm64;linux-arm\""
+    dotnet restore "$PROJECT" \
+    -p:Configuration="$CONFIGURATION" \
+    "-p:RuntimeIdentifiers=\"linux-x64;linux-arm64;linux-arm\""
 
 # -- Compile layer -------------------------------------------------------------
 # The test project is excluded so a test edit never invalidates the publish layer.
@@ -58,11 +66,18 @@ esac
 dotnet publish "$PROJECT" \
     --configuration "$CONFIGURATION" \
     --framework "$TARGET_FRAMEWORK" \
+    --output /app/publish \
     --runtime "$RID" \
     --self-contained false \
-    -p:Version="$VERSION" \
     --no-restore \
-    --output /out
+    -p:Version="$VERSION" \
+    -p:SourceRevisionId="$GIT_COMMIT" \
+    -p:GitRepository="$GIT_REPOSITORY" \
+    -p:GitBranch="$GIT_BRANCH" \
+    -p:BuildWorkflow="$GITHUB_WORKFLOW" \
+    -p:BuildRunId="$GITHUB_RUN_ID" \
+    -p:BuildRunNumber="$GITHUB_RUN_NUMBER"
+ln -s "$WORKLOAD.dll" /app/publish/entrypoint.dll
 # The chiselled runtime has no shell to create the volume directory, so it is
 # created here and copied across owned by the runtime user.
 install -d /state/data
@@ -102,10 +117,10 @@ RUN --mount=type=cache,target=/root/.nuget/packages,sharing=locked \
 COPY . .
 RUN --network=none --mount=type=cache,target=/root/.nuget/packages,sharing=locked \
     dotnet test --project "$TEST_PROJECT" \
-        --configuration "$CONFIGURATION" \
-        --framework "$TARGET_FRAMEWORK" \
-        --no-restore \
-        --filter-not-trait "Category=Integration"
+    --configuration "$CONFIGURATION" \
+    --framework "$TARGET_FRAMEWORK" \
+    --no-restore \
+    --filter-not-trait "Category=Integration"
 
 # ------------------------------------------------------------------------------
 # Stage 2 of 2: final
@@ -119,9 +134,9 @@ RUN --network=none --mount=type=cache,target=/root/.nuget/packages,sharing=locke
 # this is a console application. On the runtime image it fails at startup with
 # "No frameworks were found".
 # ------------------------------------------------------------------------------
-FROM mcr.microsoft.com/dotnet/aspnet:10.0-noble-chiseled AS final
+FROM mcr.microsoft.com/dotnet/aspnet:10.0-noble-chiseled AS runtime
 WORKDIR /app
-COPY --link --from=build /out .
+COPY --link --from=build /app/publish .
 
 # Generated YAML is written here; mount a host directory over it. The directory is
 # owned by the runtime user, otherwise an anonymous volume is created root-owned
@@ -131,24 +146,18 @@ VOLUME /data
 
 # -- Provenance ----------------------------------------------------------------
 # Supplied by the CI workflow (.github/workflows/ci.yml).
+ARG WORKLOAD=yamlizr
 ARG GIT_REPOSITORY=n/a
-ENV GIT_REPOSITORY=$GIT_REPOSITORY
 ARG GIT_BRANCH=n/a
-ENV GIT_BRANCH=$GIT_BRANCH
 ARG GIT_COMMIT=n/a
-ENV GIT_COMMIT=$GIT_COMMIT
 ARG GIT_TAG=n/a
-ENV GIT_TAG=$GIT_TAG
 
 ARG GITHUB_WORKFLOW=n/a
-ENV GITHUB_WORKFLOW=$GITHUB_WORKFLOW
 ARG GITHUB_RUN_ID=0
-ENV GITHUB_RUN_ID=$GITHUB_RUN_ID
 ARG GITHUB_RUN_NUMBER=0
-ENV GITHUB_RUN_NUMBER=$GITHUB_RUN_NUMBER
 
 # https://github.com/opencontainers/image-spec/blob/main/annotations.md
-LABEL org.opencontainers.image.title="yamlizr" \
+LABEL org.opencontainers.image.title="$WORKLOAD" \
     org.opencontainers.image.description="Azure DevOps Classic Designer-to-YAML pipeline conversion tool" \
     org.opencontainers.image.source="https://github.com/f2calv/yamlizr" \
     org.opencontainers.image.licenses="MIT" \
@@ -159,4 +168,9 @@ LABEL org.opencontainers.image.title="yamlizr" \
 # as this user; setting it explicitly documents the intent.
 USER $APP_UID
 
-ENTRYPOINT ["dotnet", "yamlizr.dll"]
+ENTRYPOINT ["dotnet", "entrypoint.dll"]
+
+# ------------------------------------------------------------------------------
+# Stage 4 of 4: final
+# ------------------------------------------------------------------------------
+FROM runtime AS final

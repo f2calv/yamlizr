@@ -82,18 +82,13 @@ jobs:
       tag: ${{ needs.versioning.outputs.version }}
       platform: linux/amd64,linux/arm64,linux/arm/v7
       push-image: ${{ github.ref_name == github.event.repository.default_branch }}
-      args: --build-arg VERSION=${{ needs.versioning.outputs.version }}
       #A successful build does not prove the image runs. 3.1.6 shipped one that exited immediately
       #with "No frameworks were found". This runs on the single loaded architecture, before the
       #multi-architecture build, which then reuses those layers rather than rebuilding them.
       smoke-test: |
         VERSION=$(docker run --rm $IMAGE --version)
         echo "reported version: $VERSION"
-        #SourceLink may append +<sha> to the informational version, so match the prefix
-        case "$VERSION" in
-          "${{ needs.versioning.outputs.version }}"*) ;;
-          *) echo "::error::expected a version starting with ${{ needs.versioning.outputs.version }}, got $VERSION"; exit 1 ;;
-        esac
+        test "$VERSION" = "${{ needs.versioning.outputs.version }}"
         docker run --rm $IMAGE generate --help
 
   release:

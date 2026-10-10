@@ -6,6 +6,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <UserSecretsId>b08b24aa-70ab-4ecd-aef9-cce6d49054ec</UserSecretsId>
+    <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
   </PropertyGroup>
@@ -31,6 +32,15 @@
   <PropertyGroup Condition="'$(GITHUB_ACTIONS)' == 'true' OR '$(TF_BUILD)' == 'true'">
     <ContinuousIntegrationBuild>true</ContinuousIntegrationBuild>
   </PropertyGroup>
+
+  <ItemGroup>
+    <AssemblyMetadata Include="GitRepository" Value="$(GitRepository)" Condition="'$(GitRepository)' != ''"/>
+    <AssemblyMetadata Include="GitBranch" Value="$(GitBranch)" Condition="'$(GitBranch)' != ''"/>
+    <AssemblyMetadata Include="GitCommit" Value="$(SourceRevisionId)" Condition="'$(SourceRevisionId)' != ''"/>
+    <AssemblyMetadata Include="BuildWorkflow" Value="$(BuildWorkflow)" Condition="'$(BuildWorkflow)' != ''"/>
+    <AssemblyMetadata Include="BuildRunId" Value="$(BuildRunId)" Condition="'$(BuildRunId)' != ''"/>
+    <AssemblyMetadata Include="BuildRunNumber" Value="$(BuildRunNumber)" Condition="'$(BuildRunNumber)' != ''"/>
+  </ItemGroup>
 
   <PropertyGroup>
     <!-- IDE1006 - the YAML models name properties to match the serialised schema, not PascalCase. -->
