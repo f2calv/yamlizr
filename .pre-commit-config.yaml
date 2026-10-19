@@ -15,7 +15,6 @@ default_install_hook_types: [pre-push]
 exclude: |
   (?x)^(
     \.editorconfig|
-    \.devcontainer/devcontainer\.json|
     Directory\.Packages\.props
   )$
 
@@ -37,20 +36,24 @@ repos:
   #the git layer. A mixed-line-ending hook only rewrites worktree bytes git already treats as
   #identical, so it produces churn on Windows without protecting anything.
   - id: end-of-file-fixer
-    #Note: Visual Studio and VS Code drop the trailing newline when they format JSON on
-    #save, so these files churn on every edit and break CI. Their content is still
-    #validated by check-json5 below - only the newline check is waived.
-    exclude: |
-      (?x)(
-        appsettings.*\.json$|
-        launchSettings\.json$|
-        ^\.vscode/.*\.json$
-      )
   - id: trailing-whitespace
 - repo: https://gitlab.com/bmares/check-json5
   rev: v1.0.1
   hooks:
   - id: check-json5
+- repo: https://github.com/rbubley/mirrors-prettier
+  rev: v3.9.10
+  hooks:
+  #JSON formatting; indentation and line endings come from .editorconfig. Tool-written
+  #manifests and lockfiles are left to the tools that generate them.
+  - id: prettier
+    types_or: [json]
+    exclude: |
+      (?x)(
+        (^|/)devcontainer-lock\.json$|
+        (^|/)package-lock\.json$|
+        (^|/)\.config/dotnet-tools\.json$
+      )
 - repo: https://github.com/igorshubovych/markdownlint-cli
   rev: v0.49.1
   hooks:
