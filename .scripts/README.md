@@ -1,6 +1,18 @@
 # Repository Scripts
 
-Tooling that supports development of yamlizr but ships with none of it.
+Contributor tooling for provisioning Azure DevOps conversion fixtures and launching an editor MCP
+server. These scripts are source-only utilities, not part of the yamlizr tool or NuGet packages.
+
+## Script Catalogue
+
+| Script | Purpose | Side effects |
+| --- | --- | --- |
+| [New-FixtureDefinitions.ps1](New-FixtureDefinitions.ps1) | Creates conversion fixtures in an existing project | Remote writes unless `-WhatIf`; never queues definitions |
+| [Start-AdoMcpServer.ps1](Start-AdoMcpServer.ps1) | Supplies authentication to the editor's Azure DevOps MCP server | Launches the server through `npx`; available tools can access remote data |
+| [Start-AdoMcpServer.Tests.ps1](tests/Start-AdoMcpServer.Tests.ps1) | Pester coverage of launcher parsing and credential handling | Contributor test source, not needed for CLI use |
+
+Both executable scripts require PowerShell 7.4 or newer. Fixture provisioning requires an existing
+project and repository-bound Build definition. The MCP launcher additionally requires Node/npm.
 
 ## New-FixtureDefinitions.ps1
 
@@ -10,12 +22,13 @@ The script is the reproducible record of how those definitions were built. It ne
 
 ### Sharing a project, and the name prefix
 
-The script adds definitions to an existing project and never creates one. The fixture organisation is a GitHub-provisioned account whose single project already holds unrelated pipelines, so the fixtures have to coexist with them.
+The script adds definitions to an existing project and never creates one. Use a project where you
+are authorized to add and update fixture objects.
 
 Every object the script creates therefore carries a common prefix, `yamlizr.test.` by default. That keeps the fixtures identifiable, guarantees the script never touches anything outside the prefix, and means the conversion is driven with yamlizr's own filter:
 
 ```powershell
-yamlizr --filter yamlizr.test.
+yamlizr generate --filter yamlizr.test. --outputpath "$PWD\out" --create-directory
 ```
 
 which exercises `--filter` rather than leaving it untested.
@@ -30,10 +43,11 @@ Two tokens are in play and they are deliberately different.
 
 | Token | Scope | Used by | Stored in |
 | --- | --- | --- | --- |
-| Full access | Read and write | This script and the MCP server | `.env` as `AZURE_DEVOPS_PAT` |
+| Fixture provisioning | Required read/write scopes below | Fixture script; MCP permissions depend on tools used | Environment or `.env` as `AZURE_DEVOPS_PAT` |
 | Read only | Build, Release, Task Groups and Variable Groups read | The integration tests | User Secrets as `CasCap:AzureDevOpsOptions:PAT` |
 
-Copy [.env.example](../.env.example) to `.env` and set `AZURE_DEVOPS_PAT` to the raw token exactly as Azure DevOps issued it. No encoding, no quotes. `.env` is git-ignored and must never be committed.
+Prefer `AZURE_DEVOPS_PAT` in the process environment, or copy [.env.example](../.env.example) to
+`.env` and set it to the raw token. `.env` is git-ignored and must never be committed.
 
 The MCP server itself reads a variable named `PERSONAL_ACCESS_TOKEN` whose contents are not a personal access token but base64 of `<email>:<pat>`. Rather than push that onto whoever populates `.env`, [Start-AdoMcpServer.ps1](Start-AdoMcpServer.ps1) derives it. Restart the `ado` server from the MCP view after changing `.env`; it is read only at start-up.
 
@@ -44,7 +58,9 @@ $token = Read-Host 'PAT' -MaskInput
 ./.scripts/New-FixtureDefinitions.ps1 -OrganisationUri https://dev.azure.com/contoso -Project demo -Pat $token
 ```
 
-Required scopes for the full-access token: Project and Team (read), Build (read and execute), Release (read, write, execute and manage), Task Groups (read, create and manage), Variable Groups (read, create and manage), Deployment Groups (read and manage).
+Required provisioning scopes: Project and Team (read), Build (read and execute), Release (read,
+write, execute and manage), Task Groups (read, create and manage), Variable Groups (read, create and
+manage), Deployment Groups (read and manage). Do not grant full access merely to satisfy this list.
 
 `Code` is deliberately not required. A classic Build definition must name a repository, and the binding for a GitHub repository carries a service connection id plus a page of provider metadata that cannot be reconstructed from a repository name. The script copies that binding from an existing definition rather than enumerating Azure Repos, which would need `Code` and would fail in an organisation that has no Azure Repos repository. Nothing is ever pushed to the borrowed repository, and no fixture definition is ever queued.
 
@@ -68,10 +84,10 @@ Then apply it:
 | --- | --- | --- |
 | `-OrganisationUri` | required | Absolute organisation Uri, for example `https://dev.azure.com/contoso` |
 | `-Project` | required | Existing project to add the fixtures to. Never created |
-| `-Prefix` | `yamlizr.test.` | Applied to every object created, and the value to pass to `yamlizr --filter` |
+| `-Prefix` | `yamlizr.test.` | Applied to every object created, and the value to pass to `yamlizr generate --filter`; live fixture tests use this default prefix |
 | `-TemplateDefinition` | first definition | Existing definition whose repository binding the fixtures copy |
-| `-Pat` | from `.env` | Full-access token as a `SecureString` |
-| `-EnvFile` | `../.env` | Location of the file holding `AZURE_DEVOPS_PAT` |
+| `-Pat` | environment, then `.env` | Token with the required provisioning scopes as a `SecureString` |
+| `-EnvFile` | repository-root `.env` | Location of the file holding `AZURE_DEVOPS_PAT` |
 | `-IncludeGates` | off | Adds a pre-deployment gate, which needs a shared work item query |
 | `-IncludeUnknownTask` | off | Adds a step referencing an uninstalled task, which Azure DevOps may reject |
 
@@ -111,13 +127,19 @@ There are two routes, and they disagree in useful ways.
 
 ### Against Azure DevOps
 
-The pipeline preview endpoint parses a document and expands its templates without queueing anything, which is the only check that proves Azure DevOps will actually accept the output. `IApiService.Validate` wraps it, and `PipelineValidationTests` exercises it.
+The pipeline preview endpoint parses a document and expands its templates without queueing anything.
+[`IApiService.Validate`](../src/CasCap.Api.AzureDevOps/Abstractions/IApiService.cs) wraps it, and
+[`PipelineValidationTests`](../src/CasCap.Api.AzureDevOps.Tests/Tests/Integration/PipelineValidationTests.cs)
+exercises it. A successful preview does not prove runtime behavior or conversion fidelity.
 
 It needs an existing YAML pipeline to parse against, which is what `yamlizr.test.validation` is for. That pipeline must be **enabled**; a disabled one fails the call with `DefinitionDisabledException` rather than validating anything. Point the tests at it:
 
 ```powershell
-dotnet user-secrets set CasCap:AzureDevOpsOptions:ValidationPipelineId 19 --project src/CasCap.Api.AzureDevOps.Tests
+dotnet user-secrets set CasCap:AzureDevOpsOptions:ValidationPipelineId 1 --project src/CasCap.Api.AzureDevOps.Tests
 ```
+
+Replace the synthetic ID with the enabled pipeline's ID. See the
+[test guide](../src/CasCap.Api.AzureDevOps.Tests/README.md) for all prerequisites and skip conditions.
 
 One limitation: a relative `template:` reference resolves against the target pipeline's repository, not the submitted document. Generated YAML that references a task group template therefore only validates when those templates are committed, or when it was generated with `--inline`.
 

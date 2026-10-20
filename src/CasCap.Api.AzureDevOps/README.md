@@ -1,79 +1,139 @@
 # CasCap.Api.AzureDevOps
 
-Azure DevOps helper library used by the [yamlizr](https://github.com/f2calv/yamlizr) global tool. It
-reads classic Designer Build and Release Definitions through the Azure DevOps REST API and converts
-them into Azure Pipelines YAML objects.
+Azure DevOps client and conversion library for .NET applications migrating Classic Designer
+Build and Release definitions to Azure Pipelines YAML. It supplies the models and generator behind
+the [yamlizr CLI](https://github.com/f2calv/yamlizr).
 
-## Purpose
+## Installation
 
-The library owns everything that is not command line presentation:
+```shell
+dotnet add package CasCap.Api.AzureDevOps
+```
 
-- an Azure DevOps REST client for the endpoints the official .NET client libraries do not cover
-- models for the Azure DevOps task/extension catalogue
-- models for the subset of the Azure Pipelines YAML schema that this tool emits
-- the generator that maps a classic definition onto those YAML models
+The [NuGet package](https://www.nuget.org/packages/CasCap.Api.AzureDevOps) targets
+`net8.0`, `net9.0` and `net10.0`. Use the CLI for ready-made bulk conversion; the library leaves
+definition retrieval, catalogue construction, credential acquisition and file output to your host.
 
-## Services
+## Quick Start
 
-| Type | Purpose |
+In a .NET console application, retrieve the installed task catalogue. Supply the token through
+your host's secret store or environment, not source code:
+
+```csharp
+using CasCap.Abstractions;
+using CasCap.Services;
+using Microsoft.Extensions.Logging.Abstractions;
+
+var token = Environment.GetEnvironmentVariable("AZURE_DEVOPS_PAT")
+    ?? throw new InvalidOperationException("Set AZURE_DEVOPS_PAT.");
+IApiService api = new ApiService(NullLogger<ApiService>.Instance, token);
+var tasks = await api.GetAllExtensions("https://dev.azure.com/example-org");
+Console.WriteLine($"Installed tasks: {tasks?.Count ?? 0}");
+```
+
+[`IApiService`](https://github.com/f2calv/yamlizr/blob/main/src/CasCap.Api.AzureDevOps/Abstractions/IApiService.cs)
+is implemented by
+[`ApiService`](https://github.com/f2calv/yamlizr/blob/main/src/CasCap.Api.AzureDevOps/Services/ApiService.cs).
+It accepts a logger and token directly; there is no package-specific DI registration extension.
+The client uses Basic authentication with the token and an empty username. Use a valid, authorized,
+unexpired PAT or pipeline access token and avoid logging it.
+
+## Public API
+
+| Contract | Consumer responsibility |
 | --- | --- |
-| `IApiService` / `ApiService` | Retrieves the installed extension catalogue for an organisation and validates generated YAML against the preview-run endpoint. |
+| [`IApiService.GetAllExtensions`](https://github.com/f2calv/yamlizr/blob/main/src/CasCap.Api.AzureDevOps/Abstractions/IApiService.cs) | Pass the organization URI without a trailing slash; the result can be null. |
+| [`IApiService.Validate`](https://github.com/f2calv/yamlizr/blob/main/src/CasCap.Api.AzureDevOps/Abstractions/IApiService.cs) | Supply project, an existing enabled YAML pipeline ID, YAML and optional cancellation token. Returns a validity result, expanded YAML or rejection message. |
+| [`YamlPipelineGenerator`](https://github.com/f2calv/yamlizr/blob/main/src/CasCap.Api.AzureDevOps/Utilities/YamlPipelineGenerator.cs) | Supply exactly one full classic build or release definition, installed-task map by ID/major version, task-group map, shared template map and variable-group map. Select inline behavior and release phase type explicitly. |
+| [`Pipeline`](https://github.com/f2calv/yamlizr/blob/main/src/CasCap.Api.AzureDevOps/Models/Yaml/Pipeline.cs) | Call `ToString()` to serialize the generated model. |
+| [`Template`](https://github.com/f2calv/yamlizr/blob/main/src/CasCap.Api.AzureDevOps/Models/Yaml/Template.cs) | Serialize and persist collected task-group templates when not inlining. |
+| [`TaskObj`](https://github.com/f2calv/yamlizr/blob/main/src/CasCap.Api.AzureDevOps/Models/AzureDevOps/TaskObj.cs) | Populate `InputMap` from the task's named inputs before generating. |
 
-## Utilities
+For a complete catalogue-to-generator call path, see
+[`GenerateCommand`](https://github.com/f2calv/yamlizr/blob/main/src/CasCap.DevOpsYamlizrCli/Commands/GenerateCommand.cs).
+For offline definition construction and map shapes, see
+[`YamlizrTestData`](https://github.com/f2calv/yamlizr/blob/main/src/CasCap.Api.AzureDevOps.Tests/Tests/YamlizrTestData.cs).
 
-| Type | Purpose |
-| --- | --- |
-| `YamlPipelineGenerator` | Converts a `BuildDefinition` **or** a `ReleaseDefinition` into a `Pipeline`, and reports what it could not convert through `Warnings`. |
-| `LiteralMultilineEventEmitter` | YamlDotNet event emitter which renders multi-line strings as literal block scalars rather than escaped single lines. |
+## Behavior and Limits
 
-`YamlPipelineGenerator.Warnings` is the library's contract for conversion fidelity: any classic
-construct that cannot be represented is recorded there rather than dropped silently. Callers are
-expected to surface it. See [issue #182](https://github.com/f2calv/yamlizr/issues/182).
+- One generator instance handles one definition. Read `Warnings` only after `GenPipeline()` returns
+  and surface them to the caller. It returns null when nothing is convertible and throws if both
+  definition arguments, or neither, are supplied.
+- Generated YAML is **not production ready**. Unsupported triggers, artifacts, approvals and gates
+  need manual work; flattening can discard stage/job settings. Review the
+  [conversion coverage](https://github.com/f2calv/yamlizr/blob/main/README.md#conversion-coverage).
+  Warnings do not establish semantic equivalence.
+- Preview validation parses YAML without queueing a run. Relative template references resolve
+  against the target pipeline's repository; commit templates there or generate with task groups
+  inlined. A successful preview does not establish runtime correctness or preserved approvals.
+- Both REST methods accept cancellation. Preview HTTP failures become an invalid result; transport
+  failures can still throw. No conversion-level retry or rate-limit policy is implemented here.
+  Your host must control concurrency and handle Azure DevOps access policies.
+- Definitions, generated YAML and diagnostic messages can carry sensitive project content.
+  Protect files and log sinks; the library is not a secret-redaction layer.
 
 ## Configuration
 
-`AzureDevOpsOptions` binds the `CasCap:AzureDevOpsOptions` section.
+[`AzureDevOpsOptions`](https://github.com/f2calv/yamlizr/blob/main/src/CasCap.Api.AzureDevOps/Models/AzureDevOpsOptions.cs)
+defines the `CasCap:AzureDevOpsOptions` section used by the CLI and tests. Binding alone does not
+construct a client or enforce its data annotations; the consuming host supplies validated values.
 
 | Property | Purpose |
 | --- | --- |
-| `PAT` | Personal Access Token, or an access token issued to a pipeline's build service identity. |
-| `OrganisationUri` | Absolute Uri of the Azure DevOps organisation. |
-| `Project` | Name of the team project to convert. |
+| [`PAT`](https://github.com/f2calv/yamlizr/blob/main/src/CasCap.Api.AzureDevOps/Models/AzureDevOpsOptions.cs) | Personal Access Token, or an access token issued to a pipeline's build service identity. |
+| [`OrganisationUri`](https://github.com/f2calv/yamlizr/blob/main/src/CasCap.Api.AzureDevOps/Models/AzureDevOpsOptions.cs) | Absolute Uri of the Azure DevOps organisation. |
+| [`Project`](https://github.com/f2calv/yamlizr/blob/main/src/CasCap.Api.AzureDevOps/Models/AzureDevOpsOptions.cs) | Name of the team project to convert. |
+| [`ValidationPipelineId`](https://github.com/f2calv/yamlizr/blob/main/src/CasCap.Api.AzureDevOps/Models/AzureDevOpsOptions.cs) | Optional enabled YAML pipeline ID used by validation callers, not bulk CLI generation. |
 
-## Class Hierarchy
+## Configuration Examples
 
-```mermaid
-classDiagram
-    class Pipeline
-    class Template
-    class StageAzDO
-    class TriggerAzDO
-    class YamlPipelineGenerator
-    class ApiService
+Minimal non-secret connection settings (the token is supplied separately):
 
-    Pipeline <|-- Template
-    Pipeline *-- StageAzDO
-    Pipeline *-- TriggerAzDO
-    YamlPipelineGenerator ..> Pipeline : creates
-    YamlPipelineGenerator ..> Template : creates
-    ApiService ..> YamlPipelineGenerator : supplies task catalogue
+```json
+{
+  "CasCap": {
+    "AzureDevOpsOptions": {
+      "OrganisationUri": "https://dev.azure.com/example-org",
+      "Project": "ExampleProject"
+    }
+  }
+}
 ```
 
-## Dependencies
+Validation override fragment, merged into that section:
 
-| NuGet package | Purpose |
-| --- | --- |
-| `AzurePipelinesToGitHubActionsConverter.Core` | Azure Pipelines YAML schema types and the GitHub Actions conversion. |
-| `CasCap.Common.Extensions` | Shared collection and string helpers. |
-| `CasCap.Common.Net` | `HttpClientBase`, the REST client base type. |
-| `Microsoft.TeamFoundation.DistributedTask.WebApi` | Task group and variable group clients. |
-| `Microsoft.TeamFoundationServer.Client` | Build definition client. |
-| `Microsoft.VisualStudio.Services.Client` | Connection and credential types. |
-| `Microsoft.VisualStudio.Services.Release.Client` | Release definition client. |
-| `Newtonsoft.Json` | Required by the Azure DevOps client libraries. |
-| `semver` | Parses classic task version specs such as `2.*`. |
-| `YamlDotNet` | YAML serialization. |
+```json
+{
+  "ValidationPipelineId": 1
+}
+```
 
-| Project reference | Configuration |
-| --- | --- |
-| `CasCap.Common.Extensions`, `CasCap.Common.Net` | Referenced as projects in `Debug`, as packages in `Release`. |
+Replace the synthetic ID with a real enabled pipeline. See Microsoft's
+[PAT guidance](https://learn.microsoft.com/en-us/azure/devops/organizations/accounts/use-personal-access-tokens-to-authenticate?view=azure-devops)
+and the CLI's [permission guidance](https://github.com/f2calv/yamlizr/blob/main/README.md#personal-access-token).
+
+## Data Flow
+
+The host retrieves definitions using Azure DevOps SDK clients and supplies catalogues to the
+generator; the REST wrapper does not itself perform bulk conversion.
+
+```mermaid
+flowchart LR
+  Host([Consuming host]) --> SDK[Azure DevOps SDK clients]
+  Host --> API[ApiService]
+  SDK --> Inputs[Definitions and groups]
+  API --> Tasks[Installed tasks]
+  Inputs --> Gen[YamlPipelineGenerator]
+  Tasks --> Gen
+  Gen --> Result[Pipeline, templates and warnings]
+  Result --> Files[(Host-owned output)]
+  Files -. optional preview .-> API
+  classDef owned fill:#e8f0fe,stroke:#315da8
+  class API,Gen,Result owned
+```
+
+Essential usage is described above; package renderers may not render Mermaid.
+
+## License
+
+[MIT License](https://github.com/f2calv/yamlizr/blob/main/LICENSE).
