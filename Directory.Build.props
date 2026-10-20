@@ -20,7 +20,7 @@
     <!-- <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile> -->
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
     <PackageProjectUrl>https://github.com/f2calv/yamlizr</PackageProjectUrl>
-    <PackageLicenseExpression>Unlicense</PackageLicenseExpression>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageReleaseNotes>See https://github.com/f2calv/yamlizr/releases</PackageReleaseNotes>
     <IncludeSymbols>true</IncludeSymbols>
