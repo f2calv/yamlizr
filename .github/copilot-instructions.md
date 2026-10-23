@@ -21,9 +21,11 @@ to review and edit the result. That does not license silent data loss.
   dependency.
 - Generated YAML is not "production ready" and the README must keep saying so.
 
-## Known Transitive Advisories
+## Azure DevOps Dependency Override
 
-The Azure DevOps client libraries drag in `System.Drawing.Common` 5.0.0 (GHSA-rxg9-xrhp-64gj,
-critical, raising `NU1904`) and `System.Security.Cryptography.Xml` 5.0.0 (GHSA-vh55-786g-wjwj,
-moderate, raising `NU1902`). There is no direct reference to remove and no upstream release that
-drops them.
+The current Azure DevOps clients (`20.256.2`) request `System.Security.Cryptography.Xml` 5.0.0
+through their WCF dependencies, also bringing `System.Drawing.Common` 5.0.0 into the graph.
+The library explicitly references supported XML `10.0.13` to address GHSA-vh55-786g-wjwj and
+remove the vulnerable Drawing dependency path (GHSA-rxg9-xrhp-64gj).
+Reassess the colocated project-file TODO when updating those clients; remove the override only
+after verifying the resolved dependency graph and offline tests across all target frameworks.

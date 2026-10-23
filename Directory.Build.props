@@ -45,16 +45,10 @@
   <PropertyGroup>
     <!-- IDE1006 - the YAML models name properties to match the serialised schema, not PascalCase. -->
     <!-- NETSDK1233 - Targeting .NET 10.0 or higher in Visual Studio 2022 XX.XX is not supported. -->
-    <!-- Note: NU190x NuGet audit warnings are deliberately NOT suppressed - see the known
-         transitive advisories section of .github/copilot-instructions.md. -->
+    <!-- NuGet audit warnings remain build errors; see the Azure DevOps dependency override
+         in .github/copilot-instructions.md. -->
     <NoWarn>IDE1006;NETSDK1233</NoWarn>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
-    <!-- NU190x report advisories in transitive Azure DevOps client dependencies. They stay visible
-         as warnings rather than being suppressed or made fatal, because the warning is the only
-         signal that an upstream fix has landed, and a newly published advisory is not a reason to
-         fail a build that has not changed. See the known transitive advisories section of
-         .github/copilot-instructions.md. -->
-    <WarningsNotAsErrors>NU1901;NU1902;NU1903;NU1904</WarningsNotAsErrors>
   </PropertyGroup>
 
   <PropertyGroup>

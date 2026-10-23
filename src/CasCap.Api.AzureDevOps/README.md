@@ -14,6 +14,11 @@ The [NuGet package](https://www.nuget.org/packages/CasCap.Api.AzureDevOps) targe
 `net8.0`, `net9.0` and `net10.0`. Use the CLI for ready-made bulk conversion; the library leaves
 definition retrieval, catalogue construction, credential acquisition and file output to your host.
 
+The checkout explicitly references supported `System.Security.Cryptography.Xml` to override the
+Azure DevOps SDK's older transitive version. This also removes its obsolete drawing dependency
+chain. Consumers should not downgrade that dependency; dependency resolution and offline tests
+do not establish live Azure DevOps connectivity.
+
 ## Quick Start
 
 In a .NET console application, retrieve the installed task catalogue. Supply the token through
