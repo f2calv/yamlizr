@@ -220,12 +220,14 @@ public class YamlPipelineGenerator(
         if (!unconverted.IsNullOrEmpty())
             _warnings.Add($"{unconverted.Count} trigger(s) of type {string.Join(", ", unconverted.Select(p => p.TriggerType).Distinct())} are not converted, see https://github.com/f2calv/yamlizr/issues/182");
         var trig = Build.Triggers.OfType<ContinuousIntegrationTrigger>().FirstOrDefault();
-        return trig is null ? null : new TriggerAzDO
-        {
-            branches = trig.BranchFilters.IsNullOrEmpty() ? null : GenBranchFilters(trig.BranchFilters),
-            paths = trig.PathFilters.IsNullOrEmpty() ? null : GenPathFilters(trig.PathFilters),
-            batch = trig.BatchChanges,
-        };
+        if (trig is null) return null;
+
+        var trigger = new TriggerAzDO { batch = trig.BatchChanges };
+        if (!trig.BranchFilters.IsNullOrEmpty())
+            trigger.branches = GenBranchFilters(trig.BranchFilters);
+        if (!trig.PathFilters.IsNullOrEmpty())
+            trigger.paths = GenPathFilters(trig.PathFilters);
+        return trigger;
     }
 
     private static IncludeExclude GenBranchFilters(List<string> branchFilters)
@@ -235,7 +237,7 @@ public class YamlPipelineGenerator(
         foreach (var branch in branchFilters)
         {
             var value = branch.Substring(1).Replace("refs/heads/", string.Empty);
-            if (branch.StartsWith("+")) include.Add(value); else exclude.Add(value);
+            if (branch.StartsWith('+')) include.Add(value); else exclude.Add(value);
         }
         return new IncludeExclude
         {
@@ -254,7 +256,7 @@ public class YamlPipelineGenerator(
             if (value.Length == 2 && path[1] == '/') continue;
             if (value.StartsWith("+/")) value = "+" + value.Substring(2);
             if (value.StartsWith("-/")) value = "-" + value.Substring(2);
-            if (value.StartsWith("+"))
+            if (value.StartsWith('+'))
                 include.Add(value.Substring(1));
             else
                 exclude.Add(value.Substring(1));

@@ -26,7 +26,8 @@ public class YamlPipelineGeneratorTests
 
         var pipeline = YamlizrTestData.Generator(build).GenPipeline();
 
-        Assert.NotNull(pipeline?.Trigger);
+        Assert.NotNull(pipeline);
+        Assert.NotNull(pipeline.Trigger);
         Assert.True(pipeline.Trigger.batch);
         Assert.NotNull(pipeline.Trigger.branches);
         Assert.Equal(["main"], pipeline.Trigger.branches.include);
@@ -52,7 +53,8 @@ public class YamlPipelineGeneratorTests
 
         var pipeline = YamlizrTestData.Generator(build).GenPipeline();
 
-        Assert.NotNull(pipeline?.Trigger);
+        Assert.NotNull(pipeline);
+        Assert.NotNull(pipeline.Trigger);
         Assert.Null(pipeline.Trigger.branches);
         if (rootPathsOnly)
         {
