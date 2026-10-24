@@ -2,6 +2,7 @@ using AzurePipelinesToGitHubActionsConverter.Core.AzurePipelines;
 using CasCap.Common.Exceptions;
 using CasCap.Models;
 using CasCap.Utilities;
+using Microsoft.TeamFoundation.Build.WebApi;
 using Microsoft.TeamFoundation.DistributedTask.WebApi;
 using Microsoft.VisualStudio.Services.ReleaseManagement.WebApi;
 using System.Collections.Concurrent;
@@ -12,6 +13,57 @@ namespace CasCap.Api.AzureDevOps.Tests.Unit;
 [Trait("Category", "Generation")]
 public class YamlPipelineGeneratorTests
 {
+    [Fact]
+    public void GenPipeline_TriggerFilters_PreserveWireValues()
+    {
+        var build = YamlizrTestData.BuildDefinition(YamlizrTestData.Step(YamlizrTestData.KnownTaskId));
+        build.Triggers.Add(new ContinuousIntegrationTrigger
+        {
+            BatchChanges = true,
+            BranchFilters = { "+refs/heads/main", "-refs/heads/archive/*" },
+            PathFilters = { "+/", "-/", "+/src/*", "-/docs/*", "+tests/*" },
+        });
+
+        var pipeline = YamlizrTestData.Generator(build).GenPipeline();
+
+        Assert.NotNull(pipeline?.Trigger);
+        Assert.True(pipeline.Trigger.batch);
+        Assert.NotNull(pipeline.Trigger.branches);
+        Assert.Equal(["main"], pipeline.Trigger.branches.include);
+        Assert.Equal(["archive/*"], pipeline.Trigger.branches.exclude);
+        Assert.NotNull(pipeline.Trigger.paths);
+        Assert.Equal(["src/*", "tests/*"], pipeline.Trigger.paths.include);
+        Assert.Equal(["docs/*"], pipeline.Trigger.paths.exclude);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void GenPipeline_EmptyTriggerFilters_PreserveOmission(bool rootPathsOnly)
+    {
+        var build = YamlizrTestData.BuildDefinition(YamlizrTestData.Step(YamlizrTestData.KnownTaskId));
+        var trigger = new ContinuousIntegrationTrigger();
+        if (rootPathsOnly)
+        {
+            trigger.PathFilters.Add("+/");
+            trigger.PathFilters.Add("-/");
+        }
+        build.Triggers.Add(trigger);
+
+        var pipeline = YamlizrTestData.Generator(build).GenPipeline();
+
+        Assert.NotNull(pipeline?.Trigger);
+        Assert.Null(pipeline.Trigger.branches);
+        if (rootPathsOnly)
+        {
+            Assert.NotNull(pipeline.Trigger.paths);
+            Assert.Null(pipeline.Trigger.paths.include);
+            Assert.Null(pipeline.Trigger.paths.exclude);
+        }
+        else
+            Assert.Null(pipeline.Trigger.paths);
+    }
+
     [Fact]
     public void GenPipeline_InstalledTask_EmitsStep()
     {

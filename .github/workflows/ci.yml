@@ -87,8 +87,9 @@ jobs:
       #multi-architecture build, which then reuses those layers rather than rebuilding them.
       smoke-test: |
         VERSION=$(docker run --rm $IMAGE --version)
+        EXPECTED_VERSION='${{ needs.versioning.outputs.version }}'
         echo "reported version: $VERSION"
-        test "$VERSION" = "${{ needs.versioning.outputs.version }}"
+        test "$VERSION" = "${EXPECTED_VERSION,,}"
         docker run --rm $IMAGE generate --help
 
   release:

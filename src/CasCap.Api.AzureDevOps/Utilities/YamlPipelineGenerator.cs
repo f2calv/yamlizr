@@ -146,9 +146,7 @@ public class YamlPipelineGenerator(
         var j = 0;
         foreach (var phase in phases)
         {
-            var steps = new List<Step>(phase.Steps.Count);
-            foreach (var step in phase.Steps)
-                if (step.Enabled) steps.AddRange(GenSteps(step));
+            var steps = phase.Steps.Where(step => step.Enabled).SelectMany(step => GenSteps(step)).ToList();
             if (steps.IsNullOrEmpty()) continue;
             //a classic phase can have no name, which used to throw from Sanitize().Replace()
             var phaseName = string.IsNullOrWhiteSpace(phase.Name) ? $"Phase {j + 1}" : phase.Name;
@@ -222,43 +220,50 @@ public class YamlPipelineGenerator(
         if (!unconverted.IsNullOrEmpty())
             _warnings.Add($"{unconverted.Count} trigger(s) of type {string.Join(", ", unconverted.Select(p => p.TriggerType).Distinct())} are not converted, see https://github.com/f2calv/yamlizr/issues/182");
         var trig = Build.Triggers.OfType<ContinuousIntegrationTrigger>().FirstOrDefault();
-        if (trig is null) return null;
+        return trig is null ? null : new TriggerAzDO
+        {
+            branches = trig.BranchFilters.IsNullOrEmpty() ? null : GenBranchFilters(trig.BranchFilters),
+            paths = trig.PathFilters.IsNullOrEmpty() ? null : GenPathFilters(trig.PathFilters),
+            batch = trig.BatchChanges,
+        };
+    }
 
-        var trigger = new TriggerAzDO();
-        if (!trig.BranchFilters.IsNullOrEmpty())
+    private static IncludeExclude GenBranchFilters(List<string> branchFilters)
+    {
+        var include = new List<string>(branchFilters.Count);
+        var exclude = new List<string>(branchFilters.Count);
+        foreach (var branch in branchFilters)
         {
-            trigger.branches = new IncludeExclude();
-            var include = new List<string>(trig.BranchFilters.Count);
-            var exclude = new List<string>(trig.BranchFilters.Count);
-            foreach (var branch in trig.BranchFilters)
-            {
-                var b = branch.Substring(1).Replace("refs/heads/", string.Empty);
-                if (branch.StartsWith("+")) include.Add(b); else exclude.Add(b);
-            }
-            if (!include.IsNullOrEmpty()) trigger.branches.include = [.. include];
-            if (!exclude.IsNullOrEmpty()) trigger.branches.exclude = [.. exclude];
+            var value = branch.Substring(1).Replace("refs/heads/", string.Empty);
+            if (branch.StartsWith("+")) include.Add(value); else exclude.Add(value);
         }
-        if (!trig.PathFilters.IsNullOrEmpty())
+        return new IncludeExclude
         {
-            trigger.paths = new IncludeExclude();
-            var include = new List<string>(trig.PathFilters.Count);
-            var exclude = new List<string>(trig.PathFilters.Count);
-            foreach (var path in trig.PathFilters)
-            {
-                var _path = path;
-                if (_path.Length == 2 && path[1] == '/') continue;
-                if (_path.StartsWith("+/")) _path = "+" + _path.Substring(2);
-                if (_path.StartsWith("-/")) _path = "-" + _path.Substring(2);
-                if (_path.StartsWith("+"))
-                    include.Add(_path.Substring(1));
-                else
-                    exclude.Add(_path.Substring(1));
-            }
-            if (!include.IsNullOrEmpty()) trigger.paths.include = [.. include];
-            if (!exclude.IsNullOrEmpty()) trigger.paths.exclude = [.. exclude];
+            include = include.IsNullOrEmpty() ? null : [.. include],
+            exclude = exclude.IsNullOrEmpty() ? null : [.. exclude],
+        };
+    }
+
+    private static IncludeExclude GenPathFilters(List<string> pathFilters)
+    {
+        var include = new List<string>(pathFilters.Count);
+        var exclude = new List<string>(pathFilters.Count);
+        foreach (var path in pathFilters)
+        {
+            var value = path;
+            if (value.Length == 2 && path[1] == '/') continue;
+            if (value.StartsWith("+/")) value = "+" + value.Substring(2);
+            if (value.StartsWith("-/")) value = "-" + value.Substring(2);
+            if (value.StartsWith("+"))
+                include.Add(value.Substring(1));
+            else
+                exclude.Add(value.Substring(1));
         }
-        trigger.batch = trig.BatchChanges;
-        return trigger;
+        return new IncludeExclude
+        {
+            include = include.IsNullOrEmpty() ? null : [.. include],
+            exclude = exclude.IsNullOrEmpty() ? null : [.. exclude],
+        };
     }
 
     private List<Variable> GenVariables(VariableType type, ReleaseDefinitionEnvironment? environment = null)
@@ -364,7 +369,7 @@ public class YamlPipelineGenerator(
         var stages = new List<StageAzDO>();
         foreach (var environment in Release.Environments)
         {
-            var jobs = GenJobs(environment);
+            var jobs = GenReleaseJobs(environment);
             if (jobs.IsNullOrEmpty()) continue;
 
             //TODO(#374): approvals and gates have no in-document YAML equivalent. The stage needs to
@@ -391,51 +396,51 @@ public class YamlPipelineGenerator(
         if (stages.Count > 1)
             _warnings.Add($"{stages.Count} stages were generated without dependsOn, so they will run concurrently rather than in the classic environment order, see https://github.com/f2calv/yamlizr/issues/182");
         return stages.IsNullOrEmpty() ? null : [.. stages];
+    }
 
-        static bool HasApprovals(ReleaseDefinitionEnvironment environment)
-            //classic environments always carry an automated approval, only a real gate is worth reporting
-            => environment.PreDeployApprovals?.Approvals?.Any(p => !p.IsAutomated) == true
-                || environment.PostDeployApprovals?.Approvals?.Any(p => !p.IsAutomated) == true
-                || environment.PreDeploymentGates?.Gates?.Count > 0
-                || environment.PostDeploymentGates?.Gates?.Count > 0;
+    private static bool HasApprovals(ReleaseDefinitionEnvironment environment)
+        //classic environments always carry an automated approval, only a real gate is worth reporting
+        => environment.PreDeployApprovals?.Approvals?.Any(p => !p.IsAutomated) == true
+            || environment.PostDeployApprovals?.Approvals?.Any(p => !p.IsAutomated) == true
+            || environment.PreDeploymentGates?.Gates?.Count > 0
+            || environment.PostDeploymentGates?.Gates?.Count > 0;
 
-        List<Job> GenJobs(ReleaseDefinitionEnvironment environment)
+    private List<Job> GenReleaseJobs(ReleaseDefinitionEnvironment environment)
+    {
+        var jobName = string.Empty;
+        var jobs = new List<Job>();
+        var usedJobIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        //TODO(#182): --phasetype selects a single deploy phase type, the rest are skipped.
+        //https://github.com/f2calv/yamlizr/issues/182
+        var skipped = environment.DeployPhases.Count(p => p.PhaseType != _phaseType);
+        if (skipped > 0)
+            _warnings.Add($"stage '{environment.Name}' has {skipped} deploy phase(s) that are not {_phaseType} and are not converted, see https://github.com/f2calv/yamlizr/issues/182");
+        var j = 0;
+        foreach (var phase in environment.DeployPhases.Where(p => p.PhaseType == _phaseType).OrderBy(p => p.Rank))
         {
-            var jobName = string.Empty;
-            var jobs = new List<Job>();
-            var usedJobIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            //TODO(#182): --phasetype selects a single deploy phase type, the rest are skipped.
-            //https://github.com/f2calv/yamlizr/issues/182
-            var skipped = environment.DeployPhases.Count(p => p.PhaseType != _phaseType);
-            if (skipped > 0)
-                _warnings.Add($"stage '{environment.Name}' has {skipped} deploy phase(s) that are not {_phaseType} and are not converted, see https://github.com/f2calv/yamlizr/issues/182");
-            var j = 0;
-            foreach (var phase in environment.DeployPhases.Where(p => p.PhaseType == _phaseType).OrderBy(p => p.Rank))
+            var steps = new List<Step>(phase.WorkflowTasks.Count);
+            foreach (var task in phase.WorkflowTasks)
+                if (task.Enabled)
+                    steps.AddRange(GenSteps(task));
+            if (steps.IsNullOrEmpty()) continue;
+            var deploymentInput = phase.GetDeploymentInput();
+            //a classic deploy phase can have no name, which used to throw from Sanitize().Replace()
+            var phaseName = string.IsNullOrWhiteSpace(phase.Name) ? $"Phase {j + 1}" : phase.Name;
+            var job = new Job
             {
-                var steps = new List<Step>(phase.WorkflowTasks.Count);
-                foreach (var task in phase.WorkflowTasks)
-                    if (task.Enabled)
-                        steps.AddRange(GenSteps(task));
-                if (steps.IsNullOrEmpty()) continue;
-                var deploymentInput = phase.GetDeploymentInput();
-                //a classic deploy phase can have no name, which used to throw from Sanitize().Replace()
-                var phaseName = string.IsNullOrWhiteSpace(phase.Name) ? $"Phase {j + 1}" : phase.Name;
-                var job = new Job
-                {
-                    cancelTimeoutInMinutes = deploymentInput.JobCancelTimeoutInMinutes,
-                    condition = GenCondition(deploymentInput.Condition),
-                    dependsOn = string.IsNullOrWhiteSpace(jobName) ? null : [jobName],
-                    displayName = phaseName,
-                    job = ToUniqueIdentifier(phaseName, $"Phase_{j + 1}", usedJobIds),
-                    steps = [.. steps],
-                    timeoutInMinutes = deploymentInput.TimeoutInMinutes,
-                };
-                jobs.Add(job);
-                jobName = job.job;
-                j++;
-            }
-            return jobs;
+                cancelTimeoutInMinutes = deploymentInput.JobCancelTimeoutInMinutes,
+                condition = GenCondition(deploymentInput.Condition),
+                dependsOn = string.IsNullOrWhiteSpace(jobName) ? null : [jobName],
+                displayName = phaseName,
+                job = ToUniqueIdentifier(phaseName, $"Phase_{j + 1}", usedJobIds),
+                steps = [.. steps],
+                timeoutInMinutes = deploymentInput.TimeoutInMinutes,
+            };
+            jobs.Add(job);
+            jobName = job.job;
+            j++;
         }
+        return jobs;
     }
 
     private List<Step> GenSteps(BuildDefinitionStep task)
