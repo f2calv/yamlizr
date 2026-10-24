@@ -8,9 +8,11 @@ namespace CasCap.Models;
 /// </remarks>
 public class Tasks
 {
-    /// <summary>Number of tasks returned in <see cref="value"/>.</summary>
-    public int count { get; set; }
+    /// <summary>Number of tasks returned in <see cref="Value"/>.</summary>
+    [JsonPropertyName("count")]
+    public int Count { get; set; }
 
     /// <summary>Every task installed in the organisation, both in-box and extension supplied.</summary>
-    public List<TaskObj>? value { get; set; }
+    [JsonPropertyName("value")]
+    public List<TaskObj>? Value { get; set; }
 }

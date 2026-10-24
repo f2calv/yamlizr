@@ -12,20 +12,13 @@ using System.Collections.Concurrent;
 namespace CasCap.Commands;
 
 [Command(Description = "Generate Azure DevOps YAML pipelines from classic definitions.")]
-class GenerateCommand : CommandBase
+internal class GenerateCommand(
+    ILogger<GenerateCommand> logger,
+    IOptions<AzureDevOpsOptions> azureDevOpsOptions,
+    ILoggerFactory loggerFactory,
+    IConsole console) : CommandBase(logger, loggerFactory, console)
 {
-    private readonly IOptions<AzureDevOpsOptions> _azureDevOpsOptions;
-
-    public GenerateCommand(
-        ILogger<GenerateCommand> logger,
-        IOptions<AzureDevOpsOptions> azureDevOpsOptions,
-        ILoggerFactory loggerFactory,
-        IConsole console
-        )
-        : base(logger, loggerFactory, console)
-    {
-        _azureDevOpsOptions = azureDevOpsOptions;
-    }
+    private readonly IOptions<AzureDevOpsOptions> _azureDevOpsOptions = azureDevOpsOptions;
 
     //every option below is absent unless the user passes it, and each is one candidate among the
     //command line, configuration and the predefined pipeline variables
@@ -33,40 +26,40 @@ class GenerateCommand : CommandBase
     public string? PAT { get; }
 
     [Option("-org|--organisation", Description = "Azure DevOps Organisation Uri.")]
-    public string? organisationUri { get; }
+    public string? OrganisationUri { get; }
 
     [Option("-proj|--project", Description = "Azure DevOps Project Name.")]
-    public string? project { get; }
+    public string? ProjectName { get; }
 
     [Option("-out|--outputpath", Description = "Absolute path to YAML output folder [default: Current Directory]")]
-    public string? outputPath { get; set; }
+    public string? OutputPath { get; set; }
 
     [Option("--filter", Description = "Build/Release definition name filter, a case-insensitive 'contains' match rather than a wildcard pattern.")]
-    public string? filter { get; }
+    public string? Filter { get; }
 
     [Option("--phasetype", Description = "Filter deployment phases [default: AgentBasedDeployment]")]
-    public DeployPhaseTypes phaseType { get; set; } = DeployPhaseTypes.AgentBasedDeployment;
+    public DeployPhaseTypes PhaseType { get; set; } = DeployPhaseTypes.AgentBasedDeployment;
 
     [Option("--parallelism", Description = "Generate pipelines in parallel [default: false]")]
-    public bool parallelism { get; }
+    public bool Parallelism { get; }
 
     [Option("--inline", Description = "Inline taskgroup steps [default: false]")]
-    public bool inlineTaskGroups { get; set; }
+    public bool InlineTaskGroups { get; set; }
 
     [Option("--githubactions", Description = "Convert to GitHub Actions (also forces inline to true) [default: false]")]
-    public bool gitHubActions { get; }
+    public bool GitHubActions { get; }
 
     [Option("--create-directory", Description = "Create the destination directory if it does not exist [default: false]")]
-    public bool createDirectory { get; }
+    public bool CreateDirectory { get; }
 
     public async Task<int> OnExecuteAsync()
     {
-        if (gitHubActions) inlineTaskGroups = true;//github actions don't support templates
+        if (GitHubActions) InlineTaskGroups = true;//github actions don't support templates
 
         //a command line option always wins over configuration, which wins over the pipeline environment
         var accessToken = FirstNonEmpty(PAT, _azureDevOpsOptions.Value.PAT, Environment.GetEnvironmentVariable("SYSTEM_ACCESSTOKEN"));
-        var organisationValue = FirstNonEmpty(organisationUri, _azureDevOpsOptions.Value.OrganisationUri, Environment.GetEnvironmentVariable("SYSTEM_COLLECTIONURI"));
-        var projectName = FirstNonEmpty(project, _azureDevOpsOptions.Value.Project, Environment.GetEnvironmentVariable("SYSTEM_TEAMPROJECT"));
+        var organisationValue = FirstNonEmpty(OrganisationUri, _azureDevOpsOptions.Value.OrganisationUri, Environment.GetEnvironmentVariable("SYSTEM_COLLECTIONURI"));
+        var projectName = FirstNonEmpty(ProjectName, _azureDevOpsOptions.Value.Project, Environment.GetEnvironmentVariable("SYSTEM_TEAMPROJECT"));
 
         //Note: the token is deliberately not length-checked, see https://github.com/f2calv/yamlizr/issues/181
         if (string.IsNullOrWhiteSpace(accessToken))
@@ -123,37 +116,37 @@ class GenerateCommand : CommandBase
             return 1;
 
         var rootPath = AppDomain.CurrentDomain.BaseDirectory;//or Directory.GetCurrentDirectory()?
-        if (outputPath is not null) rootPath = outputPath;
+        if (OutputPath is not null) rootPath = OutputPath;
         //always output into a folder named after the project
         if (!Path.GetFileName(rootPath).Equals(Project.Name, StringComparison.OrdinalIgnoreCase))
             rootPath = Path.Combine(rootPath, Project.Name);
         if (!Directory.Exists(rootPath))
-            if (createDirectory || Prompt.GetYesNo($"Directory '{rootPath}' does not exist, create?", true))
+            if (CreateDirectory || Prompt.GetYesNo($"Directory '{rootPath}' does not exist, create?", true))
                 Directory.CreateDirectory(rootPath);//create the output folder if it doesn't exist
             else
                 return 1;
 
         _console.WriteLine($"Pre-loading relevant Azure DevOps objects, this may take some time...");
 
-        pbar = new ProgressBar(1, $"Loading build definition references...", pbarOptions);
+        pbar = new ProgressBar(1, $"Loading build definition references...", ProgressBarOptions);
         buildDefinitionReferences = await BuildClient.GetDefinitionsAsync(Project.Id);
         pbar.Tick($"{buildDefinitionReferences.Count} build definition reference(s) retrieved.");
         pbar.Dispose();
-        buildDefinitions = new ConcurrentBag<BuildDefinition>();
+        buildDefinitions = [];
 
-        pbar = new ProgressBar(1, $"Loading release definitions...", pbarOptions);
+        pbar = new ProgressBar(1, $"Loading release definitions...", ProgressBarOptions);
         releaseDefinitions = await ReleaseClient.GetReleaseDefinitionsAsync(Project.Id);
         pbar.Tick($"{releaseDefinitions.Count} release definition(s) retrieved.");
         pbar.Dispose();
 
-        pbar = new ProgressBar(1, $"Loading task groups...", pbarOptions);
+        pbar = new ProgressBar(1, $"Loading task groups...", ProgressBarOptions);
         var taskGroups = await TaskAgentClient.GetTaskGroupsAsync(Project.Id);
         pbar.Tick($"{taskGroups.Count} task group(s) retrieved.");
         pbar.Dispose();
         var taskGroupMap = taskGroups.ToDictionary(k => new TaskGroupVersion(k.Id, k.Version.Major), v => v);
         var taskGroupTemplateMap = new ConcurrentDictionary<TaskGroupVersion, Template>();
 
-        pbar = new ProgressBar(1, $"Loading extensions...", pbarOptions);
+        pbar = new ProgressBar(1, $"Loading extensions...", ProgressBarOptions);
         var tasks = await ApiSvc.GetAllExtensions(organisation.AbsoluteUri.TrimEnd('/'));
         if (tasks is null)
         {
@@ -162,24 +155,24 @@ class GenerateCommand : CommandBase
         }
         foreach (var task in tasks)
             //a catalogue entry with no name cannot be matched to a step input, so it is not indexed
-            task.inputMap = task.inputs?.Where(p => p.name is not null).ToDictionary(k => k.name!, v => v);
+            task.InputMap = task.Inputs?.Where(p => p.Name is not null).ToDictionary(k => k.Name!, v => v);
         pbar.Tick($"{tasks.Count} installed extension(s) retrieved.");
         pbar.Dispose();
         var azureDevOpsTaskMap = new Dictionary<Guid, Dictionary<int, TaskObj>>();
-        foreach (var id in tasks.Select(p => p.id).Distinct())
+        foreach (var id in tasks.Select(p => p.Id).Distinct())
         {
             //a catalogue entry with no version cannot be resolved to a Task@Major reference
-            var dExtensions = tasks.Where(p => p.id == id && p.version is not null).ToDictionary(k => k.version!.major, v => v);
+            var dExtensions = tasks.Where(p => p.Id == id && p.Version is not null).ToDictionary(k => k.Version!.Major, v => v);
             if (dExtensions.Count == 0) continue;
             var azureDevOpsTask = dExtensions.First().Value;
-            if (!azureDevOpsTaskMap.TryAdd(azureDevOpsTask.id, dExtensions))
+            if (!azureDevOpsTaskMap.TryAdd(azureDevOpsTask.Id, dExtensions))
             {
                 //note: tasks can sometimes have a duplicated id if incorrectly installed!
-                _console.WriteLine($"'{azureDevOpsTask.name}' has a non-unique extension id '{azureDevOpsTask.id}' so cannot be added to dictionary map");
+                _console.WriteLine($"'{azureDevOpsTask.Name}' has a non-unique extension id '{azureDevOpsTask.Id}' so cannot be added to dictionary map");
             }
         }
 
-        pbar = new ProgressBar(1, $"Loading variable groups...", pbarOptions);
+        pbar = new ProgressBar(1, $"Loading variable groups...", ProgressBarOptions);
         var variableGroups = await TaskAgentClient.GetVariableGroupsAsync(Project.Id);
         pbar.Tick($"{variableGroups.Count} variable group(s) retrieved.");
         pbar.Dispose();
@@ -194,16 +187,16 @@ class GenerateCommand : CommandBase
         //1) load all Designer build definitions
         if (!buildDefinitionReferences.IsNullOrEmpty())
         {
-            if (!string.IsNullOrWhiteSpace(filter))
+            if (!string.IsNullOrWhiteSpace(Filter))
             {
                 _console.Write($"{buildDefinitionReferences.Count} build definition reference(s).");
-                buildDefinitionReferences = buildDefinitionReferences.Where(p => p.Name.IndexOf(filter, StringComparison.OrdinalIgnoreCase) > -1).ToList();
-                _console.Write($" Filter set to '{filter}', {buildDefinitionReferences.Count} build definition(s) match filter.");
+                buildDefinitionReferences = [.. buildDefinitionReferences.Where(p => p.Name.IndexOf(Filter, StringComparison.OrdinalIgnoreCase) > -1)];
+                _console.Write($" Filter set to '{Filter}', {buildDefinitionReferences.Count} build definition(s) match filter.");
                 _console.WriteLine();
             }
 
             var dtStart = DateTime.UtcNow;
-            pbar = new ProgressBar(buildDefinitionReferences.Count, $"Retrieving {buildDefinitionReferences.Count} full build definition reference(s)...", pbarOptions) { EstimatedDuration = TimeSpan.FromMilliseconds(buildDefinitionReferences.Count * 100) };
+            pbar = new ProgressBar(buildDefinitionReferences.Count, $"Retrieving {buildDefinitionReferences.Count} full build definition reference(s)...", ProgressBarOptions) { EstimatedDuration = TimeSpan.FromMilliseconds(buildDefinitionReferences.Count * 100) };
 
             var processedDefinitionCount = 0;
             await Parallel.ForEachAsync(buildDefinitionReferences, async (definitionReference, token) =>
@@ -234,14 +227,11 @@ class GenerateCommand : CommandBase
         if (!buildDefinitions.IsNullOrEmpty())
         {
             var dtStart = DateTime.UtcNow;
-            pbar = new ProgressBar(buildDefinitions.Count, $"Processing {buildDefinitions.Count} classic designer build definition(s)...", pbarOptions) { EstimatedDuration = TimeSpan.FromMilliseconds(buildDefinitions.Count * 100) };
+            pbar = new ProgressBar(buildDefinitions.Count, $"Processing {buildDefinitions.Count} classic designer build definition(s)...", ProgressBarOptions) { EstimatedDuration = TimeSpan.FromMilliseconds(buildDefinitions.Count * 100) };
 
             var processedDefinitionCount = 0;
-            if (parallelism)
-                Parallel.ForEach(buildDefinitions, new ParallelOptions { MaxDegreeOfParallelism = Environment.ProcessorCount }, (buildDefinition) =>
-                {
-                    ProcessDefinition(buildDefinition);
-                });
+            if (Parallelism)
+                Parallel.ForEach(buildDefinitions, new ParallelOptions { MaxDegreeOfParallelism = Environment.ProcessorCount }, buildDefinition => ProcessDefinition(buildDefinition));
             else
                 foreach (var buildDefinition in buildDefinitions)
                     ProcessDefinition(buildDefinition);
@@ -260,8 +250,8 @@ class GenerateCommand : CommandBase
                     taskGroupMap,
                     taskGroupTemplateMap,
                     variableGroupMap,
-                    inlineTaskGroups,
-                    phaseType
+                    InlineTaskGroups,
+                    PhaseType
                     );
 
                 var pipeline = generator.GenPipeline();
@@ -282,18 +272,18 @@ class GenerateCommand : CommandBase
         //3) load and process all release definitions
         if (!releaseDefinitions.IsNullOrEmpty())
         {
-            if (!string.IsNullOrWhiteSpace(filter))
+            if (!string.IsNullOrWhiteSpace(Filter))
             {
                 _console.Write($"{releaseDefinitions.Count} release definition(s).");
-                releaseDefinitions = releaseDefinitions.Where(p => p.Name.IndexOf(filter, StringComparison.OrdinalIgnoreCase) > -1).ToList();
-                _console.WriteLine($" Filter set to '{filter}', {releaseDefinitions.Count} release definition(s) match filter.");
+                releaseDefinitions = [.. releaseDefinitions.Where(p => p.Name.IndexOf(Filter, StringComparison.OrdinalIgnoreCase) > -1)];
+                _console.WriteLine($" Filter set to '{Filter}', {releaseDefinitions.Count} release definition(s) match filter.");
             }
 
             var dtStart = DateTime.UtcNow;
-            pbar = new ProgressBar(releaseDefinitions.Count, $"Processing {releaseDefinitions.Count} release definition(s)...", pbarOptions) { EstimatedDuration = TimeSpan.FromMilliseconds(releaseDefinitions.Count * 100) };
+            pbar = new ProgressBar(releaseDefinitions.Count, $"Processing {releaseDefinitions.Count} release definition(s)...", ProgressBarOptions) { EstimatedDuration = TimeSpan.FromMilliseconds(releaseDefinitions.Count * 100) };
 
             var processedDefinitionCount = 0;
-            if (parallelism)
+            if (Parallelism)
                 await Parallel.ForEachAsync(releaseDefinitions, async (releaseDefinition, token) =>
                     await ProcessDefinition(releaseDefinition));
             else
@@ -315,8 +305,8 @@ class GenerateCommand : CommandBase
                     taskGroupMap,
                     taskGroupTemplateMap,
                     variableGroupMap,
-                    inlineTaskGroups,
-                    phaseType
+                    InlineTaskGroups,
+                    PhaseType
                     );
 
                 var pipeline = generator.GenPipeline();
@@ -351,12 +341,12 @@ class GenerateCommand : CommandBase
             if (!Directory.Exists(azureDevOpsPath)) Directory.CreateDirectory(azureDevOpsPath);
 
             var gitHubPath = Path.Combine(rootPath, "GitHubBuilds");
-            if (!Directory.Exists(gitHubPath) && gitHubActions) Directory.CreateDirectory(gitHubPath);
+            if (!Directory.Exists(gitHubPath) && GitHubActions) Directory.CreateDirectory(gitHubPath);
 
             var definitions = results.Where(p => p.buildDefinition is not null).ToList();
 
             var dtStart = DateTime.UtcNow;
-            pbar = new ProgressBar(definitions.Count, $"Persisting {definitions.Count} build pipeline(s) to disk{(gitHubActions ? " with GitHub Actions conversion" : string.Empty)}...", pbarOptions) { EstimatedDuration = TimeSpan.FromMilliseconds(releaseDefinitions.Count * 100) };
+            pbar = new ProgressBar(definitions.Count, $"Persisting {definitions.Count} build pipeline(s) to disk{(GitHubActions ? " with GitHub Actions conversion" : string.Empty)}...", ProgressBarOptions) { EstimatedDuration = TimeSpan.FromMilliseconds(releaseDefinitions.Count * 100) };
 
             var processedDefinitionCount = 0;
             await Parallel.ForEachAsync(definitions, async (result, token) => await ProcessDefinition(result));
@@ -372,7 +362,7 @@ class GenerateCommand : CommandBase
                 var fileCount = await WriteYAML(result.pipeline, buildDefinition.Id, buildDefinition.Name, azureDevOpsPath, gitHubPath);
                 Interlocked.Add(ref fileCounter, fileCount);
                 Interlocked.Increment(ref processedDefinitionCount);
-                pbar.Tick(processedDefinitionCount, $"{AppDomain.CurrentDomain.FriendlyName} persisted {processedDefinitionCount} of {definitions.Count} build pipeline(s) to disk{(gitHubActions ? " with GitHub Actions conversion" : string.Empty)}.");
+                pbar.Tick(processedDefinitionCount, $"{AppDomain.CurrentDomain.FriendlyName} persisted {processedDefinitionCount} of {definitions.Count} build pipeline(s) to disk{(GitHubActions ? " with GitHub Actions conversion" : string.Empty)}.");
                 pbar.EstimatedDuration = TimeSpan.FromMilliseconds((definitions.Count - processedDefinitionCount)
                     * DateTime.UtcNow.Subtract(dtStart).TotalMilliseconds / processedDefinitionCount);
             }
@@ -385,12 +375,12 @@ class GenerateCommand : CommandBase
             if (!Directory.Exists(azureDevOpsPath)) Directory.CreateDirectory(azureDevOpsPath);
 
             var gitHubPath = Path.Combine(rootPath, "GitHubReleases");
-            if (!Directory.Exists(gitHubPath) && gitHubActions) Directory.CreateDirectory(gitHubPath);
+            if (!Directory.Exists(gitHubPath) && GitHubActions) Directory.CreateDirectory(gitHubPath);
 
             var definitions = results.Where(p => p.releaseDefinition is not null).ToList();
 
             var dtStart = DateTime.UtcNow;
-            pbar = new ProgressBar(definitions.Count, $"Persisting {definitions.Count} release pipeline(s) to disk{(gitHubActions ? " with GitHub Actions conversion" : string.Empty)}...", pbarOptions) { EstimatedDuration = TimeSpan.FromMilliseconds(releaseDefinitions.Count * 100) };
+            pbar = new ProgressBar(definitions.Count, $"Persisting {definitions.Count} release pipeline(s) to disk{(GitHubActions ? " with GitHub Actions conversion" : string.Empty)}...", ProgressBarOptions) { EstimatedDuration = TimeSpan.FromMilliseconds(releaseDefinitions.Count * 100) };
 
             var processedDefinitionCount = 0;
             await Parallel.ForEachAsync(definitions, async (result, token) => await ProcessDefinition(result));
@@ -406,7 +396,7 @@ class GenerateCommand : CommandBase
                 var fileCount = await WriteYAML(result.pipeline, releaseDefinition.Id, releaseDefinition.Name, azureDevOpsPath, gitHubPath);
                 Interlocked.Add(ref fileCounter, fileCount);
                 Interlocked.Increment(ref processedDefinitionCount);
-                pbar.Tick(processedDefinitionCount, $"{AppDomain.CurrentDomain.FriendlyName} persisted {processedDefinitionCount} of {definitions.Count} release pipeline(s) to disk{(gitHubActions ? " with GitHub Actions conversion" : string.Empty)}.");
+                pbar.Tick(processedDefinitionCount, $"{AppDomain.CurrentDomain.FriendlyName} persisted {processedDefinitionCount} of {definitions.Count} release pipeline(s) to disk{(GitHubActions ? " with GitHub Actions conversion" : string.Empty)}.");
                 pbar.EstimatedDuration = TimeSpan.FromMilliseconds((definitions.Count - processedDefinitionCount)
                     * DateTime.UtcNow.Subtract(dtStart).TotalMilliseconds / processedDefinitionCount);
             }
@@ -425,7 +415,7 @@ class GenerateCommand : CommandBase
             var azureDevOpsDefPath = Path.Combine(azureDevOpsPath, filename);
             await File.WriteAllTextAsync(azureDevOpsDefPath, azureDevOpsYAML);
             count++;
-            if (gitHubActions)
+            if (GitHubActions)
                 try
                 {
                     var gitHubYAML = conversion.ConvertAzurePipelineToGitHubAction(azureDevOpsYAML);
@@ -446,7 +436,7 @@ class GenerateCommand : CommandBase
         }
 
         //7) persist all the YAML templates to disk
-        if (!gitHubActions && !taskGroupTemplateMap.IsNullOrEmpty())
+        if (!GitHubActions && !taskGroupTemplateMap.IsNullOrEmpty())
         {
             var azureDevOpsDefPath = Path.Combine(rootPath, "AzureDevOpsTaskGroups");
             if (!Directory.Exists(azureDevOpsDefPath)) Directory.CreateDirectory(azureDevOpsDefPath);
@@ -456,7 +446,7 @@ class GenerateCommand : CommandBase
             foreach (var kvp in taskGroupTemplateMap)
             {
                 var template = kvp.Value;
-                var filename = $"{template.taskGroup?.Name.Sanitize() ?? kvp.Key.taskGroupId.ToString()}-v{kvp.Key.version}.yml";
+                var filename = $"{template.TaskGroup?.Name.Sanitize() ?? kvp.Key.TaskGroupId.ToString()}-v{kvp.Key.Version}.yml";
                 var azureDevOpsTaskGroupPath = Path.Combine(azureDevOpsDefPath, filename);
                 File.WriteAllText(azureDevOpsTaskGroupPath, template.ToString());
                 Interlocked.Increment(ref fileCounter);
@@ -486,6 +476,6 @@ class GenerateCommand : CommandBase
         return 0;
     }
 
-    static string? FirstNonEmpty(params string?[] values)
+    private static string? FirstNonEmpty(params string?[] values)
         => Array.Find(values, p => !string.IsNullOrWhiteSpace(p));
 }

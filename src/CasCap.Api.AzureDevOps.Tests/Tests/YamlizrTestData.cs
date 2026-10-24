@@ -108,12 +108,12 @@ public static class YamlizrTestData
     {
         var task = new TaskObj
         {
-            id = KnownTaskId,
-            name = taskName,
-            version = new CasCap.Models.TaskVersion { major = major },
-            inputs = [.. inputNames.Select(p => new TaskInput { name = p })],
+            Id = KnownTaskId,
+            Name = taskName,
+            Version = new CasCap.Models.TaskVersion { Major = major },
+            Inputs = [.. inputNames.Select(p => new TaskInput { Name = p })],
         };
-        task.inputMap = task.inputs.ToDictionary(k => k.name!, v => v);
+        task.InputMap = task.Inputs.ToDictionary(k => k.Name!, v => v);
         return new Dictionary<Guid, Dictionary<int, TaskObj>> { [KnownTaskId] = new() { [major] = task } };
     }
 
@@ -123,9 +123,9 @@ public static class YamlizrTestData
             build,
             null,
             taskMap ?? TaskMap(),
-            new Dictionary<TaskGroupVersion, TaskGroup>(),
+            [],
             new ConcurrentDictionary<TaskGroupVersion, Template>(),
-            new Dictionary<int, VariableGroup>(),
+            [],
             inlineTaskGroups: false,
             DeployPhaseTypes.AgentBasedDeployment);
 
@@ -232,9 +232,9 @@ public static class YamlizrTestData
             null,
             release,
             taskMap ?? TaskMap(),
-            new Dictionary<TaskGroupVersion, TaskGroup>(),
+            [],
             new ConcurrentDictionary<TaskGroupVersion, Template>(),
-            new Dictionary<int, VariableGroup>(),
+            [],
             inlineTaskGroups: false,
             DeployPhaseTypes.AgentBasedDeployment);
 }

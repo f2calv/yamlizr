@@ -15,22 +15,29 @@
 # ------------------------------------------------------------------------------
 FROM --platform=$BUILDPLATFORM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /repo
+COPY ["Directory.Build.props", "Directory.Packages.props", "global.json", "./"]
 
+ARG WORKLOAD=yamlizr
 ARG PROJECT=src/CasCap.DevOpsYamlizrCli/CasCap.DevOpsYamlizrCli.csproj
 ARG CONFIGURATION=Debug
 ARG TARGET_FRAMEWORK=net10.0
-ARG VERSION=0.0.1
+ARG VERSION=0.0.0-local
+ARG GIT_REPOSITORY=n/a
+ARG GIT_BRANCH=n/a
+ARG GIT_COMMIT=n/a
+ARG GITHUB_WORKFLOW=n/a
+ARG GITHUB_RUN_ID=0
+ARG GITHUB_RUN_NUMBER=0
 
 # -- Dependency layer ----------------------------------------------------------
-# Only the manifests restore reads, so editing a .cs file in either repository reuses the cache.
-COPY Directory.Build.props Directory.Packages.props ./
-
 # The /./ pivot drops the deps/ prefix, so deps/CasCap.Common/... lands at /CasCap.Common/...
 COPY --parents deps/./**/*.csproj deps/./**/*.props deps/./**/*.targets /
 COPY --parents --exclude=src/*.Tests src/**/*.csproj ./
 
 RUN --mount=type=cache,target=/root/.nuget/packages,sharing=locked \
-    dotnet restore "$PROJECT" -p:Configuration="$CONFIGURATION"
+    dotnet restore "$PROJECT" \
+    -p:Configuration="$CONFIGURATION" \
+    "-p:RuntimeIdentifiers=\"linux-x64;linux-arm64;linux-arm\""
 
 # -- Compile layer -------------------------------------------------------------
 COPY deps/CasCap.Common /CasCap.Common
@@ -39,7 +46,7 @@ COPY --exclude=src/*.Tests . .
 
 ARG TARGETARCH
 ARG TARGETVARIANT
-RUN --mount=type=cache,target=/root/.nuget/packages,sharing=locked <<EOF
+RUN --network=none --mount=type=cache,target=/root/.nuget/packages,sharing=shared <<EOF
 set -eux
 # https://learn.microsoft.com/dotnet/core/rid-catalog
 case "${TARGETARCH}${TARGETVARIANT}" in
@@ -51,43 +58,45 @@ esac
 dotnet publish "$PROJECT" \
     --configuration "$CONFIGURATION" \
     --framework "$TARGET_FRAMEWORK" \
+    --output /app/publish \
     --runtime "$RID" \
     --self-contained false \
+    --no-restore \
     -p:Version="$VERSION" \
-    --output /out
+    -p:SourceRevisionId="$GIT_COMMIT" \
+    -p:GitRepository="$GIT_REPOSITORY" \
+    -p:GitBranch="$GIT_BRANCH" \
+    -p:BuildWorkflow="$GITHUB_WORKFLOW" \
+    -p:BuildRunId="$GITHUB_RUN_ID" \
+    -p:BuildRunNumber="$GITHUB_RUN_NUMBER"
+ln -s "$WORKLOAD.dll" /app/publish/entrypoint.dll
 EOF
 
 # ------------------------------------------------------------------------------
-# Stage 2 of 2: final
+# Stage 2 of 3: runtime
 #
 # aspnet, not runtime, for the same reason as the Release image: a FrameworkReference to
 # Microsoft.AspNetCore.App arrives through CasCap.Common.Net.
 # ------------------------------------------------------------------------------
-FROM mcr.microsoft.com/dotnet/aspnet:10.0-noble-chiseled AS final
+FROM mcr.microsoft.com/dotnet/aspnet:10.0-noble-chiseled AS runtime
 WORKDIR /app
-COPY --link --from=build /out .
+COPY --link --from=build /app/publish .
 
 # Generated YAML is written here; mount a host directory over it.
 VOLUME /data
 
 # -- Provenance ----------------------------------------------------------------
+ARG WORKLOAD=yamlizr
 ARG GIT_REPOSITORY=n/a
-ENV GIT_REPOSITORY=$GIT_REPOSITORY
 ARG GIT_BRANCH=n/a
-ENV GIT_BRANCH=$GIT_BRANCH
 ARG GIT_COMMIT=n/a
-ENV GIT_COMMIT=$GIT_COMMIT
 ARG GIT_TAG=n/a
-ENV GIT_TAG=$GIT_TAG
 
 ARG GITHUB_WORKFLOW=n/a
-ENV GITHUB_WORKFLOW=$GITHUB_WORKFLOW
 ARG GITHUB_RUN_ID=0
-ENV GITHUB_RUN_ID=$GITHUB_RUN_ID
 ARG GITHUB_RUN_NUMBER=0
-ENV GITHUB_RUN_NUMBER=$GITHUB_RUN_NUMBER
 
-LABEL org.opencontainers.image.title="yamlizr (debug)" \
+LABEL org.opencontainers.image.title="$WORKLOAD" \
     org.opencontainers.image.description="Local debug build against sibling CasCap.Common sources" \
     org.opencontainers.image.source="https://github.com/f2calv/yamlizr" \
     org.opencontainers.image.licenses="MIT" \
@@ -96,4 +105,9 @@ LABEL org.opencontainers.image.title="yamlizr (debug)" \
 
 USER $APP_UID
 
-ENTRYPOINT ["dotnet", "yamlizr.dll"]
+ENTRYPOINT ["dotnet", "entrypoint.dll"]
+
+# ------------------------------------------------------------------------------
+# Stage 3 of 3: final
+# ------------------------------------------------------------------------------
+FROM runtime AS final

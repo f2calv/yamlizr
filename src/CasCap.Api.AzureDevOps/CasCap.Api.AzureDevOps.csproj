@@ -18,6 +18,9 @@
     <PackageReference Include="Microsoft.VisualStudio.Services.Release.Client" />
     <PackageReference Include="Newtonsoft.Json" />
     <PackageReference Include="System.Configuration.ConfigurationManager" />
+    <!-- TODO: Remove this override when the Azure DevOps clients stop resolving vulnerable XML 5.0.0
+         and its Drawing.Common 5.0.0 dependency chain. Keep the supported XML implementation meanwhile. -->
+    <PackageReference Include="System.Security.Cryptography.Xml" />
     <PackageReference Include="semver" />
     <PackageReference Include="YamlDotNet" />
   </ItemGroup>

@@ -37,6 +37,54 @@ dotnet_diagnostic.IDE0051.severity = warning
 dotnet_diagnostic.IDE0052.severity = warning
 dotnet_diagnostic.IDE0055.severity = warning
 
+# Safe syntax modernizations are build-enforced once their workspace fallout is cleaned.
+dotnet_diagnostic.IDE0007.severity = warning
+dotnet_diagnostic.IDE0021.severity = warning
+dotnet_diagnostic.IDE0022.severity = warning
+dotnet_diagnostic.IDE0028.severity = warning
+dotnet_diagnostic.IDE0031.severity = warning
+dotnet_diagnostic.IDE0032.severity = warning
+dotnet_diagnostic.IDE0036.severity = warning
+dotnet_diagnostic.IDE0042.severity = warning
+dotnet_diagnostic.IDE0045.severity = warning
+dotnet_diagnostic.IDE0046.severity = warning
+dotnet_diagnostic.IDE0047.severity = warning
+dotnet_diagnostic.IDE0048.severity = warning
+dotnet_diagnostic.IDE0053.severity = warning
+dotnet_diagnostic.IDE0059.severity = warning
+dotnet_diagnostic.IDE0065.severity = warning
+dotnet_diagnostic.IDE0075.severity = warning
+dotnet_diagnostic.IDE0078.severity = warning
+dotnet_diagnostic.IDE0090.severity = warning
+dotnet_diagnostic.IDE0161.severity = warning
+dotnet_diagnostic.IDE0200.severity = warning
+dotnet_diagnostic.IDE0270.severity = warning
+dotnet_diagnostic.IDE0290.severity = warning
+dotnet_diagnostic.IDE0300.severity = warning
+dotnet_diagnostic.IDE0301.severity = warning
+dotnet_diagnostic.IDE0305.severity = warning
+dotnet_diagnostic.IDE0340.severity = warning
+dotnet_diagnostic.IDE0350.severity = warning
+
+# These correctness and performance diagnostics have non-breaking fixes.
+dotnet_diagnostic.CA1510.severity = warning
+dotnet_diagnostic.CA1859.severity = warning
+dotnet_diagnostic.CA1861.severity = warning
+dotnet_diagnostic.CA1869.severity = warning
+dotnet_diagnostic.CA1873.severity = warning
+dotnet_diagnostic.xUnit2033.severity = warning
+
+# IDE0058 indiscriminately flags intentionally ignored results from fluent APIs,
+# assertions, concurrent primitives, and mutable builders, producing noisy discards.
+dotnet_diagnostic.IDE0058.severity = none
+
+# Public namespaces intentionally model API ownership rather than physical folders.
+dotnet_diagnostic.IDE0130.severity = none
+
+# Range/index syntax is unavailable to libraries that still target netstandard2.0.
+dotnet_diagnostic.IDE0056.severity = none
+dotnet_diagnostic.IDE0057.severity = none
+
 #### Core EditorConfig Options ####
 
 # Indentation and spacing
@@ -61,8 +109,8 @@ dotnet_search_reference_assemblies = true
 #### .NET Coding Conventions ####
 
 # Organize usings
-dotnet_separate_import_directive_groups = false:suggestion
-dotnet_sort_system_directives_first = false:suggestion
+dotnet_separate_import_directive_groups = false
+dotnet_sort_system_directives_first = false
 file_header_template = unset
 
 # this. and Me. preferences
@@ -82,7 +130,7 @@ dotnet_style_parentheses_in_other_operators = never_if_unnecessary:suggestion
 dotnet_style_parentheses_in_relational_binary_operators = always_for_clarity:suggestion
 
 # Modifier preferences
-dotnet_style_require_accessibility_modifiers = for_non_interface_members:suggestion
+dotnet_style_require_accessibility_modifiers = always:warning
 
 # Expression-level preferences
 dotnet_prefer_system_hash_code = true:suggestion
@@ -127,7 +175,7 @@ csharp_style_var_when_type_is_apparent = true:suggestion
 
 # Expression-bodied members
 csharp_style_expression_bodied_accessors = true:suggestion
-csharp_style_expression_bodied_constructors = false:suggestion
+csharp_style_expression_bodied_constructors = true:suggestion
 csharp_style_expression_bodied_indexers = true:suggestion
 csharp_style_expression_bodied_lambdas = true:suggestion
 csharp_style_expression_bodied_local_functions = false:suggestion
@@ -154,7 +202,7 @@ csharp_style_prefer_readonly_struct = true:suggestion
 csharp_style_prefer_readonly_struct_member = true:suggestion
 
 # Code-block preferences
-csharp_prefer_braces = when_multiline:suggestion
+csharp_prefer_braces = false:warning
 csharp_prefer_simple_using_statement = true:suggestion
 csharp_prefer_system_threading_lock = true:suggestion
 csharp_style_namespace_declarations = file_scoped:suggestion
@@ -248,9 +296,14 @@ dotnet_naming_rule.types_should_be_pascal_case.severity = warning
 dotnet_naming_rule.types_should_be_pascal_case.symbols = types
 dotnet_naming_rule.types_should_be_pascal_case.style = pascal_case
 
-dotnet_naming_rule.non_field_members_should_be_pascal_case.severity = warning
-dotnet_naming_rule.non_field_members_should_be_pascal_case.symbols = non_field_members
-dotnet_naming_rule.non_field_members_should_be_pascal_case.style = pascal_case
+dotnet_naming_rule.methods_and_events_should_be_pascal_case.severity = warning
+dotnet_naming_rule.methods_and_events_should_be_pascal_case.symbols = methods_and_events
+dotnet_naming_rule.methods_and_events_should_be_pascal_case.style = pascal_case
+
+# Existing public packages can contain property names that require a versioned breaking migration.
+dotnet_naming_rule.properties_should_be_pascal_case.severity = suggestion
+dotnet_naming_rule.properties_should_be_pascal_case.symbols = properties
+dotnet_naming_rule.properties_should_be_pascal_case.style = pascal_case
 
 # Symbol specifications
 
@@ -262,9 +315,13 @@ dotnet_naming_symbols.types.applicable_kinds = class, struct, interface, enum
 dotnet_naming_symbols.types.applicable_accessibilities = public, internal, private, protected, protected_internal, private_protected
 dotnet_naming_symbols.types.required_modifiers =
 
-dotnet_naming_symbols.non_field_members.applicable_kinds = property, event, method
-dotnet_naming_symbols.non_field_members.applicable_accessibilities = public, internal, private, protected, protected_internal, private_protected
-dotnet_naming_symbols.non_field_members.required_modifiers =
+dotnet_naming_symbols.methods_and_events.applicable_kinds = event, method
+dotnet_naming_symbols.methods_and_events.applicable_accessibilities = public, internal, private, protected, protected_internal, private_protected
+dotnet_naming_symbols.methods_and_events.required_modifiers =
+
+dotnet_naming_symbols.properties.applicable_kinds = property
+dotnet_naming_symbols.properties.applicable_accessibilities = public, internal, private, protected, protected_internal, private_protected
+dotnet_naming_symbols.properties.required_modifiers =
 
 # Naming styles
 

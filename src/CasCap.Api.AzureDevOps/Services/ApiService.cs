@@ -10,30 +10,29 @@ using System.Text.Json;
 namespace CasCap.Services;
 
 /// <inheritdoc cref="IApiService"/>
-public class ApiService : HttpClientBase, IApiService
+/// <param name="logger">Logger for diagnostics.</param>
+/// <param name="PAT">
+/// Personal Access Token, or an access token issued to a pipeline's build service identity.
+/// Never validated by length, because the two differ; an invalid token surfaces as a failed call.
+/// </param>
+public partial class ApiService(ILogger<ApiService> logger, string PAT)
+    : HttpClientBase(logger, CreateClient(PAT)), IApiService
 {
-    /// <summary>Creates a client authenticated against Azure DevOps.</summary>
-    /// <param name="logger">Logger for diagnostics.</param>
-    /// <param name="PAT">
-    /// Personal Access Token, or an access token issued to a pipeline's build service identity.
-    /// Never validated by length, because the two differ; an invalid token surfaces as a failed call.
-    /// </param>
-    public ApiService(ILogger<ApiService> logger, string PAT) : base()
+    private static HttpClient CreateClient(string PAT)
     {
-        _logger = logger;
-        Client = new HttpClient();
-        Client.DefaultRequestHeaders.Clear();
-        Client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-        Client.SetBasicAuth(string.Empty, PAT);
+        var client = new HttpClient();
+        client.DefaultRequestHeaders.Clear();
+        client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+        client.SetBasicAuth(string.Empty, PAT);
+        return client;
     }
 
     /// <inheritdoc/>
     public async Task<List<TaskObj>?> GetAllExtensions(string organisationUri, CancellationToken cancellationToken = default)
     {
-        _logger.LogInformation("{ClassName} retrieving all extensions for organisation '{OrganisationUri}'",
-            nameof(ApiService), organisationUri);
-        var res = await Get<Tasks, object>($"{organisationUri}/_apis/distributedtask/tasks/", cancellationToken: cancellationToken);
-        return res.result?.value;
+        LogRetrievingExtensions(_logger, nameof(ApiService), organisationUri);
+        var (result, _, _, _) = await Get<Tasks, object>($"{organisationUri}/_apis/distributedtask/tasks/", cancellationToken: cancellationToken);
+        return result?.Value;
     }
 
     /// <inheritdoc/>
@@ -44,8 +43,7 @@ public class ApiService : HttpClientBase, IApiService
         string pipelineYaml,
         CancellationToken cancellationToken = default)
     {
-        _logger.LogInformation("{ClassName} validating YAML against pipeline {PipelineId} in project '{Project}'",
-            nameof(ApiService), pipelineId, project);
+        LogValidatingPipelineYaml(_logger, nameof(ApiService), pipelineId, project);
 
         var uri = $"{organisationUri.TrimEnd('/')}/{Uri.EscapeDataString(project)}/_apis/pipelines/{pipelineId}/preview?api-version=7.1";
         var payload = JsonSerializer.Serialize(new { previewRun = true, yamlOverride = pipelineYaml });
@@ -64,6 +62,18 @@ public class ApiService : HttpClientBase, IApiService
 
         return new PipelineValidationResult { IsValid = false, Message = message };
     }
+
+    [LoggerMessage(
+        EventId = 1,
+        Level = LogLevel.Information,
+        Message = "{ClassName} retrieving all extensions for organisation '{OrganisationUri}'")]
+    private static partial void LogRetrievingExtensions(ILogger logger, string className, string organisationUri);
+
+    [LoggerMessage(
+        EventId = 2,
+        Level = LogLevel.Information,
+        Message = "{ClassName} validating YAML against pipeline {PipelineId} in project '{Project}'")]
+    private static partial void LogValidatingPipelineYaml(ILogger logger, string className, int pipelineId, string project);
 
     private static string? ReadProperty(string json, string name)
     {

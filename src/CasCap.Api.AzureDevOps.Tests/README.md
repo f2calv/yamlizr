@@ -1,6 +1,7 @@
 # CasCap.Api.AzureDevOps.Tests
 
-xUnit v3 tests for `CasCap.Api.AzureDevOps`, running on `Microsoft.Testing.Platform`.
+xUnit v3 tests for the Azure DevOps client and YAML generator, running on Microsoft.Testing.Platform.
+Use the offline suites without credentials; live suites read an explicitly configured Azure DevOps project.
 
 ## Layout
 
@@ -9,7 +10,8 @@ Tests/
 |-- YamlizrTestData.cs        # Offline builders for Azure DevOps definitions
 |-- Unit/                     # Self-contained, no external services
 |   |-- YamlPipelineGeneratorTests.cs
-|   `-- PipelineSerializationTests.cs
+|   |-- PipelineSerializationTests.cs
+|   `-- TaskCatalogSerializationTests.cs
 `-- Integration/              # Requires a live Azure DevOps organisation
     |-- TestBase.cs                 # Shared configuration, logging and service setup
     |-- ApiServiceTests.cs          # Task catalogue retrieval
@@ -21,41 +23,55 @@ Tests/
 
 | Suite | Test methods | Expanded cases |
 | --- | --- | --- |
-| Unit | 19 | 28 |
+| Unit | 23 | 33 |
 | Integration | 8 | 8 |
-| **Total** | **27** | **36** |
+| **Total** | **31** | **41** |
+
+Counts are source-declared cases per target framework, not observed execution results. The project
+targets `net8.0`, `net9.0` and `net10.0`; use an SDK supporting the current C# source and the selected
+runtime. There are no MemberData providers or untagged test classes.
 
 ## Trait Categories
 
-| Trait | Applied to | Runs in CI |
+| Trait | Applied to | Prerequisites |
 | --- | --- | --- |
-| `Category=Generation` | `YamlPipelineGeneratorTests` | Yes |
-| `Category=Serialization` | `PipelineSerializationTests` | Yes |
-| `Category=Integration` | `ApiServiceTests`, `PipelineValidationTests`, `FixtureConversionTests` | Yes, when the repository secret is present |
+| `Category=Generation` | `YamlPipelineGeneratorTests` | Offline; synthetic definitions and task catalogues |
+| `Category=Serialization` | `PipelineSerializationTests`, `TaskCatalogSerializationTests` | Offline; in-memory models and JSON |
+| `Category=Integration` | `ApiServiceTests`, `PipelineValidationTests`, `FixtureConversionTests` | Live credentials plus organization/project and enabled validation pipeline where needed |
 
 ## Skipped Tests
 
-Integration tests skip rather than fail when no credential is configured, so a contributor without an
-Azure DevOps organisation still gets a green run, as does a pull request from a fork, which cannot read
-the secret. The reported reasons are:
+The following are conditional skip guards, not permanently skipped tests. Counts are methods that
+can report each reason; guards overlap, so do not sum them as an execution result.
 
-| Reason | Resolved by |
-| --- | --- |
-| No Azure DevOps token configured | Setting `CasCap:AzureDevOpsOptions:PAT`. |
-| No organisation configured | Setting `CasCap:AzureDevOpsOptions:OrganisationUri`. |
-| No validation pipeline configured | Setting `CasCap:AzureDevOpsOptions:ValidationPipelineId`. |
+| Reason | Methods | Required configuration |
+| --- | --- | --- |
+| No Azure DevOps token configured | 1 | `PAT` for task-catalogue retrieval |
+| No organisation configured | 1 | `OrganisationUri` after the token guard passes |
+| No validation pipeline configured | 6 | All of `PAT`, `OrganisationUri`, `Project`, `ValidationPipelineId`, despite the shorter message |
+| No fixture organisation configured | 1 | All four fields above, plus accessible fixture definitions to make the test useful |
+
+[`TestBase`](Tests/Integration/TestBase.cs) loads `appsettings.Test.json`, User Secrets, then environment
+variables, binding
+[`AzureDevOpsOptions`](../CasCap.Api.AzureDevOps/Models/AzureDevOpsOptions.cs).
+[`PipelineValidationTests`](Tests/Integration/PipelineValidationTests.cs) and
+[`FixtureConversionTests`](Tests/Integration/FixtureConversionTests.cs) each require all four connection
+fields; supplying a token alone is not sufficient. There is no additional live-enable switch.
 
 Integration tests are read-only. They never create, update or delete a definition, task group or
 variable group, and a preview run parses YAML without queueing anything.
 
 ## Validating Generated YAML
 
-`FixtureConversionTests` converts every `yamlizr.test.*` definition in the fixture organisation and
-submits each result to the Azure DevOps pipeline preview endpoint. That is stronger than a snapshot,
-which only proves the output has not changed: this proves Azure DevOps will accept it. A regression
-fails the build naming the definition, the error Azure DevOps returned, and the generated YAML.
+`FixtureConversionTests` retrieves classic definitions whose names start with `yamlizr.test.`,
+converts them with task groups inlined and submits non-null results to the preview endpoint.
+It asserts at least one conversion and no preview rejections; a null conversion is skipped within
+the loop, so it does not prove every matching definition converted. Preview acceptance proves parsing,
+not semantic equivalence, runtime success or preservation of approvals and gates.
 
-The fixture organisation is built by [.scripts/New-FixtureDefinitions.ps1](../../.scripts/README.md),
+The fixtures are provisioned by
+[New-FixtureDefinitions.ps1](../../.scripts/New-FixtureDefinitions.ps1)
+([script guide](../../.scripts/README.md)),
 which also creates the `yamlizr.test.validation` pipeline the preview endpoint parses against.
 
 Task groups are inlined for validation, because a relative `template:` reference resolves against the
@@ -63,25 +79,32 @@ target pipeline's repository rather than the submitted document.
 
 ## Running
 
+Run from the repository root. These commands are examples, not a record of tests executed.
+Release configuration uses packages instead of requiring sibling shared-library checkouts.
+The .NET 10 SDK's MTP runner supports these trait options without a `--` separator.
+
 ```bash
-# everything, which is what CI now runs; integration tests skip without a token
-dotnet test
+# credential-free only, one target framework
+dotnet test --project src/CasCap.Api.AzureDevOps.Tests/CasCap.Api.AzureDevOps.Tests.csproj --configuration Release --framework net10.0 --filter-not-trait Category=Integration
 
-# credential-free only
-dotnet test --filter-not-trait Category=Integration
-
-# live, after configuring the fixture organisation
-dotnet user-secrets set CasCap:AzureDevOpsOptions:PAT "<your token here>"
-dotnet user-secrets set CasCap:AzureDevOpsOptions:OrganisationUri "https://dev.azure.com/myorg"
-dotnet user-secrets set CasCap:AzureDevOpsOptions:Project "myproject"
-dotnet user-secrets set CasCap:AzureDevOpsOptions:ValidationPipelineId "19"
-dotnet test --filter-trait Category=Integration
+# all source-declared cases; live tests skip when their configuration is absent
+dotnet test --project src/CasCap.Api.AzureDevOps.Tests/CasCap.Api.AzureDevOps.Tests.csproj --configuration Release --framework net10.0
 ```
+
+For a deliberately authorized live run, configure all four fields via User Secrets with
+`--project src/CasCap.Api.AzureDevOps.Tests` or secret-backed `CasCap__AzureDevOpsOptions__*`
+environment variables. Use an existing enabled YAML validation pipeline and the default fixture
+prefix; do not publish its resolved ID or project details. The test harness reads only the regular
+options configuration, not the CLI's `SYSTEM_*` fallback variables. Select live tests with
+`--filter-trait Category=Integration`.
+
+Failure output can contain generated YAML, definition names and server messages. Treat it as
+potentially sensitive. No test provisions the fixture project on your behalf.
 
 ### Inside the Container Build
 
 The Release `Dockerfile` has an optional `test` stage that runs the credential-free tests in the .NET
-SDK image, with no local SDK needed. Neither the default build nor CI runs it:
+SDK image, with no local SDK needed. It is not part of the default image target:
 
 ```bash
 docker buildx build --target test --progress=plain .
@@ -94,11 +117,7 @@ fails the build.
 The token needs only read access, plus Build (read and execute) for the preview endpoint. It never
 writes to the organisation.
 
-## Dependencies
+## Further Reading
 
-| NuGet package | Purpose |
-| --- | --- |
-| `CasCap.Common.Testing` | `AddXUnitLogging`, routing `ILogger` output to `ITestOutputHelper`. |
-| `Microsoft.Extensions.Configuration.*` | Layered test configuration. |
-| `Microsoft.Testing.Extensions.CodeCoverage` | Coverage collection. |
-| `xunit.v3` | Test framework. |
+- [Generator API and limits](../CasCap.Api.AzureDevOps/README.md)
+- [Fixture provisioning and editor validation](../../.scripts/README.md)

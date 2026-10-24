@@ -8,16 +8,20 @@ namespace CasCap.Models;
 public class StageAzDO
 {
     /// <summary>Stage identifier, which must match <c>[A-Za-z_][A-Za-z0-9_]*</c>.</summary>
-    public string? stage { get; set; }
+    [YamlMember(Alias = "stage")]
+    public string? Stage { get; set; }
 
     /// <summary>Human readable stage name.</summary>
-    public string? displayName { get; set; }
+    [YamlMember(Alias = "displayName")]
+    public string? DisplayName { get; set; }
 
     /// <summary>Identifiers of the stages that must complete before this one starts.</summary>
-    public string[]? dependsOn { get; set; }
+    [YamlMember(Alias = "dependsOn")]
+    public string[]? DependsOn { get; set; }
 
     /// <summary>Expression deciding whether the stage runs.</summary>
-    public string? condition { get; set; }
+    [YamlMember(Alias = "condition")]
+    public string? Condition { get; set; }
 
     /// <summary>Stage-scoped variables, including linked variable groups.</summary>
     /// <remarks>
@@ -25,11 +29,14 @@ public class StageAzDO
     /// because a stage may also reference a variable group or a variable template, which a dictionary
     /// cannot express. Omitted entirely when empty.
     /// </remarks>
-    public List<Variable>? variables { get; set; }
+    [YamlMember(Alias = "variables")]
+    public List<Variable>? Variables { get; set; }
 
     /// <summary>Agent pool the stage's jobs run on.</summary>
-    public Pool? pool { get; set; }
+    [YamlMember(Alias = "pool")]
+    public Pool? Pool { get; set; }
 
     /// <summary>Jobs belonging to this stage.</summary>
-    public Job[]? jobs { get; set; }
+    [YamlMember(Alias = "jobs")]
+    public Job[]? Jobs { get; set; }
 }

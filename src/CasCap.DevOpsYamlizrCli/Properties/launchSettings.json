@@ -1,8 +1,7 @@
 {
   "profiles": {
     "yamlizr": {
-      "commandName": "Project",
-      //"commandLineArgs": "generate -pat <your PAT here> -org <your AzDO organisation> -proj <your AzDO project> -out c:/temp/myoutputfolder",
+      "commandName": "Project"
     }
   }
 }

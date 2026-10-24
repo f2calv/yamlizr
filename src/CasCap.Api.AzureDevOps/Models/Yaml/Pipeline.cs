@@ -5,56 +5,70 @@ namespace CasCap.Models;
 /// <summary>Root of a generated Azure Pipelines YAML document.</summary>
 /// <remarks>
 /// Property order is the serialised order, so members are declared in the order the Azure Pipelines
-/// schema conventionally presents them rather than alphabetically. Only one of <see cref="stages"/>,
-/// <see cref="jobs"/> and <see cref="steps"/> is populated, because a document that mixes them is
+/// schema conventionally presents them rather than alphabetically. Only one of <see cref="Stages"/>,
+/// <see cref="Jobs"/> and <see cref="Steps"/> is populated, because a document that mixes them is
 /// rejected.
 /// <para>See <see href="https://learn.microsoft.com/azure/devops/pipelines/yaml-schema" />.</para>
 /// </remarks>
 public class Pipeline
 {
     /// <summary>Build number format, emitted as the pipeline <c>name</c>.</summary>
-    public string? name { get; set; }
+    [YamlMember(Alias = "name")]
+    public string? Name { get; set; }
 
     /// <summary>Parameters this document declares when it is used as a template.</summary>
     /// <remarks>A sequence, not a mapping; see <see cref="TemplateParameter"/>.</remarks>
-    public List<TemplateParameter>? parameters { get; set; }
+    [YamlMember(Alias = "parameters")]
+    public List<TemplateParameter>? Parameters { get; set; }
 
     /// <summary>Container image every job runs in.</summary>
-    public string? container { get; set; }
+    [YamlMember(Alias = "container")]
+    public string? Container { get; set; }
 
     /// <summary>Repositories, containers and pipelines the run consumes.</summary>
-    public Resources? resources { get; set; }
+    [YamlMember(Alias = "resources")]
+    public Resources? Resources { get; set; }
 
     /// <summary>Continuous integration trigger.</summary>
-    public TriggerAzDO? trigger { get; set; }
+    [YamlMember(Alias = "trigger")]
+    public TriggerAzDO? Trigger { get; set; }
 
     /// <summary>Pull request trigger.</summary>
-    public TriggerAzDO? pr { get; set; }
+    [YamlMember(Alias = "pr")]
+    public TriggerAzDO? Pr { get; set; }
 
     /// <summary>Scheduled triggers.</summary>
-    public Schedule[]? schedules { get; set; }
+    [YamlMember(Alias = "schedules")]
+    public Schedule[]? Schedules { get; set; }
 
     /// <summary>Agent pool every job runs on unless it overrides this.</summary>
-    public Pool? pool { get; set; }
+    [YamlMember(Alias = "pool")]
+    public Pool? Pool { get; set; }
 
     /// <summary>Matrix or parallel execution strategy.</summary>
-    public Strategy? strategy { get; set; }
+    [YamlMember(Alias = "strategy")]
+    public Strategy? Strategy { get; set; }
 
     /// <summary>Pipeline-scoped variables, including linked variable groups.</summary>
     /// <remarks>Omitted entirely when empty, because <c>variables: []</c> is rejected by the schema.</remarks>
-    public List<Variable>? variables { get; set; }
+    [YamlMember(Alias = "variables")]
+    public List<Variable>? Variables { get; set; }
 
     /// <summary>Stages, used when the definition produced more than one.</summary>
-    public StageAzDO[]? stages { get; set; }
+    [YamlMember(Alias = "stages")]
+    public StageAzDO[]? Stages { get; set; }
 
     /// <summary>Jobs, used when the definition produced a single stage with more than one job.</summary>
-    public Job[]? jobs { get; set; }
+    [YamlMember(Alias = "jobs")]
+    public Job[]? Jobs { get; set; }
 
     /// <summary>Steps, used when the definition produced a single job.</summary>
-    public Step[]? steps { get; set; }
+    [YamlMember(Alias = "steps")]
+    public Step[]? Steps { get; set; }
 
     /// <summary>Service containers available to the run.</summary>
-    public Dictionary<string, string>? services { get; set; }
+    [YamlMember(Alias = "services")]
+    public Dictionary<string, string>? Services { get; set; }
 
     /// <summary>Serialises this pipeline to Azure Pipelines YAML.</summary>
     /// <remarks>

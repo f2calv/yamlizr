@@ -25,7 +25,7 @@ public abstract class TestBase : IDisposable
     /// <summary>Azure DevOps REST client under test, absent when no token is configured.</summary>
     /// <remarks>Reading this from a test that did not skip on <see cref="IsConfigured"/> is a bug in the test.</remarks>
     protected IApiService ApiSvc => _apiSvc ?? throw new InvalidOperationException(NotConfigured);
-    private readonly IApiService? _apiSvc;
+    private IApiService? _apiSvc { get; set; }
 
     /// <summary>True when a token is configured, so a live test can run.</summary>
     protected bool IsConfigured => !string.IsNullOrWhiteSpace(Options.PAT);

@@ -27,12 +27,8 @@ namespace CasCap.Api.AzureDevOps.Tests.Integration;
 /// </para>
 /// </remarks>
 [Trait("Category", "Integration")]
-public class FixtureConversionTests : TestBase
+public class FixtureConversionTests(ITestOutputHelper output) : TestBase(output)
 {
-    /// <summary>Initialises the shared Azure DevOps connection.</summary>
-    /// <param name="output">xUnit sink that test logging is written to.</param>
-    public FixtureConversionTests(ITestOutputHelper output) : base(output) { }
-
     /// <summary>Name prefix every object created by <c>.scripts/New-FixtureDefinitions.ps1</c> carries.</summary>
     private const string FixturePrefix = "yamlizr.test.";
 
@@ -110,7 +106,7 @@ public class FixtureConversionTests : TestBase
             release,
             taskMap,
             taskGroupMap,
-            new ConcurrentDictionary<TaskGroupVersion, Template>(),
+            [],
             variableGroupMap,
             inlineTaskGroups: true,
             DeployPhaseTypes.AgentBasedDeployment);
@@ -134,13 +130,13 @@ public class FixtureConversionTests : TestBase
 
         foreach (var extension in extensions)
             //an entry with no name cannot be matched to a step input, so it is not indexed
-            extension.inputMap = extension.inputs?.Where(p => p.name is not null).ToDictionary(k => k.name!, v => v);
+            extension.InputMap = extension.Inputs?.Where(p => p.Name is not null).ToDictionary(k => k.Name!, v => v);
 
         var taskMap = new Dictionary<Guid, Dictionary<int, TaskObj>>();
-        foreach (var id in extensions.Select(p => p.id).Distinct())
+        foreach (var id in extensions.Select(p => p.Id).Distinct())
         {
             //a duplicated id means an incorrectly installed extension, which the tool also tolerates
-            var byMajorVersion = extensions.Where(p => p.id == id && p.version is not null).ToDictionary(k => k.version!.major, v => v);
+            var byMajorVersion = extensions.Where(p => p.Id == id && p.Version is not null).ToDictionary(k => k.Version!.Major, v => v);
             taskMap.TryAdd(id, byMajorVersion);
         }
 

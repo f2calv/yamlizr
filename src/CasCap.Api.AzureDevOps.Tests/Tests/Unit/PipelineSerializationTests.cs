@@ -12,7 +12,7 @@ public class PipelineSerializationTests
     {
         var pipeline = new Pipeline
         {
-            steps =
+            Steps =
             [
                 new Step
                 {
@@ -37,7 +37,7 @@ public class PipelineSerializationTests
     {
         var pipeline = new Pipeline
         {
-            steps = [new Step { displayName = "sample step", task = "SampleTask@1" }]
+            Steps = [new Step { displayName = "sample step", task = "SampleTask@1" }]
         };
 
         var yaml = pipeline.ToString();
@@ -46,5 +46,41 @@ public class PipelineSerializationTests
         Assert.DoesNotContain("stages:", yaml);
         Assert.DoesNotContain("jobs:", yaml);
         Assert.DoesNotContain("condition:", yaml);
+    }
+
+    [Fact]
+    public void ToString_RenamedProperties_PreserveAzurePipelinesKeyCasing()
+    {
+        var pipeline = new Pipeline
+        {
+            Name = "sample",
+            Parameters = [new TemplateParameter { Name = "message", @default = "hello" }],
+            Stages =
+            [
+                new StageAzDO
+                {
+                    Stage = "Build",
+                    DisplayName = "Build stage",
+                    DependsOn = ["Prepare"],
+                    Jobs = [],
+                }
+            ],
+        };
+
+        var yaml = pipeline.ToString();
+
+        Assert.Contains("name: sample", yaml);
+        Assert.Contains("parameters:", yaml);
+        Assert.Contains("- name: message", yaml);
+        Assert.Contains("default: hello", yaml);
+        Assert.Contains("stages:", yaml);
+        Assert.Contains("stage: Build", yaml);
+        Assert.Contains("displayName: Build stage", yaml);
+        Assert.Contains("dependsOn:", yaml);
+        Assert.False(yaml.StartsWith("Name:", StringComparison.Ordinal));
+        Assert.DoesNotContain("Parameters:", yaml);
+        Assert.DoesNotContain("Stages:", yaml);
+        Assert.DoesNotContain("DisplayName:", yaml);
+        Assert.DoesNotContain("DependsOn:", yaml);
     }
 }

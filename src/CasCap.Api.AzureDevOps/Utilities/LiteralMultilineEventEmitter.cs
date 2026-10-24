@@ -9,12 +9,8 @@ namespace CasCap.Utilities;
 /// newlines, which is valid YAML but unreadable and impossible to edit by hand. Converted pipelines
 /// are expected to be reviewed, so readability matters.
 /// </remarks>
-public class LiteralMultilineEventEmitter : ChainedEventEmitter
+public class LiteralMultilineEventEmitter(IEventEmitter nextEmitter) : ChainedEventEmitter(nextEmitter)
 {
-    /// <summary>Wraps the next emitter in the chain.</summary>
-    /// <param name="nextEmitter">The emitter to delegate to once the style has been set.</param>
-    public LiteralMultilineEventEmitter(IEventEmitter nextEmitter) : base(nextEmitter) { }
-
     /// <inheritdoc/>
     public override void Emit(ScalarEventInfo eventInfo, IEmitter emitter)
     {
