@@ -19,6 +19,24 @@ Azure DevOps SDK's older transitive version. This also removes its obsolete draw
 chain. Consumers should not downgrade that dependency; dependency resolution and offline tests
 do not establish live Azure DevOps connectivity.
 
+## Migrating to 4.4
+
+Version 4.4 deliberately includes breaking C# model-member renames despite its minor version.
+Recompile library consumers and change member access and object initializers to PascalCase:
+
+- `TaskObj`, `TaskInput`, `TaskVersion` and `Tasks`, for example `id` to `Id`,
+  `inputMap` to `InputMap`, `defaultValue` to `DefaultValue` and `value` to `Value`.
+- `Pipeline`, `StageAzDO` and `TemplateParameter`, for example `stages` to `Stages`,
+  `dependsOn` to `DependsOn` and `name` to `Name`. The escaped `@default` member is unchanged.
+- `Template.taskGroup` to `Template.TaskGroup`, and `TaskGroupVersion.taskGroupId` /
+  `version` to `TaskGroupId` / `Version`. Named constructor arguments for `TaskGroupVersion`
+  are now `taskGroupId` and `version`, without the former leading underscores.
+
+The Azure DevOps JSON names and emitted Azure Pipelines YAML names remain unchanged.
+`TaskObj.InputMap` is a derived lookup excluded from JSON; populate it from `Inputs` in the host.
+CLI commands do not require a corresponding syntax migration. Consumers that cannot migrate
+should remain on an earlier immutable package version.
+
 ## Quick Start
 
 In a .NET console application, retrieve the installed task catalogue. Supply the token through

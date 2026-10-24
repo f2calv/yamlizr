@@ -19,6 +19,10 @@ Azure Pipelines YAML, with optional GitHub Actions conversion.
 
 ## Quick Start
 
+Library consumers upgrading to 4.4 must recompile for the
+[breaking model-member renames](src/CasCap.Api.AzureDevOps/README.md#migrating-to-44).
+The CLI command syntax and generated JSON/YAML wire names are unchanged.
+
 Install the [global tool](https://www.nuget.org/packages/yamlizr) with a .NET 8, 9 or 10 SDK
 and matching .NET and ASP.NET Core runtimes (included in the corresponding SDK).
 Read the [token permissions](#personal-access-token), then run this
