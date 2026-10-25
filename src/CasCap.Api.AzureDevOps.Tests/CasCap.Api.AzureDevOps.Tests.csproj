@@ -6,11 +6,11 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <None Update="appsettings.json" CopyToOutputDirectory="PreserveNewest" />
-    <None Update="appsettings.Test.json" CopyToOutputDirectory="PreserveNewest" Condition="Exists('appsettings.Test.json')" />
-    <None Update="appsettings.Local.json" CopyToOutputDirectory="PreserveNewest" Condition="Exists('appsettings.Local.json')" />
-    <None Update="appsettings.Local.Test.json" CopyToOutputDirectory="PreserveNewest" Condition="Exists('appsettings.Local.Test.json')" />
-    <None Update="appsettings.Tests.Local.json" CopyToOutputDirectory="PreserveNewest" Condition="Exists('appsettings.Tests.Local.json')" />
+    <None Update="appsettings.json" CopyToOutputDirectory="Always" />
+    <None Update="appsettings.Test.json" CopyToOutputDirectory="Always" Condition="Exists('appsettings.Test.json')" />
+    <None Update="appsettings.Local.json" CopyToOutputDirectory="Always" Condition="Exists('appsettings.Local.json')" CopyToPublishDirectory="Never" Pack="false" />
+    <None Update="appsettings.Local.Test.json" CopyToOutputDirectory="Always" Condition="Exists('appsettings.Local.Test.json')" CopyToPublishDirectory="Never" Pack="false" />
+    <None Update="appsettings.Tests.Local.json" CopyToOutputDirectory="Always" Condition="Exists('appsettings.Tests.Local.json')" CopyToPublishDirectory="Never" Pack="false" />
   </ItemGroup>
 
   <ItemGroup>
