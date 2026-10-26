@@ -37,6 +37,12 @@ internal class GenerateCommand(
     [Option("--filter", Description = "Build/Release definition name filter, a case-insensitive 'contains' match rather than a wildcard pattern.")]
     public string? Filter { get; }
 
+    [Option("--folder", Description = "Build/Release definition folder path filter, e.g. '\\Team\\App' (includes subfolders).")]
+    public string? FolderPath { get; }
+
+    [Option("--preserve-folders", Description = "Replicate the Azure DevOps folder structure in the output folders [default: false]")]
+    public bool PreserveFolders { get; }
+
     [Option("--phasetype", Description = "Filter deployment phases [default: AgentBasedDeployment]")]
     public DeployPhaseTypes PhaseType { get; set; } = DeployPhaseTypes.AgentBasedDeployment;
 
@@ -51,6 +57,9 @@ internal class GenerateCommand(
 
     [Option("--create-directory", Description = "Create the destination directory if it does not exist [default: false]")]
     public bool CreateDirectory { get; }
+
+    //Azure DevOps definition paths always use '\' (and users may type '/'), independent of the host OS, so Path.*SeparatorChar must not be used here
+    private static readonly char[] _folderSeparators = ['\\', '/'];
 
     public async Task<int> OnExecuteAsync()
     {
@@ -187,6 +196,12 @@ internal class GenerateCommand(
         //1) load all Designer build definitions
         if (!buildDefinitionReferences.IsNullOrEmpty())
         {
+            if (!string.IsNullOrWhiteSpace(FolderPath))
+            {
+                buildDefinitionReferences = [.. buildDefinitionReferences.Where(p => FolderMatcher.Matches(p.Path, FolderPath))];
+                _console.WriteLine($"Folder set to '{FolderPath}', {buildDefinitionReferences.Count} build definition(s) match folder.");
+            }
+
             if (!string.IsNullOrWhiteSpace(Filter))
             {
                 _console.Write($"{buildDefinitionReferences.Count} build definition reference(s).");
@@ -272,6 +287,12 @@ internal class GenerateCommand(
         //3) load and process all release definitions
         if (!releaseDefinitions.IsNullOrEmpty())
         {
+            if (!string.IsNullOrWhiteSpace(FolderPath))
+            {
+                releaseDefinitions = [.. releaseDefinitions.Where(p => FolderMatcher.Matches(p.Path, FolderPath))];
+                _console.WriteLine($"Folder set to '{FolderPath}', {releaseDefinitions.Count} release definition(s) match folder.");
+            }
+
             if (!string.IsNullOrWhiteSpace(Filter))
             {
                 _console.Write($"{releaseDefinitions.Count} release definition(s).");
@@ -359,7 +380,7 @@ internal class GenerateCommand(
             {
                 //this loop only ever receives build results, so the release side of the tuple is unset
                 var buildDefinition = result.buildDefinition ?? throw new InvalidOperationException("a build conversion result carried no build definition.");
-                var fileCount = await WriteYAML(result.pipeline, buildDefinition.Id, buildDefinition.Name, azureDevOpsPath, gitHubPath);
+                var fileCount = await WriteYAML(result.pipeline, buildDefinition.Id, buildDefinition.Name, buildDefinition.Path, azureDevOpsPath, gitHubPath);
                 Interlocked.Add(ref fileCounter, fileCount);
                 Interlocked.Increment(ref processedDefinitionCount);
                 pbar.Tick(processedDefinitionCount, $"{AppDomain.CurrentDomain.FriendlyName} persisted {processedDefinitionCount} of {definitions.Count} build pipeline(s) to disk{(GitHubActions ? " with GitHub Actions conversion" : string.Empty)}.");
@@ -393,7 +414,7 @@ internal class GenerateCommand(
             {
                 //this loop only ever receives release results, so the build side of the tuple is unset
                 var releaseDefinition = result.releaseDefinition ?? throw new InvalidOperationException("a release conversion result carried no release definition.");
-                var fileCount = await WriteYAML(result.pipeline, releaseDefinition.Id, releaseDefinition.Name, azureDevOpsPath, gitHubPath);
+                var fileCount = await WriteYAML(result.pipeline, releaseDefinition.Id, releaseDefinition.Name, releaseDefinition.Path, azureDevOpsPath, gitHubPath);
                 Interlocked.Add(ref fileCounter, fileCount);
                 Interlocked.Increment(ref processedDefinitionCount);
                 pbar.Tick(processedDefinitionCount, $"{AppDomain.CurrentDomain.FriendlyName} persisted {processedDefinitionCount} of {definitions.Count} release pipeline(s) to disk{(GitHubActions ? " with GitHub Actions conversion" : string.Empty)}.");
@@ -402,9 +423,19 @@ internal class GenerateCommand(
             }
         }
 
-        async Task<int> WriteYAML(Pipeline pipeline, int Id, string Name, string azureDevOpsPath, string gitHubPath)
+        async Task<int> WriteYAML(Pipeline pipeline, int Id, string Name, string? folder, string azureDevOpsPath, string gitHubPath)
         {
             var count = 0;
+            var subFolders = PreserveFolders
+                ? (folder ?? string.Empty).Split(_folderSeparators, StringSplitOptions.RemoveEmptyEntries).Select(p => p.Sanitize()).OfType<string>().ToArray()
+                : [];
+            if (subFolders.Length > 0)
+            {
+                azureDevOpsPath = Path.Combine([azureDevOpsPath, .. subFolders]);
+                gitHubPath = Path.Combine([gitHubPath, .. subFolders]);
+            }
+            Directory.CreateDirectory(azureDevOpsPath);
+            if (GitHubActions) Directory.CreateDirectory(gitHubPath);
             if (pipeline is null)
             {
                 errors.Enqueue($"definition id {Id} '{Name}' cannot be YAML'ised at this time...");
