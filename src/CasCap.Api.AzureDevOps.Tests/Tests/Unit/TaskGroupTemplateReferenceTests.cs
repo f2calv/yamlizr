@@ -36,7 +36,8 @@ public class TaskGroupTemplateReferenceTests
 
         var pipeline = Generator(build, null, depth).GenPipeline();
 
-        Assert.NotNull(pipeline?.Steps);
+        Assert.NotNull(pipeline);
+        Assert.NotNull(pipeline.Steps);
         Assert.Equal(expected, pipeline.Steps[0].template);
     }
 
@@ -50,7 +51,8 @@ public class TaskGroupTemplateReferenceTests
 
         var pipeline = Generator(null, release, depth).GenPipeline();
 
-        Assert.NotNull(pipeline?.Steps);
+        Assert.NotNull(pipeline);
+        Assert.NotNull(pipeline.Steps);
         Assert.Equal(expected, pipeline.Steps[0].template);
     }
 
