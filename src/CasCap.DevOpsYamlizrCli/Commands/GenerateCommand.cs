@@ -58,9 +58,6 @@ internal class GenerateCommand(
     [Option("--create-directory", Description = "Create the destination directory if it does not exist [default: false]")]
     public bool CreateDirectory { get; }
 
-    //Azure DevOps definition paths always use '\' (and users may type '/'), independent of the host OS, so Path.*SeparatorChar must not be used here
-    private static readonly char[] _folderSeparators = ['\\', '/'];
-
     public async Task<int> OnExecuteAsync()
     {
         if (GitHubActions) InlineTaskGroups = true;//github actions don't support templates
@@ -266,7 +263,8 @@ internal class GenerateCommand(
                     taskGroupTemplateMap,
                     variableGroupMap,
                     InlineTaskGroups,
-                    PhaseType
+                    PhaseType,
+                    PreserveFolders ? FolderMatcher.GetSubFolders(buildDefinition.Path).Length : 0
                     );
 
                 var pipeline = generator.GenPipeline();
@@ -327,7 +325,8 @@ internal class GenerateCommand(
                     taskGroupTemplateMap,
                     variableGroupMap,
                     InlineTaskGroups,
-                    PhaseType
+                    PhaseType,
+                    PreserveFolders ? FolderMatcher.GetSubFolders(releaseDefinition.Path).Length : 0
                     );
 
                 var pipeline = generator.GenPipeline();
@@ -426,9 +425,7 @@ internal class GenerateCommand(
         async Task<int> WriteYAML(Pipeline pipeline, int Id, string Name, string? folder, string azureDevOpsPath, string gitHubPath)
         {
             var count = 0;
-            var subFolders = PreserveFolders
-                ? (folder ?? string.Empty).Split(_folderSeparators, StringSplitOptions.RemoveEmptyEntries).Select(p => p.Sanitize()).OfType<string>().ToArray()
-                : [];
+            var subFolders = PreserveFolders ? FolderMatcher.GetSubFolders(folder) : [];
             if (subFolders.Length > 0)
             {
                 azureDevOpsPath = Path.Combine([azureDevOpsPath, .. subFolders]);
