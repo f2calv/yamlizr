@@ -1,4 +1,5 @@
 ﻿using CasCap.Abstractions;
+using CasCap.Common.Extensions;
 using CasCap.Models;
 using CasCap.Services;
 using Microsoft.Extensions.Configuration;
@@ -11,13 +12,14 @@ namespace CasCap.Api.AzureDevOps.Tests.Integration;
 /// Shared setup for tests which call a live Azure DevOps organisation.
 /// </summary>
 /// <remarks>
-/// Configuration is read in repository order: <c>appsettings.Test.json</c>, then User Secrets for local
-/// runs, then environment variables for CI. Set the token locally with
+/// Configuration uses the shared Test-environment settings chain, then User Secrets for local runs
+/// and environment variables for CI. Set the token locally with
 /// <c>dotnet user-secrets set CasCap:AzureDevOpsOptions:PAT "your-token"</c>.
 /// </remarks>
 public abstract class TestBase : IDisposable
 {
     private readonly ServiceProvider _serviceProvider;
+    private readonly ConfigurationManager _configuration = new();
 
     /// <summary>Azure DevOps connection details resolved from configuration.</summary>
     protected AzureDevOpsOptions Options { get; }
@@ -53,11 +55,8 @@ public abstract class TestBase : IDisposable
     /// <param name="output">xUnit sink that test logging is written to.</param>
     protected TestBase(ITestOutputHelper output)
     {
-        var configuration = new ConfigurationBuilder()
-            .AddJsonFile("appsettings.Test.json", optional: true, reloadOnChange: false)
-            .AddUserSecrets<TestBase>(optional: true)
-            .AddEnvironmentVariables()
-            .Build();
+        var configuration = _configuration;
+        configuration.AddStandardConfiguration("Test", typeof(TestBase).Assembly);
 
         Options = configuration.GetSection(AzureDevOpsOptions.ConfigurationSectionName).Get<AzureDevOpsOptions>()
             ?? new AzureDevOpsOptions();
@@ -80,6 +79,7 @@ public abstract class TestBase : IDisposable
     public void Dispose()
     {
         _serviceProvider.Dispose();
+        _configuration.Dispose();
         GC.SuppressFinalize(this);
     }
 }

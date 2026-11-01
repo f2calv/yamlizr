@@ -24,7 +24,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Content Include="appsettings.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Remove="appsettings.json" />
+    <Content Include="appsettings.json" CopyToOutputDirectory="Always" />
+    <None Update="appsettings.Local*.json;appsettings.*.Local.json" CopyToPublishDirectory="Never" Pack="false" />
   </ItemGroup>
 
   <ItemGroup>

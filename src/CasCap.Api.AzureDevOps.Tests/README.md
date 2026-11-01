@@ -51,8 +51,10 @@ can report each reason; guards overlap, so do not sum them as an execution resul
 | No validation pipeline configured | 6 | All of `PAT`, `OrganisationUri`, `Project`, `ValidationPipelineId`, despite the shorter message |
 | No fixture organisation configured | 1 | All four fields above, plus accessible fixture definitions to make the test useful |
 
-[`TestBase`](Tests/Integration/TestBase.cs) loads `appsettings.Test.json`, User Secrets, then environment
-variables, binding
+[`TestBase`](Tests/Integration/TestBase.cs) uses the shared Test-environment loader: required
+`appsettings.json`, optional `appsettings.Test.json`, optional `appsettings.Local.json`,
+`appsettings.Local.Test.json` and `appsettings.Tests.Local.json`, then User Secrets and environment
+variables. The Test file may be absent when other providers supply the values. It binds
 [`AzureDevOpsOptions`](../CasCap.Api.AzureDevOps/Models/AzureDevOpsOptions.cs).
 [`PipelineValidationTests`](Tests/Integration/PipelineValidationTests.cs) and
 [`FixtureConversionTests`](Tests/Integration/FixtureConversionTests.cs) each require all four connection
