@@ -1,5 +1,4 @@
 using AzurePipelinesToGitHubActionsConverter.Core.AzurePipelines;
-using CasCap.Common.Exceptions;
 using CasCap.Models;
 using CasCap.Utilities;
 using Microsoft.TeamFoundation.Build.WebApi;
@@ -309,6 +308,6 @@ public class YamlPipelineGeneratorTests
             inlineTaskGroups: false,
             DeployPhaseTypes.AgentBasedDeployment);
 
-        Assert.Throws<GenericException>(generator.GenPipeline);
+        Assert.Throws<InvalidOperationException>(generator.GenPipeline);
     }
 }

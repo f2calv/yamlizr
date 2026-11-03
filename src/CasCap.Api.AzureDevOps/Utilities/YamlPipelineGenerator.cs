@@ -36,8 +36,8 @@ public class YamlPipelineGenerator(
 
     //exactly one of the two is supplied, so each path reads its own through an accessor rather than
     //re-testing a field the surrounding branch has already established
-    private BuildDefinition Build => _build ?? throw new GenericException($"{nameof(YamlPipelineGenerator)} was not given a build definition.");
-    private ReleaseDefinition Release => _release ?? throw new GenericException($"{nameof(YamlPipelineGenerator)} was not given a release definition.");
+    private BuildDefinition Build => _build ?? throw new InvalidOperationException($"{nameof(YamlPipelineGenerator)} was not given a build definition.");
+    private ReleaseDefinition Release => _release ?? throw new InvalidOperationException($"{nameof(YamlPipelineGenerator)} was not given a release definition.");
 
     private readonly Dictionary<Guid, Dictionary<int, TaskObj>> _taskMap = taskMap;
     private readonly Dictionary<TaskGroupVersion, TaskGroup> _taskGroupMap = taskGroupMap;
@@ -70,7 +70,7 @@ public class YamlPipelineGenerator(
     /// Flattening discards settings that only a stage or a job can carry, which is reported.
     /// </remarks>
     /// <returns>The generated pipeline, or null when the definition produced nothing convertible.</returns>
-    /// <exception cref="GenericException">Thrown when neither or both of a build and a release were supplied.</exception>
+    /// <exception cref="InvalidOperationException">Thrown when neither or both of a build and a release were supplied.</exception>
     public Pipeline? GenPipeline()
     {
         var pipeline = new Pipeline();
@@ -123,7 +123,7 @@ public class YamlPipelineGenerator(
             }
         }
         else
-            throw new GenericException($"{nameof(YamlPipelineGenerator)} expects only either a build OR a release!");
+            throw new InvalidOperationException($"{nameof(YamlPipelineGenerator)} expects only either a build OR a release!");
         if (stages.Count > 1) pipeline.Stages = [.. stages];
         else if (jobs.Count > 1) pipeline.Jobs = [.. jobs];
         else pipeline.Steps = [.. steps];
