@@ -144,6 +144,8 @@ Optional arguments;
 - `-out|--outputpath` path to the YAML output folder. **Pass it explicitly**: the implementation defaults
   to the application base directory, despite the help text claiming the current directory.
 - `--filter <some string here>` only convert definitions whose name contains this text. It is a case-insensitive `contains` match, not a wildcard pattern, so pass `yamlizr.test.` rather than `yamlizr.test.*`.
+- `--folder <\Team\App>` only convert build/release definitions in this Azure DevOps folder, including subfolders.
+- `--preserve-folders` replicate the Azure DevOps folder structure in the output folders, default `false`.
 - `--phasetype` selects the release deployment phase type, default `AgentBasedDeployment`.
   Accepting another enum value does not establish equivalent conversion fidelity.
 
