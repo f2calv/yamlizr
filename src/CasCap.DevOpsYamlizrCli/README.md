@@ -114,22 +114,25 @@ plus the project's required access. See the full
 and [pipeline token mapping](https://github.com/f2calv/yamlizr/blob/main/README.md#running-inside-a-pipeline).
 Never commit a token; container environment values remain inspectable.
 
-## Data Flow
+## Dependency Graph
 
-The CLI orchestrates SDK retrieval and library conversion; generated files are local output,
-not changes to Azure DevOps.
+The CLI references the conversion library in this repository and these six runtime packages.
+See the [conversion flow](https://github.com/f2calv/yamlizr/blob/main/README.md#data-flow)
+and the library's own dependency graph for its transitive dependencies.
 
 ```mermaid
-flowchart TD
-    Config[appsettings, user secrets, environment] --> CLI([yamlizr generate])
-    CLI --> Cmd[GenerateCommand]
-    Cmd --> Conn[VssConnection]
-    Conn --> AzDO[(Azure DevOps)]
-    Cmd --> Gen[YamlPipelineGenerator]
-    Gen --> Yaml[(YAML files on disk)]
-    Gen --> Warn[Run summary of unconverted constructs]
-    classDef owned fill:#e8f0fe,stroke:#315da8
-    class CLI,Cmd,Gen owned
+graph TD
+  cli([yamlizr]) --> library[CasCap.Api.AzureDevOps]
+  cli --> fonts[Figgle.Fonts]
+  cli --> command[McMaster.Extensions.CommandLineUtils]
+  cli --> hostingcommand[McMaster.Extensions.Hosting.CommandLine]
+  cli --> secrets[Microsoft.Extensions.Configuration.UserSecrets]
+  cli --> hosting[Microsoft.Extensions.Hosting]
+  cli --> progress[ShellProgressBar]
+  classDef owned fill:#dbeafe,stroke:#1d4ed8,color:#1e3a8a
+  classDef published fill:#dcfce7,stroke:#15803d,color:#14532d
+  class cli owned
+  class library,fonts,command,hostingcommand,secrets,hosting,progress published
 ```
 
 The diagram is supplemental; registry renderers may not render Mermaid. See the
