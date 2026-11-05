@@ -23,9 +23,9 @@ Tests/
 
 | Suite | Test methods | Expanded cases |
 | --- | --- | --- |
-| Unit | 23 | 33 |
+| Unit | 23 | 34 |
 | Integration | 8 | 8 |
-| **Total** | **31** | **41** |
+| **Total** | **31** | **42** |
 
 Counts are source-declared cases per target framework, not observed execution results. The project
 targets `net8.0`, `net9.0` and `net10.0`; use an SDK supporting the current C# source and the selected

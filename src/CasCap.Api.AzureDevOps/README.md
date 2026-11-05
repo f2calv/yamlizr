@@ -81,7 +81,9 @@ For offline definition construction and map shapes, see
 
 - One generator instance handles one definition. Read `Warnings` only after `GenPipeline()` returns
   and surface them to the caller. It returns null when nothing is convertible and throws if both
-  definition arguments, or neither, are supplied.
+  definition arguments, or neither, are supplied. Invalid generator state now throws
+  `InvalidOperationException` instead of the shared `GenericException`; update any catch targeting
+  `GenericException`. Valid conversion inputs and generated wire formats are unchanged.
 - Generated YAML is **not production ready**. Unsupported triggers, artifacts, approvals and gates
   need manual work; flattening can discard stage/job settings. Review the
   [conversion coverage](https://github.com/f2calv/yamlizr/blob/main/README.md#conversion-coverage).
@@ -135,24 +137,33 @@ Replace the synthetic ID with a real enabled pipeline. See Microsoft's
 [PAT guidance](https://learn.microsoft.com/en-us/azure/devops/organizations/accounts/use-personal-access-tokens-to-authenticate?view=azure-devops)
 and the CLI's [permission guidance](https://github.com/f2calv/yamlizr/blob/main/README.md#personal-access-token).
 
-## Data Flow
+## Dependency Graph
 
-The host retrieves definitions using Azure DevOps SDK clients and supplies catalogues to the
-generator; the REST wrapper does not itself perform bulk conversion.
+Your host retrieves definitions and catalogues, supplies them to the generator and persists the
+resulting pipeline and templates. The REST wrapper does not itself perform bulk conversion.
+
+These are the library's direct runtime dependencies in Release configuration.
+Debug substitutes sibling source projects for the two CasCap.Common packages. The XML reference
+deliberately overrides the older Azure DevOps SDK dependency described above.
 
 ```mermaid
-flowchart LR
-  Host([Consuming host]) --> SDK[Azure DevOps SDK clients]
-  Host --> API[ApiService]
-  SDK --> Inputs[Definitions and groups]
-  API --> Tasks[Installed tasks]
-  Inputs --> Gen[YamlPipelineGenerator]
-  Tasks --> Gen
-  Gen --> Result[Pipeline, templates and warnings]
-  Result --> Files[(Host-owned output)]
-  Files -. optional preview .-> API
-  classDef owned fill:#e8f0fe,stroke:#315da8
-  class API,Gen,Result owned
+graph TD
+  library([CasCap.Api.AzureDevOps]) --> extensions[CasCap.Common.Extensions]
+  library --> net[CasCap.Common.Net]
+  library --> converter[AzurePipelinesToGitHubActionsConverter.Core]
+  library --> tasks[Microsoft.TeamFoundation.DistributedTask.WebApi]
+  library --> tfs[Microsoft.TeamFoundationServer.Client]
+  library --> services[Microsoft.VisualStudio.Services.Client]
+  library --> releases[Microsoft.VisualStudio.Services.Release.Client]
+  library --> json[Newtonsoft.Json]
+  library --> configuration[System.Configuration.ConfigurationManager]
+  library --> xml[System.Security.Cryptography.Xml]
+  library --> semver[semver]
+  library --> yaml[YamlDotNet]
+  classDef owned fill:#dbeafe,stroke:#1d4ed8,color:#1e3a8a
+  classDef published fill:#dcfce7,stroke:#15803d,color:#14532d
+  class library owned
+  class extensions,net,converter,tasks,tfs,services,releases,json,configuration,xml,semver,yaml published
 ```
 
 Essential usage is described above; package renderers may not render Mermaid.

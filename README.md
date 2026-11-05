@@ -58,7 +58,7 @@ docker pull ghcr.io/f2calv/yamlizr
 | Tag | Meaning |
 | --- | --- |
 | `latest` | The most recent release, moves with every release. |
-| `4.3.4` | Verified exact release; pin a version for repeatable automation. |
+| `4.4.1` | Verified exact release; pin a version for repeatable automation. |
 
 Notes on running the image;
 
@@ -164,7 +164,7 @@ docker run --pull always --rm \
   --user "$(id -u):$(id -g)" \
   -e CasCap__AzureDevOpsOptions__PAT \
   -v "$(pwd)/out:/data" \
-  ghcr.io/f2calv/yamlizr:4.3.4 generate -org https://dev.azure.com/example-org -proj ExampleProject -out /data --create-directory
+  ghcr.io/f2calv/yamlizr:4.4.1 generate -org https://dev.azure.com/example-org -proj ExampleProject -out /data --create-directory
 ```
 
 This Linux shell example assumes the token environment variable is already exported. Create the
@@ -297,18 +297,23 @@ definitions plus task and variable catalogues.
 [`YamlPipelineGenerator`](src/CasCap.Api.AzureDevOps/Utilities/YamlPipelineGenerator.cs)
 produces [`Pipeline`](src/CasCap.Api.AzureDevOps/Models/Yaml/Pipeline.cs) objects, which serialize
 through YamlDotNet. Optional GitHub Actions conversion consumes that Azure Pipelines YAML.
+See the [CLI dependencies](src/CasCap.DevOpsYamlizrCli/README.md#dependency-graph) and
+[library dependencies](src/CasCap.Api.AzureDevOps/README.md#dependency-graph) for the package graph.
 
 ```mermaid
 flowchart LR
-  A[(Azure DevOps definitions and catalogues)] --> C[yamlizr generate]
-  C --> G[Pipeline generator]
-  G --> Y[(Azure Pipelines YAML and templates)]
-  G --> W[Warnings for unsupported constructs]
-  Y --> X{GitHub Actions requested?}
-  X -->|yes, task groups inlined| H[External converter]
-  H --> F[(GitHub Actions YAML)]
-  classDef owned fill:#e8f0fe,stroke:#315da8
-  class C,G owned
+  definitions["Azure DevOps definitions and catalogues"] --> cli([yamlizr generate])
+  cli --> yaml[(Azure Pipelines YAML and templates)]
+  cli --> warnings[Run summary of unsupported constructs]
+  yaml --> requested{GitHub Actions requested?}
+  requested -->|yes, task groups inlined| converter[External converter]
+  converter --> workflows[(GitHub Actions YAML)]
+  classDef owned fill:#dbeafe,stroke:#1d4ed8,color:#1e3a8a
+  classDef external fill:#fef3c7,stroke:#d97706,color:#78350f
+  classDef store fill:#e5e7eb,stroke:#4b5563,color:#111827
+  class cli,warnings owned
+  class definitions,converter external
+  class yaml,workflows store
 ```
 
 ## Conversion Coverage
@@ -373,6 +378,14 @@ The projects target .NET 8, 9 and 10. Use a .NET 10 SDK for the current C# sourc
 Release configuration uses published shared dependencies; Debug requires sibling source projects.
 See the [test guide](src/CasCap.Api.AzureDevOps.Tests/README.md) before choosing offline or live checks,
 and the [script guide](.scripts/README.md) before provisioning fixtures.
+
+```shell
+dotnet build yamlizr.Release.slnx --configuration Release
+dotnet test --solution yamlizr.Release.slnx --configuration Release --no-build --no-restore --max-parallel-test-modules 1 --filter-not-trait Category=Integration
+```
+
+Run these commands from the repository root. The test command runs the credential-free cases on
+all three target frameworks; it does not contact Azure DevOps or provision fixtures.
 
 ## License
 
