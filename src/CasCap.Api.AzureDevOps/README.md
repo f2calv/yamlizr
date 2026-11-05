@@ -139,6 +139,9 @@ and the CLI's [permission guidance](https://github.com/f2calv/yamlizr/blob/main/
 
 ## Dependency Graph
 
+Your host retrieves definitions and catalogues, supplies them to the generator and persists the
+resulting pipeline and templates. The REST wrapper does not itself perform bulk conversion.
+
 These are the library's direct runtime dependencies in Release configuration.
 Debug substitutes sibling source projects for the two CasCap.Common packages. The XML reference
 deliberately overrides the older Azure DevOps SDK dependency described above.
