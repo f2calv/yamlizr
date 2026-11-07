@@ -29,7 +29,8 @@ public class YamlPipelineGenerator(
     ConcurrentDictionary<TaskGroupVersion, Template> taskGroupTemplateMap,
     Dictionary<int, Microsoft.TeamFoundation.DistributedTask.WebApi.VariableGroup> variableGroupMap,
     bool inlineTaskGroups,
-    DeployPhaseTypes phaseType)
+    DeployPhaseTypes phaseType,
+    int folderDepth = 0)
 {
     private readonly BuildDefinition? _build = build;
     private readonly ReleaseDefinition? _release = release;
@@ -47,6 +48,9 @@ public class YamlPipelineGenerator(
     private readonly DeployPhaseTypes _phaseType = phaseType;
 
     private readonly string _templatesFolder = "AzureDevOpsTaskGroups";
+
+    //number of folders the pipeline file is nested beneath AzureDevOpsBuilds/AzureDevOpsReleases (--preserve-folders)
+    private readonly int _folderDepth = Math.Max(0, folderDepth);
 
     private readonly List<string> _warnings = [];
 
@@ -600,7 +604,8 @@ public class YamlPipelineGenerator(
             if (input is not null && string.IsNullOrWhiteSpace(inputs[key]))
                 inputs[key] = input.DefaultValue;
         }
-        return [new Step { template = $"../{_templatesFolder}/{filename}", parameters = inputs.IsNullOrEmpty() ? null : inputs }];
+        var parents = string.Concat(Enumerable.Repeat("../", 1 + _folderDepth));
+        return [new Step { template = $"{parents}{_templatesFolder}/{filename}", parameters = inputs.IsNullOrEmpty() ? null : inputs }];
     }
 
     /// <summary>Reads the major version from a classic task version spec such as <c>2.*</c>.</summary>
