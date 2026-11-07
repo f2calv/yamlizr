@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <RootNamespace>CasCap</RootNamespace>
-    <LangVersion>14.0</LangVersion>
+    <LangVersion>15.0</LangVersion>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <UserSecretsId>b08b24aa-70ab-4ecd-aef9-cce6d49054ec</UserSecretsId>

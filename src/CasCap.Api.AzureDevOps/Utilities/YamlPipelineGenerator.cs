@@ -273,7 +273,7 @@ public class YamlPipelineGenerator(
         List<Variable> variables;
         if (type == VariableType.Build)
         {
-            variables = new List<Variable>(Build.VariableGroups.Count + Build.Variables.Count);
+            variables = [with(Build.VariableGroups.Count + Build.Variables.Count)];
             foreach (var vg in Build.VariableGroups)
                 variables.Add(new Variable { group = vg.Name });
             foreach (var kvp in Build.Variables)
@@ -283,7 +283,7 @@ public class YamlPipelineGenerator(
         {
             if (environment is not null)
             {
-                variables = new List<Variable>(environment.VariableGroups.Count + environment.Variables.Count);
+                variables = [with(environment.VariableGroups.Count + environment.Variables.Count)];
                 foreach (var id in environment.VariableGroups)
                     if (_variableGroupMap.TryGetValue(id, out var vg))
                         variables.Add(new Variable { group = vg.Name });
@@ -470,8 +470,8 @@ public class YamlPipelineGenerator(
                     condition = GenCondition(condition) == "succeeded()" ? null : GenCondition(condition),//todo: add "succeeded()" as default in Sam's lib
                     continueOnError = continueOnError,
                     displayName = displayName,
-                    env = env is { Count: > 0 } ? new Dictionary<string, string>(env) : null,
-                    inputs = inputs is { Count: > 0 } ? ProcessTaskInputs(new Dictionary<string, string>(inputs)) : null,
+                    env = env is { Count: > 0 } ? [with(env)] : null,
+                    inputs = inputs is { Count: > 0 } ? ProcessTaskInputs([with(inputs)]) : null,
                     task = string.IsNullOrWhiteSpace(taskObj.ContributionIdentifier) ? $"{taskObj.Name}@{version}"
                         : $"{taskObj.ContributionIdentifier}.{taskObj.Name}@{version}",
                     timeoutInMinutes = timeoutInMinutes,
@@ -503,8 +503,8 @@ public class YamlPipelineGenerator(
                 Dictionary<string, string?>? parameterDefaults = null;
                 if (!taskGroup.Inputs.IsNullOrEmpty())
                 {
-                    template.Parameters = new List<TemplateParameter>(taskGroup.Inputs.Count);
-                    parameterDefaults = new Dictionary<string, string?>(taskGroup.Inputs.Count);
+                    template.Parameters = [with(taskGroup.Inputs.Count)];
+                    parameterDefaults = [with(taskGroup.Inputs.Count)];
                     foreach (var input in taskGroup.Inputs)
                     {
                         var defaultValue = string.IsNullOrWhiteSpace(input.DefaultValue) ? null : input.DefaultValue;
@@ -587,7 +587,7 @@ public class YamlPipelineGenerator(
         }
     }
 
-    private List<Step> GetSteps(Template template, IDictionary<string, string>? inputs) => GenSteps(template, inputs is null ? [] : new Dictionary<string, string>(inputs));
+    private List<Step> GetSteps(Template template, IDictionary<string, string>? inputs) => GenSteps(template, inputs is null ? [] : [with(inputs)]);
 
     private List<Step> GenSteps(Template template, Dictionary<string, string> inputs)
     {
