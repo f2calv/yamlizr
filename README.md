@@ -23,8 +23,10 @@ Library consumers upgrading to 4.4 must recompile for the
 [breaking model-member renames](src/CasCap.Api.AzureDevOps/README.md#migrating-to-44).
 The CLI command syntax and generated JSON/YAML wire names are unchanged.
 
-Install the [global tool](https://www.nuget.org/packages/yamlizr) with a .NET 8, 9 or 10 SDK
-and matching .NET and ASP.NET Core runtimes (included in the corresponding SDK).
+Install the [global tool](https://www.nuget.org/packages/yamlizr) with a .NET SDK
+and the .NET and ASP.NET Core runtimes required by the selected package version.
+This checkout targets .NET 10 and 11 and uses the .NET 11 RC3 SDK pinned in `global.json`;
+that does not imply a .NET 11 tool version has been published.
 Read the [token permissions](#personal-access-token), then run this
 PowerShell 7 example from the directory where you want the output:
 
@@ -82,9 +84,8 @@ If you already have the .NET SDK then the global tool is the lighter option, and
 to your filesystem with no volume or user mapping to think about.
 
 - Download and install one of;
-  - [.NET 8.0 SDK](https://dotnet.microsoft.com/download/dotnet/8.0)
-  - [.NET 9.0 SDK](https://dotnet.microsoft.com/download/dotnet/9.0)
   - [.NET 10.0 SDK](https://dotnet.microsoft.com/download/dotnet/10.0)
+  - [.NET 11 previews](https://dotnet.microsoft.com/download/dotnet/11.0), using the RC3 SDK pinned in `global.json` for source development
 - From a command line shell install (or update) the tool;
 
   ```pwsh
@@ -374,7 +375,7 @@ they were exported or migrated.
 
 ## Development
 
-The projects target .NET 8, 9 and 10. Use a .NET 10 SDK for the current C# source.
+The projects target .NET 10 and 11. Use the .NET 11 RC3 SDK pinned in `global.json` for the current source.
 Release configuration uses published shared dependencies; Debug requires sibling source projects.
 See the [test guide](src/CasCap.Api.AzureDevOps.Tests/README.md) before choosing offline or live checks,
 and the [script guide](.scripts/README.md) before provisioning fixtures.
@@ -385,7 +386,7 @@ dotnet test --solution yamlizr.Release.slnx --configuration Release --no-build -
 ```
 
 Run these commands from the repository root. The test command runs the credential-free cases on
-all three target frameworks; it does not contact Azure DevOps or provision fixtures.
+both target frameworks; it does not contact Azure DevOps or provision fixtures.
 
 ## License
 

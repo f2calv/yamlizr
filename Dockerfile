@@ -14,7 +14,7 @@
 # Pinned to $BUILDPLATFORM and CROSS-COMPILES to $TARGETPLATFORM; emulating the
 # target under QEMU instead is often an order of magnitude slower.
 # ------------------------------------------------------------------------------
-FROM --platform=$BUILDPLATFORM mcr.microsoft.com/dotnet/sdk:10.0 AS build
+FROM --platform=$BUILDPLATFORM mcr.microsoft.com/dotnet/sdk:11.0.100-rc.3-resolute AS build
 WORKDIR /repo
 
 COPY ["Directory.Build.props", "Directory.Packages.props", "global.json", "./"]
@@ -22,7 +22,7 @@ COPY ["Directory.Build.props", "Directory.Packages.props", "global.json", "./"]
 ARG WORKLOAD=yamlizr
 ARG PROJECT=src/CasCap.DevOpsYamlizrCli/CasCap.DevOpsYamlizrCli.csproj
 ARG CONFIGURATION=Release
-ARG TARGET_FRAMEWORK=net10.0
+ARG TARGET_FRAMEWORK=net11.0
 ARG VERSION=0.0.0-local
 ARG GIT_REPOSITORY=n/a
 ARG GIT_BRANCH=n/a
@@ -98,12 +98,12 @@ EOF
 # global.json selects Microsoft.Testing.Platform, which `dotnet test --project`
 # and the trait filters require.
 # ------------------------------------------------------------------------------
-FROM --platform=$BUILDPLATFORM mcr.microsoft.com/dotnet/sdk:10.0 AS test
+FROM --platform=$BUILDPLATFORM mcr.microsoft.com/dotnet/sdk:11.0.100-rc.3-resolute AS test
 WORKDIR /src
 
 ARG TEST_PROJECT=src/CasCap.Api.AzureDevOps.Tests/CasCap.Api.AzureDevOps.Tests.csproj
 ARG CONFIGURATION=Release
-ARG TARGET_FRAMEWORK=net10.0
+ARG TARGET_FRAMEWORK=net11.0
 
 # -- Dependency layer ----------------------------------------------------------
 COPY Directory.Build.props Directory.Packages.props global.json ./
@@ -112,8 +112,8 @@ RUN --mount=type=cache,target=/root/.nuget/packages,sharing=locked \
     dotnet restore "$TEST_PROJECT" -p:Configuration="$CONFIGURATION"
 
 # -- Test layer ----------------------------------------------------------------
-# The SDK image ships only the .NET 10 runtime, so the multi-targeted test
-# project runs for net10.0 here; run the other target frameworks on the host.
+# The SDK image ships only the .NET 11 runtime, so the multi-targeted test
+# project runs for net11.0 here; run the other target frameworks on the host.
 COPY . .
 RUN --network=none --mount=type=cache,target=/root/.nuget/packages,sharing=locked \
     dotnet test --project "$TEST_PROJECT" \
@@ -134,7 +134,7 @@ RUN --network=none --mount=type=cache,target=/root/.nuget/packages,sharing=locke
 # this is a console application. On the runtime image it fails at startup with
 # "No frameworks were found".
 # ------------------------------------------------------------------------------
-FROM mcr.microsoft.com/dotnet/aspnet:10.0-noble-chiseled AS runtime
+FROM mcr.microsoft.com/dotnet/aspnet:11.0.0-rc.3-resolute-chiseled AS runtime
 WORKDIR /app
 COPY --link --from=build /app/publish .
 

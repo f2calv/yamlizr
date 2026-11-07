@@ -28,7 +28,7 @@ Tests/
 | **Total** | **31** | **42** |
 
 Counts are source-declared cases per target framework, not observed execution results. The project
-targets `net8.0`, `net9.0` and `net10.0`; use an SDK supporting the current C# source and the selected
+targets `net10.0` and `net11.0`; use the .NET 11 RC3 SDK pinned in `global.json` and the selected
 runtime. There are no MemberData providers or untagged test classes.
 
 ## Trait Categories
@@ -83,7 +83,7 @@ target pipeline's repository rather than the submitted document.
 
 Run from the repository root. These commands are examples, not a record of tests executed.
 Release configuration uses packages instead of requiring sibling shared-library checkouts.
-The .NET 10 SDK's MTP runner supports these trait options without a `--` separator.
+The .NET 11 RC3 SDK's MTP runner supports these trait options without a `--` separator.
 
 ```bash
 # credential-free only, one target framework
@@ -112,8 +112,8 @@ SDK image, with no local SDK needed. It is not part of the default image target:
 docker buildx build --target test --progress=plain .
 ```
 
-It runs on the build machine's native platform, for `net10.0` only because the SDK image ships only
-the .NET 10 runtime, with `Category=Integration` filtered out and networking disabled. A failing test
+It runs on the build machine's native platform, for `net11.0` only because the SDK image ships only
+the .NET 11 runtime, with `Category=Integration` filtered out and networking disabled. A failing test
 fails the build.
 
 The token needs only read access, plus Build (read and execute) for the preview endpoint. It never
