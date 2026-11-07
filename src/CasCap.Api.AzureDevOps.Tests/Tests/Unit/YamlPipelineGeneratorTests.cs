@@ -1,5 +1,4 @@
 using AzurePipelinesToGitHubActionsConverter.Core.AzurePipelines;
-using CasCap.Common.Exceptions;
 using CasCap.Models;
 using CasCap.Utilities;
 using Microsoft.TeamFoundation.Build.WebApi;
@@ -296,12 +295,14 @@ public class YamlPipelineGeneratorTests
             p.Contains("deploy phase(s) that are not") && p.Contains("AgentBasedDeployment"));
     }
 
-    [Fact]
-    public void GenPipeline_NeitherBuildNorRelease_IsRejected()
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void GenPipeline_InvalidDefinitionCombination_IsRejected(bool includeBoth)
     {
         var generator = new YamlPipelineGenerator(
-            null,
-            null,
+            includeBoth ? YamlizrTestData.BuildDefinition() : null,
+            includeBoth ? YamlizrTestData.ReleaseDefinition() : null,
             [],
             [],
             new ConcurrentDictionary<TaskGroupVersion, Template>(),
@@ -309,6 +310,6 @@ public class YamlPipelineGeneratorTests
             inlineTaskGroups: false,
             DeployPhaseTypes.AgentBasedDeployment);
 
-        Assert.Throws<GenericException>(generator.GenPipeline);
+        Assert.Throws<InvalidOperationException>(generator.GenPipeline);
     }
 }
