@@ -28,7 +28,7 @@ Tests/
 | **Total** | **31** | **42** |
 
 Counts are source-declared cases per target framework, not observed execution results. The project
-targets `net10.0` and `net11.0`; use the .NET 11 RC3 SDK pinned in `global.json` and the selected
+targets `net10.0` and `net11.0`; use the .NET 11 SDK pinned in `global.json` and the selected
 runtime. There are no MemberData providers or untagged test classes.
 
 ## Trait Categories
@@ -83,7 +83,7 @@ target pipeline's repository rather than the submitted document.
 
 Run from the repository root. These commands are examples, not a record of tests executed.
 Release configuration uses packages instead of requiring sibling shared-library checkouts.
-The .NET 11 RC3 SDK's MTP runner supports these trait options without a `--` separator.
+The .NET 11 SDK's MTP runner supports these trait options without a `--` separator.
 
 ```bash
 # credential-free only, one target framework

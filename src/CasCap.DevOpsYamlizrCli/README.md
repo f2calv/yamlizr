@@ -10,7 +10,7 @@ and generated files before putting them into use.
 ## Quick Start
 
 Install with a .NET SDK and the .NET and ASP.NET Core runtimes required by the selected package version.
-This checkout targets .NET 10 and 11 and uses the .NET 11 RC3 SDK pinned in `global.json`. The
+This checkout targets .NET 10 and 11 and uses the .NET 11 SDK pinned in `global.json`. The
 [NuGet tool](https://www.nuget.org/packages/yamlizr) exposes the `yamlizr` command.
 
 ```powershell
