@@ -13,7 +13,7 @@
 # ------------------------------------------------------------------------------
 # Stage 1 of 2: build
 # ------------------------------------------------------------------------------
-FROM --platform=$BUILDPLATFORM mcr.microsoft.com/dotnet/sdk:11.0.100-rc.3-resolute AS build
+FROM --platform=$BUILDPLATFORM mcr.microsoft.com/dotnet/sdk:11.0-resolute AS build
 WORKDIR /repo
 COPY ["Directory.Build.props", "Directory.Packages.props", "global.json", "./"]
 
@@ -78,7 +78,7 @@ EOF
 # aspnet, not runtime, for the same reason as the Release image: a FrameworkReference to
 # Microsoft.AspNetCore.App arrives through CasCap.Common.Net.
 # ------------------------------------------------------------------------------
-FROM mcr.microsoft.com/dotnet/aspnet:11.0.0-rc.3-resolute-chiseled AS runtime
+FROM mcr.microsoft.com/dotnet/aspnet:11.0-resolute-chiseled AS runtime
 WORKDIR /app
 COPY --link --from=build /app/publish .
 

@@ -14,7 +14,7 @@
 # Pinned to $BUILDPLATFORM and CROSS-COMPILES to $TARGETPLATFORM; emulating the
 # target under QEMU instead is often an order of magnitude slower.
 # ------------------------------------------------------------------------------
-FROM --platform=$BUILDPLATFORM mcr.microsoft.com/dotnet/sdk:11.0.100-rc.3-resolute AS build
+FROM --platform=$BUILDPLATFORM mcr.microsoft.com/dotnet/sdk:11.0-resolute AS build
 WORKDIR /repo
 
 COPY ["Directory.Build.props", "Directory.Packages.props", "global.json", "./"]
@@ -98,7 +98,7 @@ EOF
 # global.json selects Microsoft.Testing.Platform, which `dotnet test --project`
 # and the trait filters require.
 # ------------------------------------------------------------------------------
-FROM --platform=$BUILDPLATFORM mcr.microsoft.com/dotnet/sdk:11.0.100-rc.3-resolute AS test
+FROM --platform=$BUILDPLATFORM mcr.microsoft.com/dotnet/sdk:11.0-resolute AS test
 WORKDIR /src
 
 ARG TEST_PROJECT=src/CasCap.Api.AzureDevOps.Tests/CasCap.Api.AzureDevOps.Tests.csproj
@@ -134,7 +134,7 @@ RUN --network=none --mount=type=cache,target=/root/.nuget/packages,sharing=locke
 # this is a console application. On the runtime image it fails at startup with
 # "No frameworks were found".
 # ------------------------------------------------------------------------------
-FROM mcr.microsoft.com/dotnet/aspnet:11.0.0-rc.3-resolute-chiseled AS runtime
+FROM mcr.microsoft.com/dotnet/aspnet:11.0-resolute-chiseled AS runtime
 WORKDIR /app
 COPY --link --from=build /app/publish .
 
