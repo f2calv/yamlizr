@@ -985,7 +985,7 @@ function New-FixtureBuildDefinitions {
         New-AgentPhase -Name 'Restore and build' -RefName 'Phase_1' -Steps @(
             New-OptionalTaskStep -TaskName 'UseDotNet' -DisplayName 'Use the .NET SDK' -Inputs @{
                 packageType = 'sdk'
-                version     = '8.0.x'
+                version     = '11.0.x'
             }
             New-OptionalTaskStep -TaskName 'NuGetToolInstaller' -DisplayName 'Install NuGet' -Inputs @{ versionSpec = '6.x' }
             New-OptionalTaskStep -TaskName 'NuGetCommand' -DisplayName 'NuGet restore' -Inputs @{
