@@ -9,8 +9,8 @@ and generated files before putting them into use.
 
 ## Quick Start
 
-Install with a .NET 8, 9 or 10 SDK and matching .NET and ASP.NET Core runtimes
-(included in the corresponding SDK). The
+Install with a .NET SDK and the .NET and ASP.NET Core runtimes required by the selected package version.
+This checkout targets .NET 10 and 11 and uses a stable .NET 11 SDK. The
 [NuGet tool](https://www.nuget.org/packages/yamlizr) exposes the `yamlizr` command.
 
 ```powershell

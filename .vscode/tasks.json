@@ -29,7 +29,7 @@
         "--project",
         "${workspaceFolder}/src/CasCap.Api.AzureDevOps.Tests/CasCap.Api.AzureDevOps.Tests.csproj",
         "--framework",
-        "net10.0",
+        "net11.0",
         "--filter-not-trait",
         "Category=Integration"
       ],

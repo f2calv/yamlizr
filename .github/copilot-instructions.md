@@ -25,7 +25,8 @@ to review and edit the result. That does not license silent data loss.
 
 The current Azure DevOps clients (`20.256.2`) request `System.Security.Cryptography.Xml` 5.0.0
 through their WCF dependencies, also bringing `System.Drawing.Common` 5.0.0 into the graph.
-The library explicitly references supported XML `10.0.13` to address GHSA-vh55-786g-wjwj and
-remove the vulnerable Drawing dependency path (GHSA-rxg9-xrhp-64gj).
+The library explicitly references supported XML `10.0.15` for `net10.0` and `11.0.0` for
+`net11.0` to address GHSA-vh55-786g-wjwj and remove the vulnerable Drawing dependency path
+(GHSA-rxg9-xrhp-64gj).
 Reassess the colocated project-file TODO when updating those clients; remove the override only
 after verifying the resolved dependency graph and offline tests across all target frameworks.

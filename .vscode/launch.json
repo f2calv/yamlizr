@@ -6,7 +6,7 @@
       "type": "coreclr",
       "request": "launch",
       "preLaunchTask": "build",
-      "program": "${workspaceFolder}/src/CasCap.DevOpsYamlizrCli/bin/Debug/net10.0/yamlizr.dll",
+      "program": "${workspaceFolder}/src/CasCap.DevOpsYamlizrCli/bin/Debug/net11.0/yamlizr.dll",
       "args": ["${input:commandLine}"],
       "cwd": "${workspaceFolder}",
       "console": "integratedTerminal",

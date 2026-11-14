@@ -10,8 +10,9 @@ the [yamlizr CLI](https://github.com/f2calv/yamlizr).
 dotnet add package CasCap.Api.AzureDevOps
 ```
 
-The [NuGet package](https://www.nuget.org/packages/CasCap.Api.AzureDevOps) targets
-`net8.0`, `net9.0` and `net10.0`. Use the CLI for ready-made bulk conversion; the library leaves
+This checkout targets `net10.0` and `net11.0`; published
+[NuGet versions](https://www.nuget.org/packages/CasCap.Api.AzureDevOps) retain their own framework requirements.
+Use the CLI for ready-made bulk conversion; the library leaves
 definition retrieval, catalogue construction, credential acquisition and file output to your host.
 
 The checkout explicitly references supported `System.Security.Cryptography.Xml` to override the
