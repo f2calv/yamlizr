@@ -28,7 +28,7 @@ Tests/
 | **Total** | **31** | **42** |
 
 Counts are source-declared cases per target framework, not observed execution results. The project
-targets `net10.0` and `net11.0`; use the .NET 11 SDK pinned in `global.json` and the selected
+targets `net10.0` and `net11.0`; use a stable .NET 11 SDK and the selected
 runtime. There are no MemberData providers or untagged test classes.
 
 ## Trait Categories
