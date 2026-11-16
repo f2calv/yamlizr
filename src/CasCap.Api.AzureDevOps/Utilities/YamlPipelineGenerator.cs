@@ -52,6 +52,11 @@ public class YamlPipelineGenerator(
     //number of folders the pipeline file is nested beneath AzureDevOpsBuilds/AzureDevOpsReleases (--preserve-folders)
     private readonly int _folderDepth = Math.Max(0, folderDepth);
 
+    //true while the steps of a task group template are being built; templates always live in the
+    //flat AzureDevOpsTaskGroups folder, so a template-to-template reference must not inherit the depth
+    //of the pipeline that happened to create the template first
+    private bool _buildingTemplateSteps;
+
     private readonly List<string> _warnings = [];
 
     /// <summary>
@@ -520,8 +525,18 @@ public class YamlPipelineGenerator(
                 if (!taskGroupSteps.IsNullOrEmpty())
                 {
                     var steps = new List<Step>(taskGroupSteps.Count);
-                    foreach (var taskGroupStep in taskGroupSteps)
-                        steps.AddRange(GenSteps(taskGroupStep, parameterDefaults));
+                    //a nested task group re-enters this, so restore the previous value rather than clear it
+                    var previous = _buildingTemplateSteps;
+                    _buildingTemplateSteps = true;
+                    try
+                    {
+                        foreach (var taskGroupStep in taskGroupSteps)
+                            steps.AddRange(GenSteps(taskGroupStep, parameterDefaults));
+                    }
+                    finally
+                    {
+                        _buildingTemplateSteps = previous;
+                    }
                     template.Steps = [.. steps];
                 }
                 template.Steps ??= [];//handle when all tasks within taskgroup are disabled
@@ -604,7 +619,10 @@ public class YamlPipelineGenerator(
             if (input is not null && string.IsNullOrWhiteSpace(inputs[key]))
                 inputs[key] = input.DefaultValue;
         }
-        var parents = string.Concat(Enumerable.Repeat("../", 1 + _folderDepth));
+        //a template file sits directly in AzureDevOpsTaskGroups regardless of where the pipeline is
+        //written, so only a reference from a pipeline document follows the folder depth
+        var depth = _buildingTemplateSteps ? 0 : _folderDepth;
+        var parents = string.Concat(Enumerable.Repeat("../", 1 + depth));
         return [new Step { template = $"{parents}{_templatesFolder}/{filename}", parameters = inputs.IsNullOrEmpty() ? null : inputs }];
     }
 
