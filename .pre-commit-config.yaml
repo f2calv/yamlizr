@@ -42,7 +42,7 @@ repos:
   hooks:
   - id: check-json5
 - repo: https://github.com/rbubley/mirrors-prettier
-  rev: v3.9.10
+  rev: v3.10.1
   hooks:
   #JSON formatting; indentation and line endings come from .editorconfig. Tool-written
   #manifests and lockfiles are left to the tools that generate them.
