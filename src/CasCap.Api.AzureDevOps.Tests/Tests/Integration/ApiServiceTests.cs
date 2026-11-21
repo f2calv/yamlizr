@@ -4,6 +4,7 @@ namespace CasCap.Api.AzureDevOps.Tests.Integration;
 /// <remarks>Initialises the shared Azure DevOps connection.</remarks>
 /// <param name="output">xUnit sink that test logging is written to.</param>
 [Trait("Category", "Integration")]
+[Trait("Category", "Live")]
 public class ApiServiceTests(ITestOutputHelper output) : TestBase(output)
 {
     [Fact]

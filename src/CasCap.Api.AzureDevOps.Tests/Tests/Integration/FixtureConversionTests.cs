@@ -27,6 +27,7 @@ namespace CasCap.Api.AzureDevOps.Tests.Integration;
 /// </para>
 /// </remarks>
 [Trait("Category", "Integration")]
+[Trait("Category", "Live")]
 public class FixtureConversionTests(ITestOutputHelper output) : TestBase(output)
 {
     /// <summary>Name prefix every object created by <c>.scripts/New-FixtureDefinitions.ps1</c> carries.</summary>

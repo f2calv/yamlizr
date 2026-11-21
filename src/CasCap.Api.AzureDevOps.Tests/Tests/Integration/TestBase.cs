@@ -55,6 +55,9 @@ public abstract class TestBase : IDisposable
     /// <param name="output">xUnit sink that test logging is written to.</param>
     protected TestBase(ITestOutputHelper output)
     {
+        Assert.SkipUnless(Environment.GetEnvironmentVariable("YAMLIZR_RUN_LIVE_TESTS") == "true",
+            "Set YAMLIZR_RUN_LIVE_TESTS=true to run against a live Azure DevOps organization.");
+
         var configuration = _configuration;
         configuration.AddStandardConfiguration("Test", typeof(TestBase).Assembly);
 

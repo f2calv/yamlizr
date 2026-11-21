@@ -11,6 +11,7 @@ namespace CasCap.Api.AzureDevOps.Tests.Integration;
 /// is the only claim that matters for generated output. See issue #366.
 /// </remarks>
 [Trait("Category", "Integration")]
+[Trait("Category", "Live")]
 public class PipelineValidationTests(ITestOutputHelper output) : TestBase(output)
 {
     private const string NoValidationPipeline =

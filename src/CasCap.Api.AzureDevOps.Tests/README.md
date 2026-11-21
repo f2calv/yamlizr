@@ -37,7 +37,7 @@ runtime. There are no MemberData providers or untagged test classes.
 | --- | --- | --- |
 | `Category=Generation` | `YamlPipelineGeneratorTests` | Offline; synthetic definitions and task catalogues |
 | `Category=Serialization` | `PipelineSerializationTests`, `TaskCatalogSerializationTests` | Offline; in-memory models and JSON |
-| `Category=Integration` | `ApiServiceTests`, `PipelineValidationTests`, `FixtureConversionTests` | Live credentials plus organization/project and enabled validation pipeline where needed |
+| `Category=Integration`, `Category=Live` | `ApiServiceTests`, `PipelineValidationTests`, `FixtureConversionTests` | Live opt-in and credentials plus organization/project and enabled validation pipeline where needed |
 
 ## Skipped Tests
 
@@ -58,7 +58,7 @@ variables. The Test file may be absent when other providers supply the values. I
 [`AzureDevOpsOptions`](../CasCap.Api.AzureDevOps/Models/AzureDevOpsOptions.cs).
 [`PipelineValidationTests`](Tests/Integration/PipelineValidationTests.cs) and
 [`FixtureConversionTests`](Tests/Integration/FixtureConversionTests.cs) each require all four connection
-fields; supplying a token alone is not sufficient. There is no additional live-enable switch.
+fields; supplying a token alone is not sufficient. All live cases also require `YAMLIZR_RUN_LIVE_TESTS=true`.
 
 Integration tests are read-only. They never create, update or delete a definition, task group or
 variable group, and a preview run parses YAML without queueing anything.
@@ -87,9 +87,9 @@ The .NET 11 SDK's MTP runner supports these trait options without a `--` separat
 
 ```bash
 # credential-free only, one target framework
-dotnet test --project src/CasCap.Api.AzureDevOps.Tests/CasCap.Api.AzureDevOps.Tests.csproj --configuration Release --framework net10.0 --filter-not-trait Category=Integration
+dotnet test --project src/CasCap.Api.AzureDevOps.Tests/CasCap.Api.AzureDevOps.Tests.csproj --configuration Release --framework net10.0 --filter-not-trait Category=Live
 
-# all source-declared cases; live tests skip when their configuration is absent
+# all source-declared cases; live tests skip without explicit opt-in
 dotnet test --project src/CasCap.Api.AzureDevOps.Tests/CasCap.Api.AzureDevOps.Tests.csproj --configuration Release --framework net10.0
 ```
 
@@ -98,7 +98,7 @@ For a deliberately authorized live run, configure all four fields via User Secre
 environment variables. Use an existing enabled YAML validation pipeline and the default fixture
 prefix; do not publish its resolved ID or project details. The test harness reads only the regular
 options configuration, not the CLI's `SYSTEM_*` fallback variables. Select live tests with
-`--filter-trait Category=Integration`.
+`--filter-trait Category=Live` and set `YAMLIZR_RUN_LIVE_TESTS=true`.
 
 Failure output can contain generated YAML, definition names and server messages. Treat it as
 potentially sensitive. No test provisions the fixture project on your behalf.
