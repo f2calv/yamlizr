@@ -1,3 +1,4 @@
+using CasCap.Common.Extensions;
 using CasCap.Models;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -13,18 +14,12 @@ internal static class AppHost
     /// <returns>The process exit code.</returns>
     internal static async Task<int> RunAsync(string[] args)
     {
-        // The tool runs from the global tool store, so shipped defaults load from the assembly
-        // directory while a per-project override loads from the working directory.
         var host = new HostBuilder()
             .ConfigureAppConfiguration((_, builder) => builder
-                .SetBasePath(AppContext.BaseDirectory)
-                .AddJsonFile("appsettings.json", optional: true, reloadOnChange: false)
-                .AddJsonFile(
-                    Path.Combine(Directory.GetCurrentDirectory(), "appsettings.json"),
-                    optional: true,
-                    reloadOnChange: false)
-                .AddUserSecrets<Program>(optional: true)
-                .AddEnvironmentVariables())
+                .AddGlobalToolConfiguration(
+                    typeof(Program).Assembly,
+                    AppContext.BaseDirectory,
+                    Directory.GetCurrentDirectory()))
             .ConfigureLogging((context, logging) =>
             {
                 logging.AddConfiguration(context.Configuration.GetSection("Logging"));

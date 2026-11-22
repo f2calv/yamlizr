@@ -33,4 +33,13 @@
     <ProjectReference Include="..\CasCap.Api.AzureDevOps\CasCap.Api.AzureDevOps.csproj" />
   </ItemGroup>
 
+  <ItemGroup Condition="'$(Configuration)'!='Release'">
+    <ProjectReference Include="..\..\..\CasCap.Common\src\CasCap.Common.Configuration\CasCap.Common.Configuration.csproj" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(Configuration)'=='Release'">
+    <!-- TODO: Update the shared-package pins after AddGlobalToolConfiguration ships in the next
+         immutable CasCap.Common release; Debug uses source rather than duplicating the helper. -->
+    <PackageReference Include="CasCap.Common.Configuration" />
+  </ItemGroup>
+
 </Project>
