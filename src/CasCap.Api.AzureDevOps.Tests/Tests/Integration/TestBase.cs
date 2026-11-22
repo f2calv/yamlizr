@@ -12,7 +12,7 @@ namespace CasCap.Api.AzureDevOps.Tests.Integration;
 /// Shared setup for tests which call a live Azure DevOps organisation.
 /// </summary>
 /// <remarks>
-/// Configuration uses the shared Test-environment settings chain, then User Secrets for local runs
+/// Configuration uses the shared Tests-environment settings chain, then User Secrets for local runs
 /// and environment variables for CI. Set the token locally with
 /// <c>dotnet user-secrets set CasCap:AzureDevOpsOptions:PAT "your-token"</c>.
 /// </remarks>
@@ -59,7 +59,7 @@ public abstract class TestBase : IDisposable
             "Set YAMLIZR_RUN_LIVE_TESTS=true to run against a live Azure DevOps organization.");
 
         var configuration = _configuration;
-        configuration.AddStandardConfiguration("Test", typeof(TestBase).Assembly);
+        configuration.AddStandardConfiguration("Tests", typeof(TestBase).Assembly);
 
         Options = configuration.GetSection(AzureDevOpsOptions.ConfigurationSectionName).Get<AzureDevOpsOptions>()
             ?? new AzureDevOpsOptions();
