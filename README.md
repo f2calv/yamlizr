@@ -210,8 +210,14 @@ configured value.
 
 1. `appsettings.json` alongside the tool
 2. `appsettings.json` in the current working directory
-3. .NET User Secrets
-4. environment variables
+3. optional `appsettings.Local.json` in the current working directory
+4. .NET User Secrets
+5. environment variables
+
+The current checkout supports the local overlay through the shared configuration helper.
+It is gitignored, never loaded from the installed tool directory, and does not enable JSON reload.
+User Secrets override duplicate local values. Published tools gain this behavior after the shared
+helper and consuming CLI are released.
 
 The [`AzureDevOpsOptions`](src/CasCap.Api.AzureDevOps/Models/AzureDevOpsOptions.cs)
 section supplies connection values. Explicit command options win over configuration; predefined
@@ -243,7 +249,8 @@ $env:CasCap__AzureDevOpsOptions__Project = 'ExampleProject'
 yamlizr generate -out "$PWD\out" --create-directory
 ```
 
-Never commit a token. Use User Secrets locally and a secret-backed environment variable in CI.
+Never commit a token. Prefer User Secrets locally, or use the gitignored local overlay for private
+configuration, and use a secret-backed environment variable in CI.
 
 ## Running Inside a Pipeline
 

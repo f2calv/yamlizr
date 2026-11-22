@@ -22,6 +22,8 @@
 **/obj/**
 **/.git/**
 **/.vs/**
+**/appsettings.Local*.json
+**/appsettings.*.Local.json
 
 # The test project stays in the context for the optional `test` stage. The build stages exclude it
 # with COPY --exclude, so a test edit never busts the publish layer cache.
